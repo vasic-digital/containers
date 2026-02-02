@@ -1,0 +1,40 @@
+sequenceDiagram
+    participant App
+    participant BM as BootManager
+    participant DI as Discoverer
+    participant CO as ComposeOrchestrator
+    participant HC as HealthChecker
+    participant EB as EventBus
+
+    App->>BM: BootAll(ctx)
+    BM->>EB: Publish(BootStarted)
+
+    Note over BM: Phase 1: Discovery
+    loop For each discoverable endpoint
+        BM->>DI: Discover(ctx, endpoint)
+        DI-->>BM: discovered=true/false
+    end
+
+    Note over BM: Phase 2: Group by Compose
+    BM->>BM: GroupByCompose(endpoints)
+
+    Note over BM: Phase 3: Start Services
+    loop For each compose group
+        BM->>CO: Up(ctx, project)
+        CO-->>BM: ok/error
+        BM->>EB: Publish(ContainerStarted)
+    end
+
+    Note over BM: Phase 4: Health Check
+    loop For each enabled endpoint
+        BM->>HC: CheckWithRetry(ctx, target)
+        HC-->>BM: HealthResult
+        alt Required + Failed
+            BM->>EB: Publish(ContainerFailed)
+        else Healthy
+            BM->>EB: Publish(HealthChanged)
+        end
+    end
+
+    BM->>EB: Publish(BootCompleted)
+    BM-->>App: BootSummary / error

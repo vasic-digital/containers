@@ -1,0 +1,61 @@
+graph TB
+    subgraph "Boot Layer"
+        BM[boot.BootManager]
+    end
+
+    subgraph "Orchestration Layer"
+        CO[compose.ComposeOrchestrator]
+        HC[health.HealthChecker]
+        DI[discovery.Discoverer]
+    end
+
+    subgraph "Lifecycle Layer"
+        LM[lifecycle.LifecycleManager]
+        LB[LazyBooter]
+        IS[IdleShutdown]
+        CS[ConcurrencySemaphore]
+    end
+
+    subgraph "Runtime Layer"
+        CR[runtime.ContainerRuntime]
+        DR[DockerRuntime]
+        PR[PodmanRuntime]
+        KR[KubernetesRuntime]
+    end
+
+    subgraph "Infrastructure"
+        EB[event.EventBus]
+        MC[metrics.MetricsCollector]
+        LG[logging.Logger]
+        RM[monitor.ResourceMonitor]
+    end
+
+    subgraph "Configuration"
+        EP[endpoint.ServiceEndpoint]
+        SG[compose.ServiceGroup]
+    end
+
+    BM --> CO
+    BM --> HC
+    BM --> DI
+    BM --> EB
+    BM --> MC
+    BM --> LG
+    BM --> EP
+
+    LM --> CO
+    LM --> HC
+    LM --> LB
+    LM --> IS
+    LM --> CS
+
+    CO --> CR
+    RM --> CR
+
+    CR --> DR
+    CR --> PR
+    CR --> KR
+
+    HC --> EP
+    DI --> EP
+    CO --> SG

@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> Registered: Register()
+
+    Registered --> Starting: Start() / Acquire()
+    Starting --> Running: Container started + healthy
+    Starting --> Failed: Start error / health check failed
+
+    Running --> Idle: All users released
+    Running --> Stopping: Stop() / Shutdown()
+    Running --> Failed: Health check failed
+
+    Idle --> Running: Acquire()
+    Idle --> Stopping: IdleTimeout expired
+    Idle --> Stopping: Stop() / Shutdown()
+
+    Stopping --> Stopped: Container stopped
+    Stopping --> Failed: Stop error
+
+    Stopped --> Starting: Start() / Acquire()
+    Failed --> Starting: Start() / Acquire() (retry)
+    Failed --> Stopped: Remove()
+
+    Stopped --> [*]: Deregistered

@@ -1,0 +1,35 @@
+graph LR
+    subgraph "Publishers"
+        BM[BootManager]
+        LM[LifecycleManager]
+        HC[HealthChecker]
+        RM[ResourceMonitor]
+    end
+
+    subgraph "EventBus"
+        EB[DefaultEventBus]
+        CH[Channel Buffer]
+        FM[Filter Matching]
+    end
+
+    subgraph "Subscribers"
+        S1[Metrics Collector]
+        S2[Logger]
+        S3[Alert Handler]
+        S4[Dashboard]
+    end
+
+    BM -->|BootStarted| EB
+    BM -->|BootCompleted| EB
+    LM -->|ContainerStarted| EB
+    LM -->|ContainerStopped| EB
+    HC -->|HealthChanged| EB
+    RM -->|ThresholdExceeded| EB
+
+    EB --> CH
+    CH --> FM
+
+    FM -->|type=Container*| S1
+    FM -->|all events| S2
+    FM -->|type=*Failed| S3
+    FM -->|all events| S4
