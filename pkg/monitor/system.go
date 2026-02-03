@@ -17,18 +17,33 @@ type SystemCollector interface {
 	Collect() SystemResources
 }
 
+// platformChecker abstracts platform detection for testing.
+type platformChecker interface {
+	isLinux() bool
+}
+
+// defaultPlatformChecker uses the actual platform package.
+type defaultPlatformChecker struct{}
+
+func (d defaultPlatformChecker) isLinux() bool {
+	return platform.IsLinux()
+}
+
 // DefaultSystemCollector reads system metrics from /proc on Linux
 // and falls back to Go runtime metrics on other platforms.
 type DefaultSystemCollector struct {
 	prevIdle  uint64
 	prevTotal uint64
+	platform  platformChecker
 }
 
 // NewDefaultSystemCollector creates a DefaultSystemCollector. On
 // Linux it primes the CPU counters with an initial sample.
 func NewDefaultSystemCollector() *DefaultSystemCollector {
-	c := &DefaultSystemCollector{}
-	if platform.IsLinux() {
+	c := &DefaultSystemCollector{
+		platform: defaultPlatformChecker{},
+	}
+	if c.platform.isLinux() {
 		idle, total := readCPUSample()
 		c.prevIdle = idle
 		c.prevTotal = total
@@ -42,7 +57,13 @@ func NewDefaultSystemCollector() *DefaultSystemCollector {
 func (c *DefaultSystemCollector) Collect() SystemResources {
 	var res SystemResources
 
-	if platform.IsLinux() {
+	// Use the platform checker (allows testing of non-Linux paths)
+	checker := c.platform
+	if checker == nil {
+		checker = defaultPlatformChecker{}
+	}
+
+	if checker.isLinux() {
 		res.CPUPercent = c.collectCPULinux()
 		c.collectMemoryLinux(&res)
 		c.collectDiskLinux(&res)
@@ -78,7 +99,13 @@ func (c *DefaultSystemCollector) collectCPULinux() float64 {
 // readCPUSample parses the first cpu line from /proc/stat and
 // returns the idle ticks and total ticks.
 func readCPUSample() (idle, total uint64) {
-	f, err := os.Open("/proc/stat")
+	return readCPUSampleFromFile("/proc/stat")
+}
+
+// readCPUSampleFromFile reads CPU sample from the specified file path.
+// Separated for testability.
+func readCPUSampleFromFile(path string) (idle, total uint64) {
+	f, err := os.Open(path)
 	if err != nil {
 		return 0, 0
 	}
@@ -112,7 +139,16 @@ func readCPUSample() (idle, total uint64) {
 func (c *DefaultSystemCollector) collectMemoryLinux(
 	res *SystemResources,
 ) {
-	f, err := os.Open("/proc/meminfo")
+	c.collectMemoryLinuxFromFile(res, "/proc/meminfo")
+}
+
+// collectMemoryLinuxFromFile reads memory stats from the specified file.
+// Separated for testability.
+func (c *DefaultSystemCollector) collectMemoryLinuxFromFile(
+	res *SystemResources,
+	path string,
+) {
+	f, err := os.Open(path)
 	if err != nil {
 		return
 	}
@@ -153,9 +189,18 @@ func parseMemInfoKB(line string) uint64 {
 func (c *DefaultSystemCollector) collectDiskLinux(
 	res *SystemResources,
 ) {
-	// Use os.Stat to at least verify root is accessible. Real disk
+	c.collectDiskLinuxFromPath(res, "/")
+}
+
+// collectDiskLinuxFromPath reads disk stats from the specified path.
+// Separated for testability.
+func (c *DefaultSystemCollector) collectDiskLinuxFromPath(
+	res *SystemResources,
+	path string,
+) {
+	// Use os.Stat to at least verify path is accessible. Real disk
 	// stats require syscall; kept minimal to avoid cgo dependency.
-	info, err := os.Stat("/")
+	info, err := os.Stat(path)
 	if err != nil || info == nil {
 		return
 	}

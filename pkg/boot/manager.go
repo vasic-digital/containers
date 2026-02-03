@@ -71,6 +71,7 @@ func (bm *BootManager) BootAll(
 	}
 
 	// Phase 1: Discovery for remote/discoverable endpoints.
+	// Also marks disabled endpoints as skipped.
 	bm.logger.Info("boot: starting discovery phase")
 	for name, ep := range bm.endpoints {
 		if !ep.Enabled {
@@ -167,17 +168,10 @@ func (bm *BootManager) BootAll(
 		}
 	}
 
-	// Handle endpoints without a compose file.
+	// Handle enabled endpoints without a compose file.
+	// Note: Disabled endpoints are already handled in Phase 1.
 	for name, ep := range bm.endpoints {
 		if _, exists := bm.results[name]; exists {
-			continue
-		}
-		if !ep.Enabled {
-			bm.results[name] = &BootResult{
-				Name:   name,
-				Status: "skipped",
-			}
-			summary.Skipped++
 			continue
 		}
 		if ep.Remote {

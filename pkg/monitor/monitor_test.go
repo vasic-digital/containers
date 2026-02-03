@@ -2,6 +2,7 @@ package monitor_test
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"testing"
 	"time"
@@ -173,4 +174,80 @@ func TestDefaultMonitor_SetThreshold(t *testing.T) {
 		t.Fatal("expected threshold to trigger")
 	}
 	cancel()
+}
+
+// TestDefaultMonitor_StopChannel tests that Stop() terminates the
+// Start() goroutine via the stop channel.
+func TestDefaultMonitor_StopChannel(t *testing.T) {
+	sys := &stubSystemCollector{cpu: 10.0, memory: 20.0}
+	m := monitor.NewDefaultMonitor(nil, sys)
+
+	ctx := context.Background()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- m.Start(ctx, 100*time.Millisecond)
+	}()
+
+	// Wait for at least one snapshot
+	time.Sleep(150 * time.Millisecond)
+
+	// Stop should terminate Start
+	err := m.Stop()
+	require.NoError(t, err)
+
+	select {
+	case startErr := <-done:
+		// Start should return nil when stopped via stopCh
+		assert.Nil(t, startErr)
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("Start did not return after Stop was called")
+	}
+}
+
+// stubRuntimeWithStatsError is a runtime that returns errors for Stats calls.
+type stubRuntimeWithStatsError struct {
+	stubRuntime
+}
+
+func (s *stubRuntimeWithStatsError) Stats(
+	_ context.Context, _ string,
+) (*runtime.ContainerStats, error) {
+	return nil, fmt.Errorf("stats error")
+}
+
+// TestDefaultMonitor_StatsError tests that the monitor handles Stats
+// errors gracefully by continuing to collect other containers.
+func TestDefaultMonitor_StatsError(t *testing.T) {
+	sys := &stubSystemCollector{cpu: 25.0, memory: 50.0}
+	rt := &stubRuntimeWithStatsError{
+		stubRuntime: stubRuntime{
+			containers: []runtime.ContainerInfo{
+				{ID: "c1", Name: "redis"},
+				{ID: "c2", Name: "pg"},
+			},
+		},
+	}
+	m := monitor.NewDefaultMonitor(rt, sys)
+
+	ctx, cancel := context.WithTimeout(
+		context.Background(), 200*time.Millisecond,
+	)
+	defer cancel()
+
+	go func() {
+		_ = m.Start(ctx, 100*time.Millisecond)
+	}()
+
+	// Wait for snapshot
+	time.Sleep(150 * time.Millisecond)
+
+	snap, err := m.Snapshot()
+	require.NoError(t, err)
+
+	// System stats should still be collected
+	assert.Equal(t, 25.0, snap.System.CPUPercent)
+
+	// Container stats should be empty due to errors
+	assert.Empty(t, snap.Containers)
 }

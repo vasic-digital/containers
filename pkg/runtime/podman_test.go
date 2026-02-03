@@ -393,3 +393,209 @@ func TestPodmanRuntime_Logs(t *testing.T) {
 	require.NoError(t, readErr)
 	assert.Equal(t, "log output", string(data))
 }
+
+func TestPodmanRuntime_Stop_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return nil, fmt.Errorf("stop failed")
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	err := p.Stop(context.Background(), "test-pod")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "podman stop")
+}
+
+func TestPodmanRuntime_Remove_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return nil, fmt.Errorf("remove failed")
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	err := p.Remove(context.Background(), "test-pod")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "podman rm")
+}
+
+func TestPodmanRuntime_Status_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return nil, fmt.Errorf("inspect failed")
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	_, err := p.Status(context.Background(), "test-pod")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "podman inspect")
+}
+
+func TestPodmanRuntime_List_WithFilters(t *testing.T) {
+	podmanPS := `[{"Id": "abc", "Names": ["web"], "Image": "nginx", "ImageID": "sha256:abc", "State": "running", "Status": "Up", "Labels": {}}]`
+
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, args ...string,
+		) ([]byte, error) {
+			capturedArgs = args
+			return []byte(podmanPS), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+
+	filter := ListFilter{
+		All:    true,
+		Labels: map[string]string{"app": "web"},
+		Names:  []string{"web"},
+		Status: []ContainerState{StateRunning},
+	}
+
+	_, err := p.List(context.Background(), filter)
+	require.NoError(t, err)
+
+	assert.Contains(t, capturedArgs, "-a")
+	assert.Contains(t, capturedArgs, "--filter")
+}
+
+func TestPodmanRuntime_List_InvalidJSON(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("not-json"), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	_, err := p.List(context.Background(), ListFilter{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing podman ps output")
+}
+
+func TestPodmanRuntime_List_NilLabels(t *testing.T) {
+	// Container with null labels should get empty map.
+	podmanPS := `[{"Id": "abc", "Names": ["web"], "Image": "nginx", "ImageID": "sha256:abc", "State": "running", "Status": "Up", "Labels": null}]`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(podmanPS), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	containers, err := p.List(context.Background(), ListFilter{})
+	require.NoError(t, err)
+	require.Len(t, containers, 1)
+	assert.NotNil(t, containers[0].Labels)
+}
+
+func TestPodmanRuntime_List_NoNames(t *testing.T) {
+	// Container with empty names array.
+	podmanPS := `[{"Id": "abc", "Names": [], "Image": "nginx", "ImageID": "sha256:abc", "State": "running", "Status": "Up", "Labels": {}}]`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(podmanPS), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	containers, err := p.List(context.Background(), ListFilter{})
+	require.NoError(t, err)
+	require.Len(t, containers, 1)
+	assert.Empty(t, containers[0].Name)
+}
+
+func TestPodmanRuntime_Stats_EmptyArray(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("[]"), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	_, err := p.Stats(context.Background(), "test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no stats data")
+}
+
+func TestPodmanRuntime_Stats_FallbackToDockerFormat(t *testing.T) {
+	// When podman returns docker-style string format, it should fall back.
+	dockerStats := `{"CPUPerc":"1.0%","MemPerc":"5.0%","MemUsage":"50MiB / 500MiB","NetIO":"1kB / 1kB","BlockIO":"0B / 0B","PIDs":"2"}`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(dockerStats), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	stats, err := p.Stats(context.Background(), "test")
+	require.NoError(t, err)
+	assert.InDelta(t, 1.0, stats.CPUPercent, 0.01)
+}
+
+func TestPodmanRuntime_Exec_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeWithStderrFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, []byte, int, error) {
+			return nil, nil, 0, fmt.Errorf("exec failed")
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	_, err := p.Exec(context.Background(), "test", []string{"ls"})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "podman exec")
+}
+
+func TestPodmanRuntime_Logs_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) (io.ReadCloser, error) {
+			return nil, fmt.Errorf("logs failed")
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	_, err := p.Logs(context.Background(), "test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "podman logs")
+}
+
+func TestPodmanRuntime_Logs_AllOptions(t *testing.T) {
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, args ...string,
+		) (io.ReadCloser, error) {
+			capturedArgs = args
+			return io.NopCloser(strings.NewReader("")), nil
+		},
+	}
+	p := NewPodmanRuntimeWithExecutor(exec)
+	rc, err := p.Logs(
+		context.Background(), "test",
+		WithFollow(true),
+		WithSince("1h"),
+		WithUntil("30m"),
+		WithTail("50"),
+	)
+	require.NoError(t, err)
+	defer rc.Close()
+
+	assert.Contains(t, capturedArgs, "-f")
+	assert.Contains(t, capturedArgs, "--since")
+	assert.Contains(t, capturedArgs, "--until")
+	assert.Contains(t, capturedArgs, "--tail")
+}

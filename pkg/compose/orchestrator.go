@@ -33,6 +33,40 @@ type ComposeOrchestrator interface {
 	) (io.ReadCloser, error)
 }
 
+// CmdFactory creates exec.Cmd instances (for testing).
+type CmdFactory interface {
+	CommandContext(ctx context.Context, name string, args ...string) Cmd
+}
+
+// Cmd wraps exec.Cmd methods used by the orchestrator.
+type Cmd interface {
+	SetDir(dir string)
+	StdoutPipe() (io.ReadCloser, error)
+	Start() error
+	Wait() error
+}
+
+// realCmdFactory creates real exec.Cmd instances.
+type realCmdFactory struct{}
+
+func (realCmdFactory) CommandContext(
+	ctx context.Context, name string, args ...string,
+) Cmd {
+	return &realCmd{cmd: exec.CommandContext(ctx, name, args...)}
+}
+
+// realCmd wraps exec.Cmd.
+type realCmd struct {
+	cmd *exec.Cmd
+}
+
+func (r *realCmd) SetDir(dir string)     { r.cmd.Dir = dir }
+func (r *realCmd) Start() error          { return r.cmd.Start() }
+func (r *realCmd) Wait() error           { return r.cmd.Wait() }
+func (r *realCmd) StdoutPipe() (io.ReadCloser, error) {
+	return r.cmd.StdoutPipe()
+}
+
 // DefaultOrchestrator implements ComposeOrchestrator by shelling out to
 // the detected compose command.
 type DefaultOrchestrator struct {
@@ -40,6 +74,7 @@ type DefaultOrchestrator struct {
 	composeArgs []string
 	workDir     string
 	logger      logging.Logger
+	cmdFactory  CmdFactory
 }
 
 // NewDefaultOrchestrator creates a DefaultOrchestrator, auto-detecting
@@ -60,6 +95,7 @@ func NewDefaultOrchestrator(
 		composeArgs: args,
 		workDir:     workDir,
 		logger:      logger,
+		cmdFactory:  realCmdFactory{},
 	}, nil
 }
 
@@ -79,6 +115,31 @@ func NewOrchestrator(
 		composeArgs: composeArgs,
 		workDir:     workDir,
 		logger:      logger,
+		cmdFactory:  realCmdFactory{},
+	}
+}
+
+// NewOrchestratorWithFactory creates an orchestrator with a custom
+// command factory (for testing).
+func NewOrchestratorWithFactory(
+	composeCmd string,
+	composeArgs []string,
+	workDir string,
+	logger logging.Logger,
+	factory CmdFactory,
+) *DefaultOrchestrator {
+	if logger == nil {
+		logger = logging.NopLogger{}
+	}
+	if factory == nil {
+		factory = realCmdFactory{}
+	}
+	return &DefaultOrchestrator{
+		composeCmd:  composeCmd,
+		composeArgs: composeArgs,
+		workDir:     workDir,
+		logger:      logger,
+		cmdFactory:  factory,
 	}
 }
 
@@ -179,8 +240,8 @@ func (o *DefaultOrchestrator) Logs(
 	args = append(args, "logs", "--no-color", service)
 
 	allArgs := append(o.composeArgs, args...)
-	cmd := exec.CommandContext(ctx, o.composeCmd, allArgs...)
-	cmd.Dir = o.workDir
+	cmd := o.cmdFactory.CommandContext(ctx, o.composeCmd, allArgs...)
+	cmd.SetDir(o.workDir)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -195,7 +256,7 @@ func (o *DefaultOrchestrator) Logs(
 		)
 	}
 
-	return &logReader{cmd: cmd, reader: stdout}, nil
+	return &cmdLogReader{cmd: cmd, reader: stdout}, nil
 }
 
 // logReader wraps a command's stdout pipe and waits for the process to
@@ -210,6 +271,21 @@ func (r *logReader) Read(p []byte) (int, error) {
 }
 
 func (r *logReader) Close() error {
+	_ = r.reader.Close()
+	return r.cmd.Wait()
+}
+
+// cmdLogReader wraps a Cmd interface's stdout pipe.
+type cmdLogReader struct {
+	cmd    Cmd
+	reader io.ReadCloser
+}
+
+func (r *cmdLogReader) Read(p []byte) (int, error) {
+	return r.reader.Read(p)
+}
+
+func (r *cmdLogReader) Close() error {
 	_ = r.reader.Close()
 	return r.cmd.Wait()
 }

@@ -4,6 +4,7 @@ package runtime
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -239,4 +240,19 @@ func TestOptions_Log(t *testing.T) {
 	assert.Equal(t, "1h", opts.Since)
 	assert.Equal(t, "30m", opts.Until)
 	assert.Equal(t, "100", opts.Tail)
+}
+
+func TestOptions_StopTimeout(t *testing.T) {
+	opts := applyStopOptions([]StopOption{
+		WithStopTimeout(30 * time.Second),
+	})
+	assert.Equal(t, 30*time.Second, opts.Timeout)
+}
+
+func TestOptions_LogDefaults(t *testing.T) {
+	opts := applyLogOptions(nil)
+	assert.False(t, opts.Follow)
+	assert.Empty(t, opts.Since)
+	assert.Empty(t, opts.Until)
+	assert.Equal(t, "all", opts.Tail)
 }

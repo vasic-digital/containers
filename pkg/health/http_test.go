@@ -171,3 +171,73 @@ func TestCheckHTTP_InvalidURL(t *testing.T) {
 	assert.False(t, result.Healthy)
 }
 
+func TestCheckHTTP_DefaultTimeout(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		},
+	))
+	defer srv.Close()
+
+	target := HealthTarget{
+		Name:    "default-timeout",
+		URL:     srv.URL,
+		Type:    HealthHTTP,
+		Timeout: 0, // Should use defaultHTTPTimeout (10s).
+	}
+
+	ctx := context.Background()
+	result := CheckHTTP(ctx, target)
+
+	assert.True(t, result.Healthy)
+}
+
+func TestCheckHTTP_DefaultPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// When no Path is specified, should default to "/".
+			assert.Equal(t, "/", r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+		},
+	))
+	defer srv.Close()
+
+	addr := srv.Listener.Addr().String()
+	host, port, err := net.SplitHostPort(addr)
+	require.NoError(t, err)
+
+	target := HealthTarget{
+		Name:    "default-path",
+		Host:    host,
+		Port:    port,
+		Path:    "", // Empty path should default to "/".
+		Type:    HealthHTTP,
+		Timeout: 2 * time.Second,
+	}
+
+	ctx := context.Background()
+	result := CheckHTTP(ctx, target)
+
+	assert.True(t, result.Healthy)
+}
+
+func TestCheckHTTP_NegativeTimeout(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		},
+	))
+	defer srv.Close()
+
+	target := HealthTarget{
+		Name:    "negative-timeout",
+		URL:     srv.URL,
+		Type:    HealthHTTP,
+		Timeout: -1 * time.Second, // Negative should use default.
+	}
+
+	ctx := context.Background()
+	result := CheckHTTP(ctx, target)
+
+	assert.True(t, result.Healthy)
+}

@@ -111,3 +111,16 @@ func TestConcurrencySemaphore_ZeroMax(t *testing.T) {
 	sem := lifecycle.NewConcurrencySemaphore(0)
 	assert.Equal(t, 1, sem.Max())
 }
+
+func TestConcurrencySemaphore_ReleaseWithoutAcquire(t *testing.T) {
+	// Releasing without acquiring should not panic.
+	sem := lifecycle.NewConcurrencySemaphore(2)
+	sem.Release() // Should not panic; no-op when nothing to release.
+	assert.Equal(t, 0, sem.ActiveCount())
+}
+
+func TestConcurrencySemaphore_NegativeMax(t *testing.T) {
+	// Negative values should be treated as 1.
+	sem := lifecycle.NewConcurrencySemaphore(-5)
+	assert.Equal(t, 1, sem.Max())
+}

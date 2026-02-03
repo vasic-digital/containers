@@ -23,8 +23,36 @@ type CommandExecutor interface {
 	) (io.ReadCloser, error)
 }
 
+// StreamCmd wraps exec.Cmd methods for streaming.
+type StreamCmd interface {
+	StdoutPipe() (io.ReadCloser, error)
+	Start() error
+	Wait() error
+}
+
+// StreamCmdFactory creates StreamCmd instances.
+type StreamCmdFactory interface {
+	CommandContext(ctx context.Context, name string, args ...string) StreamCmd
+}
+
+// realStreamCmdFactory creates real exec.Cmd instances.
+type realStreamCmdFactory struct{}
+
+func (realStreamCmdFactory) CommandContext(
+	ctx context.Context, name string, args ...string,
+) StreamCmd {
+	return exec.CommandContext(ctx, name, args...)
+}
+
 // defaultExecutor uses real os/exec commands.
-type defaultExecutor struct{}
+type defaultExecutor struct {
+	streamFactory StreamCmdFactory
+}
+
+// newDefaultExecutor creates a defaultExecutor with the real factory.
+func newDefaultExecutor() *defaultExecutor {
+	return &defaultExecutor{streamFactory: realStreamCmdFactory{}}
+}
 
 func (e *defaultExecutor) Execute(
 	ctx context.Context, name string, args ...string,
@@ -52,7 +80,11 @@ func (e *defaultExecutor) ExecuteWithStderr(
 func (e *defaultExecutor) ExecuteStream(
 	ctx context.Context, name string, args ...string,
 ) (io.ReadCloser, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
+	factory := e.streamFactory
+	if factory == nil {
+		factory = realStreamCmdFactory{}
+	}
+	cmd := factory.CommandContext(ctx, name, args...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, fmt.Errorf("creating stdout pipe: %w", err)
@@ -60,19 +92,20 @@ func (e *defaultExecutor) ExecuteStream(
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("starting command: %w", err)
 	}
-	return &cmdReadCloser{ReadCloser: stdout, cmd: cmd}, nil
+	return &streamCmdReadCloser{ReadCloser: stdout, cmd: cmd}, nil
 }
 
-// cmdReadCloser waits for the command to finish on Close.
-type cmdReadCloser struct {
+// streamCmdReadCloser waits for the command to finish on Close.
+type streamCmdReadCloser struct {
 	io.ReadCloser
-	cmd *exec.Cmd
+	cmd StreamCmd
 }
 
-func (c *cmdReadCloser) Close() error {
+func (c *streamCmdReadCloser) Close() error {
 	_ = c.ReadCloser.Close()
 	return c.cmd.Wait()
 }
+
 
 // DockerRuntime implements ContainerRuntime using the docker CLI.
 type DockerRuntime struct {
@@ -84,7 +117,7 @@ type DockerRuntime struct {
 func NewDockerRuntime() *DockerRuntime {
 	return &DockerRuntime{
 		binary:   "docker",
-		executor: &defaultExecutor{},
+		executor: newDefaultExecutor(),
 	}
 }
 

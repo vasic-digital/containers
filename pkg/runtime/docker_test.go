@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -614,4 +615,427 @@ func TestDockerRuntime_Status_PortParsing(t *testing.T) {
 	}
 	assert.True(t, foundHTTP, "expected port 80 mapping")
 	assert.True(t, foundHTTPS, "expected port 443 mapping")
+}
+
+func TestDockerRuntime_Status_EmptyInspectArray(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("[]"), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	_, err := d.Status(context.Background(), "nonexistent")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no container found")
+}
+
+func TestDockerRuntime_Status_PortWithoutProtocol(t *testing.T) {
+	// Port without "/tcp" suffix should default to tcp.
+	inspectJSON := `[{
+		"Id": "abc123",
+		"Name": "/test",
+		"State": {"Status": "running", "Running": true, "ExitCode": 0, "StartedAt": "", "FinishedAt": ""},
+		"Config": {"Labels": {}, "Image": "test"},
+		"Image": "sha256:abc",
+		"Created": "",
+		"NetworkSettings": {
+			"Networks": {},
+			"Ports": {
+				"8080": [{"HostIp": "0.0.0.0", "HostPort": "8080"}]
+			}
+		}
+	}]`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(inspectJSON), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	status, err := d.Status(context.Background(), "test")
+	require.NoError(t, err)
+	require.Len(t, status.Ports, 1)
+	assert.Equal(t, "tcp", status.Ports[0].Protocol)
+}
+
+func TestDockerRuntime_List_WithFilters(t *testing.T) {
+	psLine := `{"ID":"abc123","Names":"web","Image":"nginx","State":"running","Status":"Up","CreatedAt":"2024-01-15","Labels":"app=web","Ports":""}`
+
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, args ...string,
+		) ([]byte, error) {
+			capturedArgs = args
+			return []byte(psLine), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+
+	filter := ListFilter{
+		All:    true,
+		Labels: map[string]string{"app": "web", "env": "prod"},
+		Names:  []string{"web", "api"},
+		Status: []ContainerState{StateRunning, StateStopped},
+	}
+
+	_, err := d.List(context.Background(), filter)
+	require.NoError(t, err)
+
+	// Verify all filters are passed.
+	assert.Contains(t, capturedArgs, "-a")
+	assert.Contains(t, capturedArgs, "--filter")
+}
+
+func TestDockerRuntime_List_InvalidJSON(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			// Return mixed valid/invalid JSON lines.
+			// Valid dockerPSJSON requires specific fields.
+			validLine := `{"ID":"abc123","Names":"web","Image":"nginx","State":"running","Status":"Up","CreatedAt":"2024-01-15","Labels":"","Ports":""}`
+			return []byte(validLine + "\nnot-json\n" + validLine), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	containers, err := d.List(context.Background(), ListFilter{})
+	require.NoError(t, err)
+	// Should skip invalid lines and parse valid ones (2 valid).
+	assert.Len(t, containers, 2)
+}
+
+func TestDockerRuntime_Stats_InvalidJSON(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("not-json"), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	_, err := d.Stats(context.Background(), "test")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing stats")
+}
+
+func TestDockerRuntime_Stats_MultilineOutput(t *testing.T) {
+	// Stats output with multiple lines (only first should be used).
+	statsJSON := `{"CPUPerc":"1.0%","MemPerc":"5.0%","MemUsage":"50MiB / 500MiB","NetIO":"1kB / 1kB","BlockIO":"0B / 0B","PIDs":"2"}
+{"CPUPerc":"2.0%","MemPerc":"10.0%","MemUsage":"100MiB / 500MiB","NetIO":"2kB / 2kB","BlockIO":"0B / 0B","PIDs":"4"}`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(statsJSON), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	stats, err := d.Stats(context.Background(), "test")
+	require.NoError(t, err)
+	// Should use first line.
+	assert.InDelta(t, 1.0, stats.CPUPercent, 0.01)
+	assert.Equal(t, 2, stats.PIDs)
+}
+
+func TestDockerRuntime_Logs_WithAllOptions(t *testing.T) {
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, args ...string,
+		) (io.ReadCloser, error) {
+			capturedArgs = args
+			return io.NopCloser(strings.NewReader("logs")), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	rc, err := d.Logs(
+		context.Background(), "test",
+		WithFollow(true),
+		WithSince("1h"),
+		WithUntil("30m"),
+		WithTail("100"),
+	)
+	require.NoError(t, err)
+	defer rc.Close()
+
+	assert.Contains(t, capturedArgs, "-f")
+	assert.Contains(t, capturedArgs, "--since")
+	assert.Contains(t, capturedArgs, "1h")
+	assert.Contains(t, capturedArgs, "--until")
+	assert.Contains(t, capturedArgs, "30m")
+	assert.Contains(t, capturedArgs, "--tail")
+	assert.Contains(t, capturedArgs, "100")
+}
+
+func TestDockerRuntime_Logs_EmptyTail(t *testing.T) {
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, args ...string,
+		) (io.ReadCloser, error) {
+			capturedArgs = args
+			return io.NopCloser(strings.NewReader("")), nil
+		},
+	}
+	d := NewDockerRuntimeWithExecutor(exec)
+	rc, err := d.Logs(context.Background(), "test")
+	require.NoError(t, err)
+	defer rc.Close()
+
+	// Default tail is "all".
+	assert.Contains(t, capturedArgs, "--tail")
+	assert.Contains(t, capturedArgs, "all")
+}
+
+// Tests for defaultExecutor - these test the real os/exec implementation
+// using commands that work on all systems.
+
+func TestDefaultExecutor_Execute(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a command that works on all systems.
+	out, err := exec.Execute(ctx, "echo", "hello")
+	require.NoError(t, err)
+	assert.Contains(t, string(out), "hello")
+}
+
+func TestDefaultExecutor_Execute_Error(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a command that doesn't exist.
+	_, err := exec.Execute(ctx, "nonexistent_command_12345")
+	assert.Error(t, err)
+}
+
+func TestDefaultExecutor_ExecuteWithStderr(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with echo which outputs to stdout.
+	stdout, stderr, exitCode, err := exec.ExecuteWithStderr(
+		ctx, "sh", "-c", "echo hello",
+	)
+	require.NoError(t, err)
+	assert.Contains(t, string(stdout), "hello")
+	assert.Empty(t, stderr)
+	assert.Equal(t, 0, exitCode)
+}
+
+func TestDefaultExecutor_ExecuteWithStderr_NonZeroExit(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a command that exits with non-zero.
+	_, _, exitCode, err := exec.ExecuteWithStderr(
+		ctx, "sh", "-c", "exit 42",
+	)
+	require.NoError(t, err) // err is nil, exit code is in the result.
+	assert.Equal(t, 42, exitCode)
+}
+
+func TestDefaultExecutor_ExecuteWithStderr_Error(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a command that doesn't exist.
+	_, _, _, err := exec.ExecuteWithStderr(
+		ctx, "nonexistent_command_12345",
+	)
+	assert.Error(t, err)
+}
+
+func TestDefaultExecutor_ExecuteStream(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test streaming output.
+	rc, err := exec.ExecuteStream(ctx, "echo", "streaming")
+	require.NoError(t, err)
+	defer rc.Close()
+
+	data, readErr := io.ReadAll(rc)
+	require.NoError(t, readErr)
+	assert.Contains(t, string(data), "streaming")
+}
+
+func TestDefaultExecutor_ExecuteStream_Error(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a command that doesn't exist.
+	_, err := exec.ExecuteStream(ctx, "nonexistent_command_12345")
+	assert.Error(t, err)
+}
+
+func TestCmdReadCloser_Close(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Get a stream and close it.
+	rc, err := exec.ExecuteStream(ctx, "echo", "test")
+	require.NoError(t, err)
+
+	// Read all content first.
+	_, _ = io.ReadAll(rc)
+
+	// Close should wait for command to finish.
+	closeErr := rc.Close()
+	// Close may return an error or nil depending on timing.
+	_ = closeErr
+}
+
+func TestDefaultExecutor_ExecuteStream_StartError(t *testing.T) {
+	exec := &defaultExecutor{}
+	ctx := context.Background()
+
+	// Test with a file that exists but is not executable.
+	// On Unix systems, trying to execute a non-executable file
+	// will fail at Start() after StdoutPipe() succeeds.
+	_, err := exec.ExecuteStream(ctx, "/dev/null")
+	assert.Error(t, err)
+	// Error should be about starting command.
+	assert.Contains(t, err.Error(), "starting command")
+}
+
+// --- Mock types for testing StdoutPipe failure ---
+
+// mockStreamCmd is a mock implementation of StreamCmd.
+type mockStreamCmd struct {
+	stdoutPipeErr error
+	startErr      error
+	waitErr       error
+}
+
+func (m *mockStreamCmd) StdoutPipe() (io.ReadCloser, error) {
+	if m.stdoutPipeErr != nil {
+		return nil, m.stdoutPipeErr
+	}
+	return io.NopCloser(strings.NewReader("mock output")), nil
+}
+
+func (m *mockStreamCmd) Start() error { return m.startErr }
+func (m *mockStreamCmd) Wait() error  { return m.waitErr }
+
+// mockStreamCmdFactory creates mock StreamCmd instances.
+type mockStreamCmdFactory struct {
+	stdoutPipeErr error
+	startErr      error
+	waitErr       error
+}
+
+func (f *mockStreamCmdFactory) CommandContext(
+	_ context.Context, _ string, _ ...string,
+) StreamCmd {
+	return &mockStreamCmd{
+		stdoutPipeErr: f.stdoutPipeErr,
+		startErr:      f.startErr,
+		waitErr:       f.waitErr,
+	}
+}
+
+func TestDefaultExecutor_ExecuteStream_StdoutPipeError(t *testing.T) {
+	exec := &defaultExecutor{
+		streamFactory: &mockStreamCmdFactory{
+			stdoutPipeErr: fmt.Errorf("mock stdout pipe error"),
+		},
+	}
+
+	ctx := context.Background()
+	_, err := exec.ExecuteStream(ctx, "echo", "test")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "creating stdout pipe")
+	assert.Contains(t, err.Error(), "mock stdout pipe error")
+}
+
+func TestDefaultExecutor_ExecuteStream_StartError_WithMock(t *testing.T) {
+	exec := &defaultExecutor{
+		streamFactory: &mockStreamCmdFactory{
+			startErr: fmt.Errorf("mock start error"),
+		},
+	}
+
+	ctx := context.Background()
+	_, err := exec.ExecuteStream(ctx, "echo", "test")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "starting command")
+	assert.Contains(t, err.Error(), "mock start error")
+}
+
+func TestDefaultExecutor_ExecuteStream_NilFactory(t *testing.T) {
+	// Test that nil factory falls back to real factory.
+	exec := &defaultExecutor{streamFactory: nil}
+	ctx := context.Background()
+
+	rc, err := exec.ExecuteStream(ctx, "echo", "test")
+	require.NoError(t, err)
+	require.NotNil(t, rc)
+
+	data, err := io.ReadAll(rc)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "test")
+
+	err = rc.Close()
+	require.NoError(t, err)
+}
+
+func TestNewDefaultExecutor(t *testing.T) {
+	exec := newDefaultExecutor()
+	require.NotNil(t, exec)
+	assert.NotNil(t, exec.streamFactory)
+}
+
+func TestStreamCmdReadCloser_Close(t *testing.T) {
+	reader := io.NopCloser(strings.NewReader("test content"))
+	mockCmd := &mockStreamCmd{waitErr: nil}
+
+	rc := &streamCmdReadCloser{
+		ReadCloser: reader,
+		cmd:        mockCmd,
+	}
+
+	// Test Read
+	buf := make([]byte, 20)
+	n, err := rc.Read(buf)
+	require.NoError(t, err)
+	assert.Equal(t, "test content", string(buf[:n]))
+
+	// Test Close
+	err = rc.Close()
+	require.NoError(t, err)
+}
+
+func TestStreamCmdReadCloser_CloseWithError(t *testing.T) {
+	reader := io.NopCloser(strings.NewReader(""))
+	mockCmd := &mockStreamCmd{waitErr: fmt.Errorf("wait error")}
+
+	rc := &streamCmdReadCloser{
+		ReadCloser: reader,
+		cmd:        mockCmd,
+	}
+
+	err := rc.Close()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "wait error")
+}
+
+func TestRealStreamCmdFactory(t *testing.T) {
+	factory := realStreamCmdFactory{}
+	ctx := context.Background()
+
+	cmd := factory.CommandContext(ctx, "echo", "hello")
+	require.NotNil(t, cmd)
+
+	// Verify it's a real exec.Cmd
+	_, ok := cmd.(*exec.Cmd)
+	assert.True(t, ok)
 }

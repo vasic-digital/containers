@@ -610,3 +610,234 @@ func TestParseKubeCPU(t *testing.T) {
 		})
 	}
 }
+
+func TestKubernetesRuntime_Stop_Error(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return nil, fmt.Errorf("scale failed")
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	err := k.Stop(context.Background(), "my-deploy")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "kubectl scale (stop)")
+}
+
+func TestKubernetesRuntime_Status_InvalidJSON(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("not-json"), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	_, err := k.Status(context.Background(), "my-pod")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing pod JSON")
+}
+
+func TestKubernetesRuntime_Status_NoContainerStatuses(t *testing.T) {
+	podJSON := `{
+		"metadata": {"name": "pending-pod", "uid": "uid-123", "labels": {}, "namespace": "default"},
+		"spec": {"containers": []},
+		"status": {"phase": "Pending", "startTime": ""}
+	}`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(podJSON), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	status, err := k.Status(context.Background(), "pending-pod")
+	require.NoError(t, err)
+	assert.Equal(t, StateCreated, status.State)
+	assert.Equal(t, "Pending", status.Health)
+}
+
+func TestKubernetesRuntime_List_WithLabelSelector(t *testing.T) {
+	podListJSON := `{"items": [{"metadata": {"name": "web", "uid": "1", "labels": {"app": "web"}, "namespace": "default"}, "spec": {"containers": [{"name": "web", "image": "nginx"}]}, "status": {"phase": "Running", "startTime": ""}}]}`
+
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, args ...string,
+		) ([]byte, error) {
+			capturedArgs = args
+			return []byte(podListJSON), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+
+	filter := ListFilter{
+		Labels: map[string]string{"app": "web", "env": "prod"},
+	}
+	_, err := k.List(context.Background(), filter)
+	require.NoError(t, err)
+
+	assert.Contains(t, capturedArgs, "-l")
+}
+
+func TestKubernetesRuntime_List_InvalidJSON(t *testing.T) {
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte("not-json"), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	_, err := k.List(context.Background(), ListFilter{})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parsing pod list")
+}
+
+func TestKubernetesRuntime_List_StatusFilter(t *testing.T) {
+	podListJSON := `{
+		"items": [
+			{"metadata": {"name": "running-pod", "uid": "1", "labels": {}, "namespace": "default"}, "spec": {"containers": [{"name": "web", "image": "nginx"}]}, "status": {"phase": "Running", "startTime": ""}},
+			{"metadata": {"name": "stopped-pod", "uid": "2", "labels": {}, "namespace": "default"}, "spec": {"containers": [{"name": "web", "image": "nginx"}]}, "status": {"phase": "Succeeded", "startTime": ""}}
+		]
+	}`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(podListJSON), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+
+	// Filter to only show running pods.
+	filter := ListFilter{
+		Status: []ContainerState{StateRunning},
+	}
+	containers, err := k.List(context.Background(), filter)
+	require.NoError(t, err)
+	assert.Len(t, containers, 1)
+	assert.Equal(t, "running-pod", containers[0].Name)
+}
+
+func TestKubernetesRuntime_List_NoContainers(t *testing.T) {
+	podListJSON := `{"items": [{"metadata": {"name": "empty-pod", "uid": "1", "labels": {}, "namespace": "default"}, "spec": {"containers": []}, "status": {"phase": "Pending", "startTime": ""}}]}`
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(podListJSON), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	containers, err := k.List(context.Background(), ListFilter{})
+	require.NoError(t, err)
+	assert.Len(t, containers, 1)
+	assert.Empty(t, containers[0].Image)
+}
+
+func TestKubernetesRuntime_Stats_InvalidOutput(t *testing.T) {
+	tests := []struct {
+		name   string
+		output string
+		errMsg string
+	}{
+		{
+			name:   "too few fields",
+			output: "web-pod 250m",
+			errMsg: "unexpected top output format",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			exec := &mockExecutor{
+				executeFunc: func(
+					_ context.Context, _ string, _ ...string,
+				) ([]byte, error) {
+					return []byte(tt.output), nil
+				},
+			}
+			k := NewKubernetesRuntimeWithExecutor(exec, "default")
+			_, err := k.Stats(context.Background(), "web-pod")
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errMsg)
+		})
+	}
+}
+
+func TestKubernetesRuntime_Stats_MultilineOutput(t *testing.T) {
+	// Output with multiple lines (only first should be used).
+	output := "web-pod   100m   64Mi\nweb-pod-2   200m   128Mi"
+
+	exec := &mockExecutor{
+		executeFunc: func(
+			_ context.Context, _ string, _ ...string,
+		) ([]byte, error) {
+			return []byte(output), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	stats, err := k.Stats(context.Background(), "web-pod")
+	require.NoError(t, err)
+	assert.InDelta(t, 10.0, stats.CPUPercent, 0.1) // 100m = 10%
+}
+
+func TestKubernetesRuntime_Logs_AllOptions(t *testing.T) {
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, args ...string,
+		) (io.ReadCloser, error) {
+			capturedArgs = args
+			return io.NopCloser(strings.NewReader("")), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	rc, err := k.Logs(
+		context.Background(), "my-pod",
+		WithFollow(true),
+		WithSince("1h"),
+		WithTail("50"),
+	)
+	require.NoError(t, err)
+	defer rc.Close()
+
+	assert.Contains(t, capturedArgs, "-f")
+	assert.Contains(t, capturedArgs, "--since")
+	assert.Contains(t, capturedArgs, "--tail")
+}
+
+func TestKubernetesRuntime_Logs_TailAll(t *testing.T) {
+	var capturedArgs []string
+	exec := &mockExecutor{
+		executeStreamFunc: func(
+			_ context.Context, _ string, args ...string,
+		) (io.ReadCloser, error) {
+			capturedArgs = args
+			return io.NopCloser(strings.NewReader("")), nil
+		},
+	}
+	k := NewKubernetesRuntimeWithExecutor(exec, "default")
+	rc, err := k.Logs(
+		context.Background(), "my-pod",
+		WithTail("all"), // "all" should not add --tail flag.
+	)
+	require.NoError(t, err)
+	defer rc.Close()
+
+	// "all" should skip --tail argument for kubectl.
+	for i, arg := range capturedArgs {
+		if arg == "--tail" {
+			// Next arg should not be "all".
+			if i+1 < len(capturedArgs) {
+				assert.NotEqual(t, "all", capturedArgs[i+1])
+			}
+		}
+	}
+}

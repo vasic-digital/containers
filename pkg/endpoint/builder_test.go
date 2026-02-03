@@ -75,3 +75,78 @@ func TestBuilder_ResolvedURL_ExplicitOverride(t *testing.T) {
 		Build()
 	assert.Equal(t, "https://override.com", ep.ResolvedURL())
 }
+
+// TestResolveURL_Internal tests the internal resolveURL function directly.
+func TestResolveURL_Internal(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		port     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "host port path",
+			host:     "api.local",
+			port:     "8080",
+			path:     "health",
+			expected: "http://api.local:8080/health",
+		},
+		{
+			name:     "path with leading slash",
+			host:     "api.local",
+			port:     "8080",
+			path:     "/health",
+			expected: "http://api.local:8080/health",
+		},
+		{
+			name:     "https host with path",
+			host:     "https://secure.local",
+			port:     "443",
+			path:     "api/v1",
+			expected: "https://secure.local:443/api/v1",
+		},
+		{
+			name:     "empty path",
+			host:     "api.local",
+			port:     "8080",
+			path:     "",
+			expected: "http://api.local:8080",
+		},
+		{
+			name:     "empty host defaults to localhost",
+			host:     "",
+			port:     "8080",
+			path:     "test",
+			expected: "http://localhost:8080/test",
+		},
+		{
+			name:     "no port with path",
+			host:     "api.local",
+			port:     "",
+			path:     "/endpoint",
+			expected: "http://api.local/endpoint",
+		},
+		{
+			name:     "http prefix already present",
+			host:     "http://api.local",
+			port:     "8080",
+			path:     "status",
+			expected: "http://api.local:8080/status",
+		},
+		{
+			name:     "multiple leading slashes in path",
+			host:     "api.local",
+			port:     "80",
+			path:     "///path",
+			expected: "http://api.local:80/path",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := resolveURL(tc.host, tc.port, tc.path)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}

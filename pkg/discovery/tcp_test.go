@@ -96,3 +96,29 @@ func TestTCPDiscoverer_Discover_CancelledContext(t *testing.T) {
 	assert.False(t, found)
 	assert.Error(t, err)
 }
+
+// TestTCPDiscoverer_Discover_ZeroTimeout tests that a zero timeout
+// uses the default 5 second timeout.
+func TestTCPDiscoverer_Discover_ZeroTimeout(t *testing.T) {
+	// Start a local TCP listener to simulate a reachable service.
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	require.NoError(t, err)
+
+	d := discovery.NewTCPDiscoverer()
+	ctx := context.Background()
+	target := discovery.DiscoveryTarget{
+		Name:    "zero-timeout-svc",
+		Host:    "127.0.0.1",
+		Port:    port,
+		Method:  "tcp",
+		Timeout: 0, // Explicitly zero to trigger default
+	}
+
+	found, discErr := d.Discover(ctx, target)
+	require.NoError(t, discErr)
+	assert.True(t, found)
+}

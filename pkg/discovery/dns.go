@@ -7,13 +7,33 @@ import (
 	"time"
 )
 
+// hostLookup defines the interface for DNS host lookups.
+type hostLookup interface {
+	LookupHost(ctx context.Context, host string) ([]string, error)
+}
+
+// defaultHostLookup uses net.Resolver for DNS lookups.
+type defaultHostLookup struct {
+	resolver *net.Resolver
+}
+
+func (d *defaultHostLookup) LookupHost(
+	ctx context.Context, host string,
+) ([]string, error) {
+	return d.resolver.LookupHost(ctx, host)
+}
+
 // DNSDiscoverer implements Discoverer by performing a DNS lookup
 // for the target host.
-type DNSDiscoverer struct{}
+type DNSDiscoverer struct {
+	lookup hostLookup
+}
 
 // NewDNSDiscoverer returns a new DNSDiscoverer.
 func NewDNSDiscoverer() *DNSDiscoverer {
-	return &DNSDiscoverer{}
+	return &DNSDiscoverer{
+		lookup: &defaultHostLookup{resolver: &net.Resolver{}},
+	}
 }
 
 // Discover performs a DNS lookup for target.Host and returns true
@@ -34,11 +54,15 @@ func (d *DNSDiscoverer) Discover(
 		timeout = 5 * time.Second
 	}
 
-	resolver := &net.Resolver{}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	addrs, err := resolver.LookupHost(ctx, target.Host)
+	lookup := d.lookup
+	if lookup == nil {
+		lookup = &defaultHostLookup{resolver: &net.Resolver{}}
+	}
+
+	addrs, err := lookup.LookupHost(ctx, target.Host)
 	if err != nil {
 		return false, fmt.Errorf(
 			"discovery %s: dns lookup %s: %w",

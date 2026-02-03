@@ -222,6 +222,105 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestLoadConfig_InvalidYAML(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/invalid.yaml"
+	content := `endpoints:
+  postgres:
+    host: "unclosed quote
+`
+	require.NoError(t, writeTestFile(path, content))
+
+	_, err := LoadConfig(path)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parse yaml")
+}
+
+func TestLoadConfig_InvalidJSON(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/invalid.json"
+	content := `{"endpoints": {"api": {invalid json here}}`
+	require.NoError(t, writeTestFile(path, content))
+
+	_, err := LoadConfig(path)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "parse json")
+}
+
+func TestLoadConfig_WithDiscoveryTimeout(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/discovery.yaml"
+	content := `endpoints:
+  service:
+    host: svc.local
+    port: "8080"
+    discovery_enabled: true
+    discovery_method: dns
+    discovery_timeout: 10
+`
+	require.NoError(t, writeTestFile(path, content))
+
+	cfg, err := LoadConfig(path)
+	require.NoError(t, err)
+
+	eps := cfg.ToServiceEndpoints()
+	svc := eps["service"]
+	assert.Equal(t, 10*time.Second, svc.DiscoveryTimeout)
+	assert.True(t, svc.DiscoveryEnabled)
+	assert.Equal(t, "dns", svc.DiscoveryMethod)
+}
+
+func TestResolveURL_WithPath(t *testing.T) {
+	tests := []struct {
+		name     string
+		host     string
+		port     string
+		path     string
+		expected string
+	}{
+		{
+			name:     "host port path",
+			host:     "api.local",
+			port:     "8080",
+			path:     "health",
+			expected: "http://api.local:8080/health",
+		},
+		{
+			name:     "path with leading slash",
+			host:     "api.local",
+			port:     "8080",
+			path:     "/health",
+			expected: "http://api.local:8080/health",
+		},
+		{
+			name:     "https host with path",
+			host:     "https://secure.local",
+			port:     "443",
+			path:     "api/v1",
+			expected: "https://secure.local:443/api/v1",
+		},
+		{
+			name:     "empty path",
+			host:     "api.local",
+			port:     "8080",
+			path:     "",
+			expected: "http://api.local:8080",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			ep := &ServiceEndpoint{
+				Host:       tc.host,
+				Port:       tc.port,
+				HealthPath: tc.path,
+			}
+			result := ResolveHealthURL(ep)
+			assert.Equal(t, tc.expected, result)
+		})
+	}
+}
+
 func writeTestFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0644)
 }

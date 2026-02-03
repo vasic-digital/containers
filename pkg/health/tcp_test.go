@@ -124,3 +124,46 @@ func TestCheckTCP_RespectsContextDeadline(t *testing.T) {
 	// Should complete in roughly the context timeout, not 5s.
 	assert.Less(t, elapsed, 2*time.Second)
 }
+
+func TestCheckTCP_DefaultTimeout(t *testing.T) {
+	// Use a non-routable IP to trigger timeout.
+	target := HealthTarget{
+		Name:    "default-timeout",
+		Host:    "192.0.2.1",
+		Port:    "12345",
+		Type:    HealthTCP,
+		Timeout: 0, // Should use defaultTCPTimeout (5s).
+	}
+
+	// Set context deadline shorter than default to verify code path.
+	ctx, cancel := context.WithTimeout(
+		context.Background(), 100*time.Millisecond,
+	)
+	defer cancel()
+
+	result := CheckTCP(ctx, target)
+	assert.False(t, result.Healthy)
+	assert.Contains(t, result.Error, "tcp dial failed")
+}
+
+func TestCheckTCP_NegativeTimeout(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer func() { _ = ln.Close() }()
+
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	require.NoError(t, err)
+
+	target := HealthTarget{
+		Name:    "negative-timeout",
+		Host:    "127.0.0.1",
+		Port:    port,
+		Type:    HealthTCP,
+		Timeout: -1 * time.Second, // Negative should trigger default.
+	}
+
+	ctx := context.Background()
+	result := CheckTCP(ctx, target)
+
+	assert.True(t, result.Healthy)
+}

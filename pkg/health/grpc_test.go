@@ -119,3 +119,47 @@ func TestCheckGRPC_RespectsContextCancellation(t *testing.T) {
 	assert.False(t, result.Healthy)
 	assert.Less(t, elapsed, 2*time.Second)
 }
+
+func TestCheckGRPC_DefaultTimeout(t *testing.T) {
+	target := HealthTarget{
+		Name:    "grpc-default-timeout",
+		Host:    "192.0.2.1",
+		Port:    "50051",
+		Type:    HealthGRPC,
+		Timeout: 0, // Should use defaultGRPCTimeout (5s).
+	}
+
+	// Use short context deadline to verify default is overridden.
+	ctx, cancel := context.WithTimeout(
+		context.Background(), 100*time.Millisecond,
+	)
+	defer cancel()
+
+	result := CheckGRPC(ctx, target)
+	assert.False(t, result.Healthy)
+	assert.Contains(t, result.Error, "grpc tcp dial failed")
+}
+
+func TestCheckGRPC_NegativeTimeout(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer func() { _ = ln.Close() }()
+
+	_, port, err := net.SplitHostPort(ln.Addr().String())
+	require.NoError(t, err)
+
+	target := HealthTarget{
+		Name:    "grpc-negative-timeout",
+		Host:    "127.0.0.1",
+		Port:    port,
+		Type:    HealthGRPC,
+		Timeout: -1 * time.Second, // Negative should trigger default.
+	}
+
+	ctx := context.Background()
+	result := CheckGRPC(ctx, target)
+
+	assert.True(t, result.Healthy)
+	assert.Contains(t, result.Details["address"], port)
+	assert.Equal(t, "grpc-tcp", result.Details["protocol"])
+}

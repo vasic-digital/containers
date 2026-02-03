@@ -120,3 +120,34 @@ func TestDefaultChecker_CheckAll_PreservesOrder(t *testing.T) {
 	assert.Equal(t, "second", all[1].Target)
 	assert.Equal(t, "third", all[2].Target)
 }
+
+func TestDefaultChecker_Check_NoTimeout(t *testing.T) {
+	c := NewDefaultChecker()
+	c.Register(HealthCustom, func(
+		ctx context.Context, target HealthTarget,
+	) *HealthResult {
+		// Verify no deadline is set when timeout is zero.
+		_, hasDeadline := ctx.Deadline()
+		assert.False(t, hasDeadline, "context should have no deadline")
+		return &HealthResult{
+			Target:    target.Name,
+			Healthy:   true,
+			Timestamp: time.Now(),
+		}
+	})
+
+	ctx := context.Background()
+	result := c.Check(ctx, HealthTarget{
+		Name:    "no-timeout-test",
+		Type:    HealthCustom,
+		Timeout: 0, // No timeout.
+	})
+	assert.True(t, result.Healthy)
+}
+
+func TestDefaultChecker_CheckAll_Empty(t *testing.T) {
+	c := NewDefaultChecker()
+	ctx := context.Background()
+	results := c.CheckAll(ctx, []HealthTarget{})
+	assert.Empty(t, results)
+}

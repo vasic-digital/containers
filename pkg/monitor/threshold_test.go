@@ -181,3 +181,177 @@ func TestThresholdEvaluator_Evaluate_Operators(t *testing.T) {
 		})
 	}
 }
+
+// TestThresholdEvaluator_Evaluate_SystemDisk tests system.disk metric
+func TestThresholdEvaluator_Evaluate_SystemDisk(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	fired := false
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "system.disk",
+		Threshold: 70,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			fired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		System:    monitor.SystemResources{DiskPercent: 80},
+	}
+	e.Evaluate(snap)
+	assert.True(t, fired, "expected rule to fire for disk 80 > 70")
+}
+
+// TestThresholdEvaluator_Evaluate_ContainerCPU tests container.<name>.cpu
+// metric
+func TestThresholdEvaluator_Evaluate_ContainerCPU(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	fired := false
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "container.nginx.cpu",
+		Threshold: 50,
+		Operator:  ">=",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			fired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		Containers: map[string]monitor.ContainerResources{
+			"nginx": {
+				Name:       "nginx",
+				CPUPercent: 75,
+			},
+		},
+	}
+	e.Evaluate(snap)
+	assert.True(t, fired)
+}
+
+// TestThresholdEvaluator_Evaluate_ContainerNotFound tests when container
+// doesn't exist
+func TestThresholdEvaluator_Evaluate_ContainerNotFound(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	fired := false
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "container.nonexistent.cpu",
+		Threshold: 50,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			fired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp:  time.Now(),
+		Containers: map[string]monitor.ContainerResources{},
+	}
+	e.Evaluate(snap)
+	assert.False(t, fired, "rule should not fire for nonexistent container")
+}
+
+// TestThresholdEvaluator_Evaluate_ContainerUnknownField tests unknown
+// container field
+func TestThresholdEvaluator_Evaluate_ContainerUnknownField(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	fired := false
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "container.redis.disk", // disk is not a valid field
+		Threshold: 50,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			fired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		Containers: map[string]monitor.ContainerResources{
+			"redis": {Name: "redis", CPUPercent: 100},
+		},
+	}
+	e.Evaluate(snap)
+	assert.False(t, fired, "rule should not fire for unknown field")
+}
+
+// TestThresholdEvaluator_Evaluate_ContainerInvalidFormat tests malformed
+// container metric
+func TestThresholdEvaluator_Evaluate_ContainerInvalidFormat(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	fired := false
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "container.redis", // missing field part
+		Threshold: 50,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			fired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		Containers: map[string]monitor.ContainerResources{
+			"redis": {Name: "redis", CPUPercent: 100},
+		},
+	}
+	e.Evaluate(snap)
+	assert.False(t, fired, "rule should not fire for invalid metric format")
+}
+
+// TestThresholdEvaluator_Evaluate_NilAction tests rule with nil action
+func TestThresholdEvaluator_Evaluate_NilAction(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "system.cpu",
+		Threshold: 0,
+		Operator:  ">=",
+		Action:    nil, // nil action
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		System:    monitor.SystemResources{CPUPercent: 50},
+	}
+
+	// Should not panic with nil action
+	assert.NotPanics(t, func() {
+		e.Evaluate(snap)
+	})
+}
+
+// TestThresholdEvaluator_MultipleRules tests multiple rules firing
+func TestThresholdEvaluator_MultipleRules(t *testing.T) {
+	e := monitor.NewThresholdEvaluator()
+	cpuFired := false
+	memFired := false
+
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "system.cpu",
+		Threshold: 50,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			cpuFired = true
+		},
+	})
+	e.AddRule(monitor.ThresholdRule{
+		Metric:    "system.memory",
+		Threshold: 60,
+		Operator:  ">",
+		Action: func(_ *monitor.ResourceSnapshot) {
+			memFired = true
+		},
+	})
+
+	snap := &monitor.ResourceSnapshot{
+		Timestamp: time.Now(),
+		System: monitor.SystemResources{
+			CPUPercent:    75,
+			MemoryPercent: 70,
+		},
+	}
+	e.Evaluate(snap)
+	assert.True(t, cpuFired, "CPU rule should fire")
+	assert.True(t, memFired, "Memory rule should fire")
+}

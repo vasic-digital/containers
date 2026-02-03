@@ -4,47 +4,12 @@ package runtime
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// testableAutoDetect performs auto-detection using provided runtimes
-// instead of creating real ones. This allows unit testing without
-// requiring actual docker/podman/kubectl binaries.
-func testableAutoDetect(
-	runtimes []ContainerRuntime,
-) func(context.Context) (ContainerRuntime, error) {
-	return func(ctx context.Context) (ContainerRuntime, error) {
-		for _, rt := range runtimes {
-			if rt.IsAvailable(ctx) {
-				return rt, nil
-			}
-		}
-		return nil, fmt.Errorf(
-			"no container runtime detected",
-		)
-	}
-}
-
-// testableDetectAll returns all available runtimes from the provided
-// list.
-func testableDetectAll(
-	runtimes []ContainerRuntime,
-) func(context.Context) []ContainerRuntime {
-	return func(ctx context.Context) []ContainerRuntime {
-		var available []ContainerRuntime
-		for _, rt := range runtimes {
-			if rt.IsAvailable(ctx) {
-				available = append(available, rt)
-			}
-		}
-		return available
-	}
-}
 
 // availableRuntime is a mock runtime for testing detection logic.
 type availableRuntime struct {
@@ -102,92 +67,137 @@ func (a *availableRuntime) Logs(
 	return nil, nil
 }
 
-func TestAutoDetect_DockerFirst(t *testing.T) {
+func TestAutoDetectWith_DockerFirst(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: true},
 		&availableRuntime{name: "podman", available: true},
 		&availableRuntime{name: "kubernetes", available: true},
 	}
-	detect := testableAutoDetect(runtimes)
-	rt, err := detect(context.Background())
+	rt, err := autoDetectWith(context.Background(), runtimes)
 	require.NoError(t, err)
 	assert.Equal(t, "docker", rt.Name())
 }
 
-func TestAutoDetect_FallbackToPodman(t *testing.T) {
+func TestAutoDetectWith_FallbackToPodman(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: false},
 		&availableRuntime{name: "podman", available: true},
 		&availableRuntime{name: "kubernetes", available: false},
 	}
-	detect := testableAutoDetect(runtimes)
-	rt, err := detect(context.Background())
+	rt, err := autoDetectWith(context.Background(), runtimes)
 	require.NoError(t, err)
 	assert.Equal(t, "podman", rt.Name())
 }
 
-func TestAutoDetect_FallbackToKubernetes(t *testing.T) {
+func TestAutoDetectWith_FallbackToKubernetes(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: false},
 		&availableRuntime{name: "podman", available: false},
 		&availableRuntime{name: "kubernetes", available: true},
 	}
-	detect := testableAutoDetect(runtimes)
-	rt, err := detect(context.Background())
+	rt, err := autoDetectWith(context.Background(), runtimes)
 	require.NoError(t, err)
 	assert.Equal(t, "kubernetes", rt.Name())
 }
 
-func TestAutoDetect_NoneAvailable(t *testing.T) {
+func TestAutoDetectWith_NoneAvailable(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: false},
 		&availableRuntime{name: "podman", available: false},
 		&availableRuntime{name: "kubernetes", available: false},
 	}
-	detect := testableAutoDetect(runtimes)
-	rt, err := detect(context.Background())
+	rt, err := autoDetectWith(context.Background(), runtimes)
 	assert.Error(t, err)
 	assert.Nil(t, rt)
 	assert.Contains(t, err.Error(), "no container runtime detected")
 }
 
-func TestDetectAll_AllAvailable(t *testing.T) {
+func TestAutoDetectWith_EmptyList(t *testing.T) {
+	rt, err := autoDetectWith(context.Background(), nil)
+	assert.Error(t, err)
+	assert.Nil(t, rt)
+}
+
+func TestDetectAllWith_AllAvailable(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: true},
 		&availableRuntime{name: "podman", available: true},
 		&availableRuntime{name: "kubernetes", available: true},
 	}
-	detect := testableDetectAll(runtimes)
-	available := detect(context.Background())
+	available := detectAllWith(context.Background(), runtimes)
 	assert.Len(t, available, 3)
 }
 
-func TestDetectAll_SomeAvailable(t *testing.T) {
+func TestDetectAllWith_SomeAvailable(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: true},
 		&availableRuntime{name: "podman", available: false},
 		&availableRuntime{name: "kubernetes", available: true},
 	}
-	detect := testableDetectAll(runtimes)
-	available := detect(context.Background())
+	available := detectAllWith(context.Background(), runtimes)
 	assert.Len(t, available, 2)
 	assert.Equal(t, "docker", available[0].Name())
 	assert.Equal(t, "kubernetes", available[1].Name())
 }
 
-func TestDetectAll_NoneAvailable(t *testing.T) {
+func TestDetectAllWith_NoneAvailable(t *testing.T) {
 	runtimes := []ContainerRuntime{
 		&availableRuntime{name: "docker", available: false},
 		&availableRuntime{name: "podman", available: false},
 		&availableRuntime{name: "kubernetes", available: false},
 	}
-	detect := testableDetectAll(runtimes)
-	available := detect(context.Background())
+	available := detectAllWith(context.Background(), runtimes)
 	assert.Empty(t, available)
 }
 
-func TestDetectAll_EmptyInput(t *testing.T) {
-	detect := testableDetectAll(nil)
-	available := detect(context.Background())
+func TestDetectAllWith_EmptyInput(t *testing.T) {
+	available := detectAllWith(context.Background(), nil)
 	assert.Empty(t, available)
+}
+
+func TestDefaultRuntimeFactory(t *testing.T) {
+	runtimes := defaultRuntimeFactory()
+	require.Len(t, runtimes, 3)
+
+	names := make([]string, 0, 3)
+	for _, rt := range runtimes {
+		names = append(names, rt.Name())
+	}
+
+	assert.Contains(t, names, "docker")
+	assert.Contains(t, names, "podman")
+	assert.Contains(t, names, "kubernetes")
+}
+
+// Tests for the public API using the internal functions.
+// These tests verify the integration between public functions and internal logic.
+
+func TestAutoDetect_Integration(t *testing.T) {
+	// This test uses real runtimes but with context timeout.
+	// It will quickly fail if no runtimes are available.
+	ctx := context.Background()
+
+	// The result depends on the environment, but should not panic.
+	rt, err := AutoDetect(ctx)
+	if err != nil {
+		// No runtime available - this is expected in CI/test environments.
+		assert.Contains(t, err.Error(), "no container runtime detected")
+		assert.Nil(t, rt)
+	} else {
+		// A runtime is available.
+		assert.NotNil(t, rt)
+		assert.NotEmpty(t, rt.Name())
+	}
+}
+
+func TestDetectAll_Integration(t *testing.T) {
+	ctx := context.Background()
+
+	// Test the actual DetectAll function.
+	runtimes := DetectAll(ctx)
+
+	// Result depends on what's installed, but should not panic.
+	for _, rt := range runtimes {
+		assert.NotEmpty(t, rt.Name())
+	}
 }
