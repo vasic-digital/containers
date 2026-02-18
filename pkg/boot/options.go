@@ -1,14 +1,27 @@
 package boot
 
 import (
+	"context"
+
 	"digital.vasic.containers/pkg/compose"
 	"digital.vasic.containers/pkg/discovery"
 	"digital.vasic.containers/pkg/event"
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/metrics"
+	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/runtime"
+	"digital.vasic.containers/pkg/scheduler"
 )
+
+// Distributor is a local interface satisfied by
+// distribution.DefaultDistributor. Defined here to avoid a
+// circular import between boot and distribution.
+type Distributor interface {
+	// DistributeEndpoints distributes remote endpoints and returns
+	// the number of successfully deployed containers.
+	DistributeEndpoints(ctx context.Context, names []string) (int, error)
+}
 
 // BootManagerOption configures a BootManager during construction.
 type BootManagerOption func(*BootManager)
@@ -69,5 +82,30 @@ func WithProjectDir(dir string) BootManagerOption {
 func WithDiscoverer(d discovery.Discoverer) BootManagerOption {
 	return func(bm *BootManager) {
 		bm.discoverer = d
+	}
+}
+
+// WithDistributor sets the container distributor for remote
+// host placement. When set, remote endpoints are delegated to
+// the distributor instead of only health-checking.
+func WithDistributor(d Distributor) BootManagerOption {
+	return func(bm *BootManager) {
+		bm.distributor = d
+	}
+}
+
+// WithHostManager sets the remote host manager for the boot
+// manager.
+func WithHostManager(hm remote.HostManager) BootManagerOption {
+	return func(bm *BootManager) {
+		bm.hostManager = hm
+	}
+}
+
+// WithScheduler sets the container scheduler for the boot
+// manager.
+func WithScheduler(s scheduler.Scheduler) BootManagerOption {
+	return func(bm *BootManager) {
+		bm.scheduler = s
 	}
 }

@@ -27,3 +27,6 @@ go.work.sum
 
 # Vendor
 vendor/
+
+# Environment (contains secrets)
+.env

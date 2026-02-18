@@ -22,6 +22,54 @@ const (
 	EventShutdownStarted EventType = "shutdown.started"
 	// EventShutdownCompleted is emitted when shutdown finishes.
 	EventShutdownCompleted EventType = "shutdown.completed"
+
+	// Remote host events.
+
+	// EventRemoteHostOnline is emitted when a remote host comes
+	// online.
+	EventRemoteHostOnline EventType = "remote.host.online"
+	// EventRemoteHostOffline is emitted when a remote host goes
+	// offline.
+	EventRemoteHostOffline EventType = "remote.host.offline"
+	// EventRemoteHostDegraded is emitted when a remote host is
+	// resource-constrained.
+	EventRemoteHostDegraded EventType = "remote.host.degraded"
+
+	// Distribution events.
+
+	// EventDistributionScheduled is emitted when containers are
+	// scheduled for placement.
+	EventDistributionScheduled EventType = "distribution.scheduled"
+	// EventDistributionDeployed is emitted when a container is
+	// deployed to a host.
+	EventDistributionDeployed EventType = "distribution.deployed"
+	// EventDistributionMigrated is emitted when a container is
+	// migrated between hosts.
+	EventDistributionMigrated EventType = "distribution.migrated"
+	// EventDistributionStarted is emitted when a distribution
+	// workflow begins.
+	EventDistributionStarted EventType = "distribution.started"
+	// EventDistributionCompleted is emitted when a distribution
+	// workflow finishes.
+	EventDistributionCompleted EventType = "distribution.completed"
+
+	// Tunnel events.
+
+	// EventTunnelCreated is emitted when an SSH tunnel is created.
+	EventTunnelCreated EventType = "tunnel.created"
+	// EventTunnelClosed is emitted when an SSH tunnel is closed.
+	EventTunnelClosed EventType = "tunnel.closed"
+	// EventTunnelFailed is emitted when an SSH tunnel fails.
+	EventTunnelFailed EventType = "tunnel.failed"
+
+	// Volume events.
+
+	// EventVolumeMounted is emitted when a remote volume is
+	// mounted.
+	EventVolumeMounted EventType = "volume.mounted"
+	// EventVolumeUnmounted is emitted when a remote volume is
+	// unmounted.
+	EventVolumeUnmounted EventType = "volume.unmounted"
 )
 
 // Event represents a single system event carrying contextual

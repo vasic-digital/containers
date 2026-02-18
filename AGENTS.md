@@ -22,7 +22,13 @@
 | `discovery` | `pkg/discovery/` | Service discovery: TCP port scanning for service detection. DNS-based discovery. mDNS support for local network. Multi-strategy discovery with fallback. |
 | `logging` | `pkg/logging/` | Logging abstraction: Bring-your-own-logger interface. Adapters for popular loggers (logrus, zap, zerolog). Structured logging support. |
 | `metrics` | `pkg/metrics/` | Metrics collection: Prometheus-compatible metrics. Container lifecycle metrics. Health check metrics. Resource utilization metrics. |
-| `boot` | `pkg/boot/` | High-level orchestration: `BootManager` composing all packages. One-line service initialization. Coordinated health checking and lifecycle management. Configuration validation. |
+| `boot` | `pkg/boot/` | High-level orchestration: `BootManager` composing all packages. One-line service initialization. Coordinated health checking and lifecycle management. Configuration validation. Distributor integration for remote endpoints. |
+| `remote` | `pkg/remote/` | Remote host management: `RemoteExecutor` (SSH command execution with ControlMaster pooling), `HostManager` (host registry, resource probing), `RemoteRuntime` (ContainerRuntime over SSH), `RemoteComposeOrchestrator`. |
+| `scheduler` | `pkg/scheduler/` | Resource-aware container scheduling: 5 strategies (resource_aware, round_robin, affinity, spread, bin_pack). `ResourceScorer` for weighted host scoring (CPU 40%, Memory 40%, Disk 10%, Network 10%). |
+| `network` | `pkg/network/` | Cross-host networking: `TunnelManager` for SSH tunnels (local/remote forwarding), `PortAllocator` (thread-safe port range 20000-30000), `OverlayNetwork` for Docker overlay spanning hosts. |
+| `volume` | `pkg/volume/` | Remote volume management: `VolumeManager` with 3 backends — SSHFS (real-time), NFS (shared export), rsync (periodic sync). Mount/unmount/sync operations. |
+| `envconfig` | `pkg/envconfig/` | Environment configuration: `CONTAINERS_REMOTE_*` env var parsing, `.env` file loading, numbered host definitions (`HOST_N_NAME/ADDRESS/PORT/...`), template generation. |
+| `distribution` | `pkg/distribution/` | Distribution orchestrator: `Distributor` composing scheduler + remote + network + volume. 7-phase workflow (probe → schedule → volumes → deploy → tunnels → health → events). Failover detection and rescheduling. |
 
 ## Dependency Graph
 
@@ -31,14 +37,28 @@ boot  --->  runtime
 boot  --->  compose  --->  runtime
 boot  --->  health  --->  endpoint
 boot  --->  lifecycle  --->  runtime, event
-boot  --->  monitor  --->  runtime
+boot  --->  monitor  --->  runtime, remote
 boot  --->  discovery  --->  endpoint
 boot  --->  event
 boot  --->  logging
 boot  --->  metrics
+boot  --->  remote
+boot  --->  scheduler  --->  remote
+
+distribution  --->  scheduler  --->  remote
+distribution  --->  remote
+distribution  --->  network  --->  remote
+distribution  --->  volume  --->  remote
+distribution  --->  runtime
+distribution  --->  logging
+
+envconfig  --->  remote
+
+remote  --->  runtime (RemoteRuntime implements ContainerRuntime)
+remote  --->  compose (RemoteComposeOrchestrator implements ComposeOrchestrator)
 ```
 
-`runtime` and `endpoint` are leaf packages. `boot` is the integration layer depending on all other packages.
+`runtime`, `endpoint`, and `logging` are leaf packages. `boot` and `distribution` are integration layers. `remote` is the foundation for all distributed features.
 
 ## Key Files
 
@@ -93,17 +113,31 @@ These changes can be made simultaneously without coordination:
 - Adding a new health check strategy to `pkg/health/`
 - Adding new discovery mechanisms to `pkg/discovery/`
 - Adding new event types to `pkg/event/`
+- Adding new scheduling strategies to `pkg/scheduler/`
+- Adding new volume backends to `pkg/volume/`
 - Adding new tests to any package
 - Updating documentation
 
 ### Changes Requiring Coordination
 
-- Modifying the `ContainerRuntime` interface
+- Modifying the `ContainerRuntime` interface (affects `remote.RemoteRuntime`)
 - Changing `HealthChecker` interface signature
+- Modifying `RemoteExecutor` interface (affects scheduler, network, volume, distribution)
+- Modifying `HostManager` interface (affects scheduler, distribution, boot)
+- Modifying `Scheduler` interface (affects distribution, boot)
 - Modifying lifecycle state machine
 - Adding new configuration fields to `boot.Config`
 - Changing event types used across packages
 - Modifying metrics schema
+
+### Remote Distribution Agents
+
+7. **Remote Agent** -- Owns `pkg/remote/`. Foundation for all distributed features. Changes to `RemoteExecutor` or `HostManager` interfaces affect scheduler, network, volume, and distribution packages.
+8. **Scheduler Agent** -- Owns `pkg/scheduler/`. Strategy implementations are independent. Changes to `Scheduler` interface require distribution and boot updates.
+9. **Network Agent** -- Owns `pkg/network/`. Tunnel management and port allocation. Can work independently.
+10. **Volume Agent** -- Owns `pkg/volume/`. Volume backend implementations (SSHFS/NFS/rsync) are independent.
+11. **Distribution Agent** -- Owns `pkg/distribution/`. Top-level orchestrator. Requires testing against all remote packages.
+12. **EnvConfig Agent** -- Owns `pkg/envconfig/`. Environment parsing. Independent of other packages except `remote` types.
 
 ## Build and Test Commands
 
@@ -289,8 +323,24 @@ if metrics.MemoryPercent > 90.0 {
 }
 ```
 
+## Remote Distribution Configuration
+
+Remote hosts are configured via environment variables or `.env` files. See `.env.example` for the full template.
+
+```bash
+# Enable remote distribution
+CONTAINERS_REMOTE_ENABLED=true
+CONTAINERS_REMOTE_SCHEDULER=resource_aware
+
+# Define remote hosts (numbered 1, 2, 3, ...)
+CONTAINERS_REMOTE_HOST_1_NAME=gpu-server-1
+CONTAINERS_REMOTE_HOST_1_ADDRESS=192.168.1.100
+CONTAINERS_REMOTE_HOST_1_RUNTIME=docker
+CONTAINERS_REMOTE_HOST_1_LABELS=gpu=true,arch=amd64
+```
+
 ---
 
-**Last Updated**: February 10, 2026
-**Version**: 1.0.0
-**Status**: ✅ Production Ready
+**Last Updated**: February 18, 2026
+**Version**: 2.0.0
+**Status**: Production Ready

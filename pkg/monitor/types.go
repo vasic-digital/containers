@@ -1,6 +1,10 @@
 package monitor
 
-import "time"
+import (
+	"time"
+
+	"digital.vasic.containers/pkg/remote"
+)
 
 // ResourceSnapshot captures a point-in-time view of system and
 // container resource usage.
@@ -47,4 +51,51 @@ type ThresholdRule struct {
 	Operator string
 	// Action is called when the threshold condition is met.
 	Action func(snapshot *ResourceSnapshot)
+}
+
+// ClusterSnapshot aggregates resource snapshots from the local
+// host and all remote hosts, providing a unified cluster view.
+type ClusterSnapshot struct {
+	// Timestamp is when the cluster snapshot was taken.
+	Timestamp time.Time
+	// Local is the local host resource snapshot.
+	Local *ResourceSnapshot
+	// RemoteHosts maps host names to their resource snapshots.
+	RemoteHosts map[string]*remote.HostResources
+	// TotalCPUCores is the aggregate CPU core count across all
+	// hosts.
+	TotalCPUCores int
+	// TotalMemoryMB is the aggregate memory in MB across all
+	// hosts.
+	TotalMemoryMB uint64
+	// TotalDiskMB is the aggregate disk space in MB across all
+	// hosts.
+	TotalDiskMB uint64
+	// HostCount is the total number of hosts (local + remote).
+	HostCount int
+}
+
+// NewClusterSnapshot creates a ClusterSnapshot with the given
+// local snapshot and remote host resources.
+func NewClusterSnapshot(
+	local *ResourceSnapshot,
+	remoteHosts map[string]*remote.HostResources,
+) *ClusterSnapshot {
+	cs := &ClusterSnapshot{
+		Timestamp:   time.Now(),
+		Local:       local,
+		RemoteHosts: remoteHosts,
+		HostCount:   1, // local host
+	}
+	if local != nil {
+		cs.TotalMemoryMB = local.System.MemoryTotal / (1024 * 1024)
+		cs.TotalDiskMB = local.System.DiskTotal / (1024 * 1024)
+	}
+	for _, hr := range remoteHosts {
+		cs.HostCount++
+		cs.TotalCPUCores += hr.CPUCores
+		cs.TotalMemoryMB += hr.MemoryTotalMB
+		cs.TotalDiskMB += hr.DiskTotalMB
+	}
+	return cs
 }

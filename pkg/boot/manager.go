@@ -12,7 +12,9 @@ import (
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/metrics"
+	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/runtime"
+	"digital.vasic.containers/pkg/scheduler"
 )
 
 // BootManager orchestrates the startup of all configured service
@@ -24,6 +26,9 @@ type BootManager struct {
 	healthChecker health.HealthChecker
 	discoverer    discovery.Discoverer
 	runtime       runtime.ContainerRuntime
+	distributor   Distributor
+	hostManager   remote.HostManager
+	scheduler     scheduler.Scheduler
 	logger        logging.Logger
 	metrics       metrics.MetricsCollector
 	eventBus      event.EventBus
@@ -164,6 +169,49 @@ func (bm *BootManager) BootAll(
 				summary.Remote++
 			} else {
 				summary.Started++
+			}
+		}
+	}
+
+	// Phase 2.5: Distribute remote endpoints via distributor.
+	if bm.distributor != nil {
+		var remoteNames []string
+		for name, ep := range bm.endpoints {
+			if _, exists := bm.results[name]; exists {
+				continue
+			}
+			if ep.Remote && ep.Enabled {
+				remoteNames = append(remoteNames, name)
+			}
+		}
+		if len(remoteNames) > 0 {
+			bm.logger.Info(
+				"boot: distributing %d remote endpoints",
+				len(remoteNames),
+			)
+			deployed, distErr := bm.distributor.DistributeEndpoints(
+				ctx, remoteNames,
+			)
+			for _, name := range remoteNames {
+				if _, exists := bm.results[name]; exists {
+					continue
+				}
+				bm.results[name] = &BootResult{
+					Name:   name,
+					Status: "distributed",
+				}
+				summary.Remote++
+			}
+			if distErr != nil {
+				bm.logger.Warn(
+					"boot: distribution partial: %d/%d deployed: %v",
+					deployed, len(remoteNames), distErr,
+				)
+			} else {
+				bm.logger.Info(
+					"boot: distributed %d remote endpoints",
+					deployed,
+				)
 			}
 		}
 	}
