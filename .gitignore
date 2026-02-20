@@ -30,3 +30,4 @@ vendor/
 
 # Environment (contains secrets)
 .env
+.env.*
