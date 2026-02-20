@@ -161,6 +161,47 @@ fmt.Printf("Local: %d, Remote: %d\n",
     summary.LocalContainers, summary.RemoteContainers)
 ```
 
+## Service Orchestrator
+
+Auto-discover and manage all containerized services with automatic remote distribution:
+
+```go
+import (
+    "digital.vasic.containers/pkg/orchestrator"
+    "digital.vasic.containers/pkg/compose"
+    "digital.vasic.containers/pkg/remote"
+)
+
+// Create orchestrator with local compose and optional remote support
+orch := orchestrator.New(
+    orchestrator.WithLocalOrchestrator(composeOrch),
+    orchestrator.WithRemoteExecutor(remoteExec),  // optional
+    orchestrator.WithHostManager(hostMgr),         // optional
+    orchestrator.WithProjectDir("/path/to/project"),
+)
+
+// Auto-discover all docker-compose files in docker/ directory
+orch.DiscoverServices("docker")
+
+// Or manually add services
+orch.AddService(orchestrator.Service{
+    Name:        "mcp",
+    ComposeFile: "docker/mcp/docker-compose.mcp-servers.yml",
+    Description: "MCP servers (32+ servers)",
+})
+
+// Start all services (remote if configured, local otherwise)
+err := orch.StartAll(ctx)
+
+// Start a specific service
+err := orch.StartService(ctx, "mcp")
+
+// List discovered services
+services := orch.ListServices()
+```
+
+When remote distribution is enabled (both `RemoteExecutor` and `HostManager` provided), all services are automatically deployed to the remote host with automatic fallback to local.
+
 ## License
 
 MIT

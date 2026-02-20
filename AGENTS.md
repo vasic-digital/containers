@@ -23,6 +23,7 @@
 | `logging` | `pkg/logging/` | Logging abstraction: Bring-your-own-logger interface. Adapters for popular loggers (logrus, zap, zerolog). Structured logging support. |
 | `metrics` | `pkg/metrics/` | Metrics collection: Prometheus-compatible metrics. Container lifecycle metrics. Health check metrics. Resource utilization metrics. |
 | `boot` | `pkg/boot/` | High-level orchestration: `BootManager` composing all packages. One-line service initialization. Coordinated health checking and lifecycle management. Configuration validation. Distributor integration for remote endpoints. |
+| `orchestrator` | `pkg/orchestrator/` | Service orchestration: `DefaultOrchestrator` for auto-discovering and managing containerized services. Supports local and remote deployment. Auto-discovery of docker-compose files. Thread-safe service management. |
 | `remote` | `pkg/remote/` | Remote host management: `RemoteExecutor` (SSH command execution with ControlMaster pooling), `HostManager` (host registry, resource probing), `RemoteRuntime` (ContainerRuntime over SSH), `RemoteComposeOrchestrator`. |
 | `scheduler` | `pkg/scheduler/` | Resource-aware container scheduling: 5 strategies (resource_aware, round_robin, affinity, spread, bin_pack). `ResourceScorer` for weighted host scoring (CPU 40%, Memory 40%, Disk 10%, Network 10%). |
 | `network` | `pkg/network/` | Cross-host networking: `TunnelManager` for SSH tunnels (local/remote forwarding), `PortAllocator` (thread-safe port range 20000-30000), `OverlayNetwork` for Docker overlay spanning hosts. |
@@ -45,6 +46,11 @@ boot  --->  metrics
 boot  --->  remote
 boot  --->  scheduler  --->  remote
 
+orchestrator  --->  compose
+orchestrator  --->  remote
+orchestrator  --->  health
+orchestrator  --->  logging
+
 distribution  --->  scheduler  --->  remote
 distribution  --->  remote
 distribution  --->  network  --->  remote
@@ -58,7 +64,7 @@ remote  --->  runtime (RemoteRuntime implements ContainerRuntime)
 remote  --->  compose (RemoteComposeOrchestrator implements ComposeOrchestrator)
 ```
 
-`runtime`, `endpoint`, and `logging` are leaf packages. `boot` and `distribution` are integration layers. `remote` is the foundation for all distributed features.
+`runtime`, `endpoint`, and `logging` are leaf packages. `boot`, `orchestrator`, and `distribution` are integration layers. `remote` is the foundation for all distributed features.
 
 ## Key Files
 
@@ -78,8 +84,10 @@ remote  --->  compose (RemoteComposeOrchestrator implements ComposeOrchestrator)
 | `pkg/lifecycle/lifecycle.go` | LifecycleManager interface |
 | `pkg/lifecycle/lazy_boot.go` | Lazy boot implementation |
 | `pkg/lifecycle/idle_shutdown.go` | Idle shutdown implementation |
-| `pkg/boot/boot_manager.go` | BootManager main orchestration logic |
-| `pkg/boot/config.go` | Configuration structures and validation |
+| `pkg/boot/manager.go` | BootManager main orchestration logic |
+| `pkg/boot/options.go` | BootManager functional options |
+| `pkg/orchestrator/orchestrator.go` | ServiceOrchestrator for auto-discovery and management |
+| `pkg/orchestrator/orchestrator_test.go` | Orchestrator unit tests |
 | `go.mod` | Module definition and dependencies |
 | `CLAUDE.md` | AI coding assistant instructions |
 | `README.md` | User-facing documentation with quick start |
@@ -96,6 +104,7 @@ When multiple agents work on this module simultaneously, divide work by package 
 4. **Boot Agent** -- Owns `pkg/boot/`. Integration layer. Requires testing against all package combinations.
 5. **Discovery Agent** -- Owns `pkg/discovery/`. Independent service discovery logic. Can work in parallel with other agents.
 6. **Monitor Agent** -- Owns `pkg/monitor/`. Resource tracking. Can work independently but coordinates with runtime for container metrics.
+7. **Orchestrator Agent** -- Owns `pkg/orchestrator/`. Service orchestration with auto-discovery. Coordinates with compose and remote agents for deployment.
 
 ### Coordination Rules
 
