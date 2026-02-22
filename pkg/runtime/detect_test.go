@@ -157,16 +157,15 @@ func TestDetectAllWith_EmptyInput(t *testing.T) {
 
 func TestDefaultRuntimeFactory(t *testing.T) {
 	runtimes := defaultRuntimeFactory()
-	require.Len(t, runtimes, 3)
+	require.Len(t, runtimes, 6)
 
-	names := make([]string, 0, 3)
+	names := make([]string, 0, 6)
 	for _, rt := range runtimes {
 		names = append(names, rt.Name())
 	}
 
-	assert.Contains(t, names, "docker")
-	assert.Contains(t, names, "podman")
-	assert.Contains(t, names, "kubernetes")
+	// Verify priority order: Podman → Docker → nerdctl → CRI-O → LXD → Kubernetes
+	assert.Equal(t, []string{"podman", "docker", "nerdctl", "cri-o", "lxd", "kubernetes"}, names)
 }
 
 // Tests for the public API using the internal functions.
