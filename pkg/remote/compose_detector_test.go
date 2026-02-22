@@ -18,6 +18,11 @@ func TestComposeCommand_String(t *testing.T) {
 		expected string
 	}{
 		{
+			"podman-compose",
+			ComposeCommand{Binary: "podman-compose", Subcommand: ""},
+			"podman-compose",
+		},
+		{
 			"podman compose",
 			ComposeCommand{Binary: "podman", Subcommand: "compose"},
 			"podman compose",
@@ -55,15 +60,15 @@ func TestNewComposeDetector_NilLogger(t *testing.T) {
 	assert.NotNil(t, detector.logger)
 }
 
-func TestComposeDetector_Detect_PodmanPriority(t *testing.T) {
+func TestComposeDetector_Detect_PodmanComposePriority(t *testing.T) {
 	exec := &mockExecutor{}
 	host := RemoteHost{Name: "test-host", Runtime: "podman"}
 
 	callCount := 0
 	exec.executeFunc = func(ctx context.Context, h RemoteHost, cmd string) (*CommandResult, error) {
 		callCount++
-		if cmd == "podman compose version --short" {
-			return &CommandResult{ExitCode: 0, Stdout: "4.9.4"}, nil
+		if cmd == "podman-compose version --short" {
+			return &CommandResult{ExitCode: 0, Stdout: "1.0.6"}, nil
 		}
 		return &CommandResult{ExitCode: 1, Stderr: "not found"}, nil
 	}
@@ -72,14 +77,14 @@ func TestComposeDetector_Detect_PodmanPriority(t *testing.T) {
 	result, err := detector.Detect(context.Background(), host)
 
 	require.NoError(t, err)
-	assert.Equal(t, "podman compose", result.Name)
-	assert.Equal(t, "podman", result.Binary)
-	assert.Equal(t, "compose", result.Subcommand)
-	assert.Equal(t, "4.9.4", result.Version)
+	assert.Equal(t, "podman-compose", result.Name)
+	assert.Equal(t, "podman-compose", result.Binary)
+	assert.Equal(t, "", result.Subcommand)
+	assert.Equal(t, "1.0.6", result.Version)
 	assert.Equal(t, 1, callCount, "should stop at first successful detection")
 }
 
-func TestComposeDetector_Detect_DockerFallback(t *testing.T) {
+func TestComposeDetector_Detect_DockerComposePriority(t *testing.T) {
 	exec := &mockExecutor{}
 	host := RemoteHost{Name: "test-host", Runtime: "docker"}
 
@@ -100,7 +105,7 @@ func TestComposeDetector_Detect_DockerFallback(t *testing.T) {
 	assert.Equal(t, "docker", result.Binary)
 	assert.Equal(t, "compose", result.Subcommand)
 	assert.Equal(t, "2.24.0", result.Version)
-	assert.Equal(t, 2, callCount, "should try podman first, then docker")
+	assert.Equal(t, 2, callCount, "should try podman-compose first, then docker compose")
 }
 
 func TestComposeDetector_Detect_DockerComposeV1Fallback(t *testing.T) {
@@ -124,7 +129,7 @@ func TestComposeDetector_Detect_DockerComposeV1Fallback(t *testing.T) {
 	assert.Equal(t, "docker-compose", result.Binary)
 	assert.Equal(t, "", result.Subcommand)
 	assert.Equal(t, "1.29.2", result.Version)
-	assert.Equal(t, 3, callCount, "should try podman, docker compose, then docker-compose")
+	assert.Equal(t, 4, callCount, "should try podman-compose, docker compose, podman compose, then docker-compose")
 }
 
 func TestComposeDetector_Detect_NoComposeFound(t *testing.T) {
@@ -187,8 +192,8 @@ func TestComposeDetector_DetectWithFallback_Success(t *testing.T) {
 	host := RemoteHost{Name: "test-host", Runtime: "podman"}
 
 	exec.executeFunc = func(ctx context.Context, h RemoteHost, cmd string) (*CommandResult, error) {
-		if cmd == "podman compose version --short" {
-			return &CommandResult{ExitCode: 0, Stdout: "4.9.4"}, nil
+		if cmd == "podman-compose version --short" {
+			return &CommandResult{ExitCode: 0, Stdout: "1.0.6"}, nil
 		}
 		return &CommandResult{ExitCode: 1, Stderr: "not found"}, nil
 	}
@@ -197,7 +202,7 @@ func TestComposeDetector_DetectWithFallback_Success(t *testing.T) {
 	result := detector.DetectWithFallback(context.Background(), host)
 
 	assert.NotNil(t, result)
-	assert.Equal(t, "podman compose", result.Name)
+	assert.Equal(t, "podman-compose", result.Name)
 }
 
 func TestComposeDetector_DetectWithFallback_UsesConfiguredRuntime(t *testing.T) {
@@ -284,15 +289,17 @@ func TestComposeDetector_ClearCache_AllHosts(t *testing.T) {
 
 func TestKnownComposeCommands(t *testing.T) {
 	commands := KnownComposeCommands()
-	assert.Len(t, commands, 3)
-	assert.Equal(t, "podman compose", commands[0])
+	assert.Len(t, commands, 4)
+	assert.Equal(t, "podman-compose", commands[0])
 	assert.Equal(t, "docker compose", commands[1])
-	assert.Equal(t, "docker-compose", commands[2])
+	assert.Equal(t, "podman compose", commands[2])
+	assert.Equal(t, "docker-compose", commands[3])
 }
 
 func TestIsComposeCommand(t *testing.T) {
-	assert.True(t, IsComposeCommand("podman compose"))
+	assert.True(t, IsComposeCommand("podman-compose"))
 	assert.True(t, IsComposeCommand("docker compose"))
+	assert.True(t, IsComposeCommand("podman compose"))
 	assert.True(t, IsComposeCommand("docker-compose"))
 	assert.False(t, IsComposeCommand("kubectl"))
 	assert.False(t, IsComposeCommand("nerdctl"))

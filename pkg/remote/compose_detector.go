@@ -30,7 +30,9 @@ func (c ComposeCommand) String() string {
 }
 
 // ComposeDetector detects the best available compose command on a remote host.
-// Priority order: podman compose > docker compose > docker-compose
+// Priority order: podman-compose > docker compose > podman compose > docker-compose
+// Note: podman-compose (hyphen) is preferred over "podman compose" (space) because
+// "podman compose" often delegates to docker-compose v1 which is incompatible with Podman.
 type ComposeDetector struct {
 	executor RemoteExecutor
 	logger   logging.Logger
@@ -51,7 +53,9 @@ func NewComposeDetector(executor RemoteExecutor, logger logging.Logger) *Compose
 }
 
 // Detect detects the best available compose command on the remote host.
-// Priority: podman compose > docker compose > docker-compose (v1 standalone)
+// Priority: podman-compose > docker compose > podman compose > docker-compose (v1 standalone)
+// Note: podman-compose (hyphen) is preferred because "podman compose" often delegates
+// to docker-compose v1 which is incompatible with Podman.
 func (d *ComposeDetector) Detect(ctx context.Context, host RemoteHost) (*ComposeCommand, error) {
 	// Check cache first
 	d.mu.RLock()
@@ -62,14 +66,16 @@ func (d *ComposeDetector) Detect(ctx context.Context, host RemoteHost) (*Compose
 	d.mu.RUnlock()
 
 	// Try each compose command in priority order
+	// Priority: podman-compose > docker compose > podman compose > docker-compose
 	candidates := []struct {
 		binary     string
 		subcommand string
 		name       string
 	}{
-		{"podman", "compose", "podman compose"},
-		{"docker", "compose", "docker compose"},
-		{"docker-compose", "", "docker-compose"},
+		{"podman-compose", "", "podman-compose"}, // Native podman-compose (best for Podman)
+		{"docker", "compose", "docker compose"},  // Docker v2 plugin
+		{"podman", "compose", "podman compose"},  // Podman's wrapper (often delegates to docker-compose v1)
+		{"docker-compose", "", "docker-compose"}, // Docker-compose v1 standalone
 	}
 
 	for _, candidate := range candidates {
@@ -156,8 +162,9 @@ func (d *ComposeDetector) ClearCache(hostName string) {
 // KnownComposeCommands returns the list of compose commands in priority order.
 func KnownComposeCommands() []string {
 	return []string{
-		"podman compose",
+		"podman-compose",
 		"docker compose",
+		"podman compose",
 		"docker-compose",
 	}
 }
