@@ -16,9 +16,10 @@ import (
 //
 // The orchestrator uses intelligent compose command detection with the
 // following priority order:
-//  1. podman compose (preferred for rootless, systemd integration)
+//  1. podman-compose (native Podman implementation - preferred)
 //  2. docker compose (v2, plugin-based)
-//  3. docker-compose (v1, standalone)
+//  3. podman compose (may delegate to docker-compose v1)
+//  4. docker-compose (v1, standalone)
 //
 // If detection fails, it falls back to the host's configured runtime.
 type RemoteComposeOrchestrator struct {
@@ -83,16 +84,11 @@ func NewRemoteComposeOrchestrator(
 		o.detector = NewComposeDetector(executor, logger)
 	}
 
-	// Legacy behavior: if host.Runtime is explicitly set and no compose command
-	// was provided via options, create one from the runtime
-	if o.composeCmd == nil && host.Runtime != "" {
-		o.composeCmd = &ComposeCommand{
-			Name:       fmt.Sprintf("%s compose", host.Runtime),
-			Binary:     host.Runtime,
-			Subcommand: "compose",
-		}
-		logger.Debug("using host runtime for compose: %s compose", host.Runtime)
-	}
+	// Note: We do NOT pre-set composeCmd based on host.Runtime anymore.
+	// The detector will try podman-compose first, then fall back to the
+	// host's configured runtime if auto-detection fails.
+	// This ensures podman-compose is preferred over "podman compose"
+	// which may delegate to incompatible docker-compose v1.
 
 	return o
 }
@@ -204,21 +200,46 @@ func (o *RemoteComposeOrchestrator) Status(
 	ctx context.Context,
 	project compose.ComposeProject,
 ) ([]compose.ServiceStatus, error) {
-	cmdStr, err := o.composeCmdString(ctx)
+	cmd, err := o.getComposeCommand(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	args := o.projectArgs(project)
-	args = append(args, "ps", "--format",
-		"'{{.Name}}|{{.State}}|{{.Health}}|{{.Ports}}|{{.ExitCode}}'",
-	)
+	var cmdStr string
 
-	cmd := fmt.Sprintf("%s %s",
-		cmdStr, strings.Join(args, " "),
-	)
+	// podman-compose doesn't support --format flag for ps command
+	// Use the container runtime directly (podman or docker) with --format
+	if cmd.Binary == "podman-compose" {
+		// Use podman ps with label filter for podman-compose projects
+		labelFilter := ""
+		if project.Name != "" {
+			labelFilter = fmt.Sprintf("--filter label=com.docker.compose.project=%s", project.Name)
+		}
+		cmdStr = fmt.Sprintf("podman ps -a %s --format '{{.Names}}|{{.State}}|{{.Status}}'", labelFilter)
+	} else if cmd.Binary == "docker-compose" || (cmd.Binary == "docker" && cmd.Subcommand == "compose") {
+		// docker compose and docker-compose support --format
+		args := o.projectArgs(project)
+		args = append(args, "ps", "-a", "--format",
+			"'{{.Name}}|{{.State}}|{{.Status}}'",
+		)
+		cmdStr = fmt.Sprintf("%s %s", cmd.String(), strings.Join(args, " "))
+	} else if cmd.Binary == "podman" && cmd.Subcommand == "compose" {
+		// podman compose might delegate to docker-compose, use podman ps directly
+		labelFilter := ""
+		if project.Name != "" {
+			labelFilter = fmt.Sprintf("--filter label=com.docker.compose.project=%s", project.Name)
+		}
+		cmdStr = fmt.Sprintf("podman ps -a %s --format '{{.Names}}|{{.State}}|{{.Status}}'", labelFilter)
+	} else {
+		// Fallback: try compose ps with format
+		args := o.projectArgs(project)
+		args = append(args, "ps", "-a", "--format",
+			"'{{.Name}}|{{.State}}|{{.Status}}'",
+		)
+		cmdStr = fmt.Sprintf("%s %s", cmd.String(), strings.Join(args, " "))
+	}
 
-	result, err := o.executor.Execute(ctx, o.host, cmd)
+	result, err := o.executor.Execute(ctx, o.host, cmdStr)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"remote compose status on %s: %w", o.host.Name, err,
@@ -281,19 +302,46 @@ func parseRemoteComposeStatus(
 	var statuses []compose.ServiceStatus
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
-		line = strings.Trim(line, "'")
+		line = strings.Trim(line, "'\"")
 		if line == "" {
 			continue
 		}
-		parts := strings.SplitN(line, "|", 5)
-		if len(parts) < 5 {
+		parts := strings.SplitN(line, "|", 3)
+		if len(parts) < 2 {
 			continue
 		}
 
+		name := strings.TrimSpace(parts[0])
+		state := strings.TrimSpace(parts[1])
+		health := ""
+
+		// Status might contain health info like "running (healthy)"
+		if len(parts) > 2 {
+			statusPart := strings.TrimSpace(parts[2])
+			// Extract health from status if present
+			if strings.Contains(statusPart, "(healthy)") {
+				health = "healthy"
+			} else if strings.Contains(statusPart, "(unhealthy)") {
+				health = "unhealthy"
+			} else if strings.Contains(statusPart, "(health: starting)") {
+				health = "starting"
+			}
+		}
+
+		// Normalize state
+		state = strings.ToLower(state)
+		if strings.Contains(state, "running") {
+			state = "running"
+		} else if strings.Contains(state, "exited") || strings.Contains(state, "stopped") {
+			state = "exited"
+		} else if strings.Contains(state, "paused") {
+			state = "paused"
+		}
+
 		statuses = append(statuses, compose.ServiceStatus{
-			Name:   strings.TrimSpace(parts[0]),
-			State:  strings.TrimSpace(parts[1]),
-			Health: strings.TrimSpace(parts[2]),
+			Name:   name,
+			State:  state,
+			Health: health,
 		})
 	}
 	return statuses
