@@ -30,6 +30,7 @@
 | `volume` | `pkg/volume/` | Remote volume management: `VolumeManager` with 3 backends — SSHFS (real-time), NFS (shared export), rsync (periodic sync). Mount/unmount/sync operations. |
 | `envconfig` | `pkg/envconfig/` | Environment configuration: `CONTAINERS_REMOTE_*` env var parsing, `.env` file loading, numbered host definitions (`HOST_N_NAME/ADDRESS/PORT/...`), template generation. |
 | `distribution` | `pkg/distribution/` | Distribution orchestrator: `Distributor` composing scheduler + remote + network + volume. 7-phase workflow (probe → schedule → volumes → deploy → tunnels → health → events). Failover detection and rescheduling. |
+| `ctop` | `pkg/ctop/` | Container monitoring: top/htop-style display for local and remote containers. `Collector` gathers container data. `Display` provides interactive TUI, snapshot, and JSON output. Sorting, filtering, color-coded resource usage. |
 
 ## Dependency Graph
 
@@ -62,9 +63,12 @@ envconfig  --->  remote
 
 remote  --->  runtime (RemoteRuntime implements ContainerRuntime)
 remote  --->  compose (RemoteComposeOrchestrator implements ComposeOrchestrator)
+
+ctop  --->  remote
+ctop  --->  envconfig
 ```
 
-`runtime`, `endpoint`, and `logging` are leaf packages. `boot`, `orchestrator`, and `distribution` are integration layers. `remote` is the foundation for all distributed features.
+`runtime`, `endpoint`, and `logging` are leaf packages. `boot`, `orchestrator`, `distribution`, and `ctop` are integration layers. `remote` is the foundation for all distributed features.
 
 ## Key Files
 
@@ -88,6 +92,10 @@ remote  --->  compose (RemoteComposeOrchestrator implements ComposeOrchestrator)
 | `pkg/boot/options.go` | BootManager functional options |
 | `pkg/orchestrator/orchestrator.go` | ServiceOrchestrator for auto-discovery and management |
 | `pkg/orchestrator/orchestrator_test.go` | Orchestrator unit tests |
+| `pkg/ctop/types.go` | Ctop type definitions (ContainerProcess, DisplayConfig) |
+| `pkg/ctop/collector.go` | Container data collection from local and remote hosts |
+| `pkg/ctop/display.go` | Terminal UI display with sorting and filtering |
+| `cmd/ctop/main.go` | Ctop CLI entry point |
 | `go.mod` | Module definition and dependencies |
 | `CLAUDE.md` | AI coding assistant instructions |
 | `README.md` | User-facing documentation with quick start |
@@ -105,6 +113,7 @@ When multiple agents work on this module simultaneously, divide work by package 
 5. **Discovery Agent** -- Owns `pkg/discovery/`. Independent service discovery logic. Can work in parallel with other agents.
 6. **Monitor Agent** -- Owns `pkg/monitor/`. Resource tracking. Can work independently but coordinates with runtime for container metrics.
 7. **Orchestrator Agent** -- Owns `pkg/orchestrator/`. Service orchestration with auto-discovery. Coordinates with compose and remote agents for deployment.
+8. **Ctop Agent** -- Owns `pkg/ctop/`. Container monitoring with top/htop-style display. Coordinates with remote agent for multi-host collection. Independent display logic.
 
 ### Coordination Rules
 
@@ -147,6 +156,7 @@ These changes can be made simultaneously without coordination:
 10. **Volume Agent** -- Owns `pkg/volume/`. Volume backend implementations (SSHFS/NFS/rsync) are independent.
 11. **Distribution Agent** -- Owns `pkg/distribution/`. Top-level orchestrator. Requires testing against all remote packages.
 12. **EnvConfig Agent** -- Owns `pkg/envconfig/`. Environment parsing. Independent of other packages except `remote` types.
+13. **Ctop Agent** -- Owns `pkg/ctop/`. Container top monitoring. Uses `remote.HostManager` for remote collection. Independent display rendering. Can add new sorting/filtering without coordination.
 
 ## Build and Test Commands
 
@@ -350,6 +360,6 @@ CONTAINERS_REMOTE_HOST_1_LABELS=gpu=true,arch=amd64
 
 ---
 
-**Last Updated**: February 18, 2026
-**Version**: 2.0.0
+**Last Updated**: February 22, 2026
+**Version**: 2.1.0
 **Status**: Production Ready

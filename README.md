@@ -202,6 +202,72 @@ services := orch.ListServices()
 
 When remote distribution is enabled (both `RemoteExecutor` and `HostManager` provided), all services are automatically deployed to the remote host with automatic fallback to local.
 
+## Container Monitoring (ctop)
+
+Real-time container monitoring with top/htop-style display for local and remote containers:
+
+```go
+import (
+    "context"
+    "digital.vasic.containers/pkg/ctop"
+    "digital.vasic.containers/pkg/remote"
+)
+
+// Create collector with optional remote host support
+collector := ctop.NewCollector("podman", hostManager)
+
+// Collect container data
+list, _ := collector.Collect(context.Background())
+fmt.Printf("Containers: %d running, %d stopped\n", list.Running, list.Stopped)
+
+// Create interactive display
+display := ctop.NewDisplay(collector, ctop.DefaultDisplayConfig())
+
+// Run interactive TUI (blocks until quit)
+display.Run(context.Background())
+
+// Or get a snapshot
+snapshot, _ := display.RenderSnapshot(context.Background())
+fmt.Println(snapshot)
+
+// Or get JSON output
+json, _ := display.RenderJSON(context.Background())
+fmt.Println(json)
+```
+
+### CLI Usage
+
+```bash
+# Install the ctop CLI
+go install digital.vasic.containers/cmd/ctop@latest
+
+# Run interactive monitoring
+ctop
+
+# One-time snapshot
+ctop --once
+
+# JSON output
+ctop --json
+
+# Filter by host
+ctop --host thinker
+
+# Sort by memory
+ctop --sort mem
+
+# Show stopped containers
+ctop --all
+```
+
+### Display Features
+
+- **Color-coded resource usage**: Green (low) → Yellow (medium) → Red (high)
+- **Sorting**: CPU, memory, name, state, uptime, runtime, host
+- **Filtering**: By host name, container name, running/stopped state
+- **Multi-host**: Shows containers from local and remote hosts
+- **Remote support**: Integrates with HostManager for distributed monitoring
+
 ## License
 
 MIT
