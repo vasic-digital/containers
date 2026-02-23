@@ -98,6 +98,24 @@
     "last_checked": "2026-02-20T19:11:33.20844536+03:00",
     "healthy": true
   },
+  "svc": {
+    "name": "svc",
+    "host": "localhost",
+    "port": 8443,
+    "protocol": "https",
+    "discovered_at": "2026-02-23T19:54:32.85816771+03:00",
+    "last_checked": "2026-02-23T19:54:32.858167781+03:00",
+    "healthy": true
+  },
+  "svc-nil-labels": {
+    "name": "svc-nil-labels",
+    "host": "localhost",
+    "port": 9999,
+    "protocol": "tcp",
+    "discovered_at": "2026-02-23T19:54:32.822454029+03:00",
+    "last_checked": "2026-02-23T19:54:32.822454104+03:00",
+    "healthy": true
+  },
   "svc1": {
     "name": "svc1",
     "host": "localhost",
@@ -114,6 +132,15 @@
     "protocol": "tcp",
     "discovered_at": "2026-02-20T19:11:33.208556424+03:00",
     "last_checked": "2026-02-20T19:11:33.208556461+03:00",
+    "healthy": true
+  },
+  "test-svc": {
+    "name": "test-svc",
+    "host": "localhost",
+    "port": 9999,
+    "protocol": "tcp",
+    "discovered_at": "2026-02-23T19:54:32.82394708+03:00",
+    "last_checked": "2026-02-23T19:54:32.823947154+03:00",
     "healthy": true
   }
 }
