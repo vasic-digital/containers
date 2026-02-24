@@ -31,3 +31,4 @@ vendor/
 # Environment (contains secrets)
 .env
 .env.*
+.service-registry/
