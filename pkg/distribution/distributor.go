@@ -311,7 +311,12 @@ func (d *DefaultDistributor) deployRemote(
 		rt = "docker"
 	}
 
-	// Pull and run the container image.
+	removeCmd := fmt.Sprintf(
+		"%s rm -f %s 2>/dev/null || true",
+		rt, dc.Requirement.Name,
+	)
+	d.opts.Executor.Execute(ctx, *host, removeCmd)
+
 	cmd := fmt.Sprintf(
 		"%s run -d --name %s %s",
 		rt, dc.Requirement.Name, dc.Requirement.Image,
