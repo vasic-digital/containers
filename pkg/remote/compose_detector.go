@@ -66,16 +66,18 @@ func (d *ComposeDetector) Detect(ctx context.Context, host RemoteHost) (*Compose
 	d.mu.RUnlock()
 
 	// Try each compose command in priority order
-	// Priority: podman-compose > docker compose > podman compose > docker-compose
+	// Priority: ~/.local/bin/podman-compose > podman-compose > docker compose > podman compose > docker-compose
+	// ~/.local/bin/podman-compose is checked first for pipx installations
 	candidates := []struct {
 		binary     string
 		subcommand string
 		name       string
 	}{
-		{"podman-compose", "", "podman-compose"}, // Native podman-compose (best for Podman)
-		{"docker", "compose", "docker compose"},  // Docker v2 plugin
-		{"podman", "compose", "podman compose"},  // Podman's wrapper (often delegates to docker-compose v1)
-		{"docker-compose", "", "docker-compose"}, // Docker-compose v1 standalone
+		{"/home/milosvasic/.local/bin/podman-compose", "", "podman-compose"}, // pipx installed podman-compose (highest priority)
+		{"podman-compose", "", "podman-compose"},                             // Native podman-compose (best for Podman)
+		{"docker", "compose", "docker compose"},                              // Docker v2 plugin
+		{"podman", "compose", "podman compose"},                              // Podman's wrapper (often delegates to docker-compose v1)
+		{"docker-compose", "", "docker-compose"},                             // Docker-compose v1 standalone
 	}
 
 	for _, candidate := range candidates {
