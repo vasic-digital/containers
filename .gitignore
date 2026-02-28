@@ -32,3 +32,4 @@ vendor/
 .env
 .env.*
 .service-registry/
+/cmd/ctop/ctop
