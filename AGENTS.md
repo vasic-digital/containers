@@ -1,5 +1,15 @@
 # AGENTS.md - Containers Module
 
+## MANDATORY: No CI/CD Pipelines
+
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
+
+- No `.github/workflows/` directory
+- No `.gitlab-ci.yml` file
+- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
+- All builds and tests are run manually or via Makefile targets
+- This rule is permanent and non-negotiable
+
 ## Module Overview
 
 `digital.vasic.containers` is a generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. It provides a unified interface for Docker, Podman, and Kubernetes runtimes with advanced features like lazy booting, idle shutdown, semaphore-based control, and resource monitoring.
