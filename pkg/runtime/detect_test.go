@@ -5,6 +5,7 @@ package runtime
 import (
 	"context"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -172,30 +173,28 @@ func TestDefaultRuntimeFactory(t *testing.T) {
 // These tests verify the integration between public functions and internal logic.
 
 func TestAutoDetect_Integration(t *testing.T) {
-	// This test uses real runtimes but with context timeout.
-	// It will quickly fail if no runtimes are available.
+	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+	}
 	ctx := context.Background()
 
-	// The result depends on the environment, but should not panic.
 	rt, err := AutoDetect(ctx)
 	if err != nil {
-		// No runtime available - this is expected in CI/test environments.
 		assert.Contains(t, err.Error(), "no container runtime detected")
 		assert.Nil(t, rt)
 	} else {
-		// A runtime is available.
 		assert.NotNil(t, rt)
 		assert.NotEmpty(t, rt.Name())
 	}
 }
 
 func TestDetectAll_Integration(t *testing.T) {
+	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+	}
 	ctx := context.Background()
 
-	// Test the actual DetectAll function.
 	runtimes := DetectAll(ctx)
-
-	// Result depends on what's installed, but should not panic.
 	for _, rt := range runtimes {
 		assert.NotEmpty(t, rt.Name())
 	}

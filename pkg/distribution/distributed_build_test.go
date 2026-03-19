@@ -2,6 +2,7 @@ package distribution
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -10,9 +11,17 @@ import (
 	"digital.vasic.containers/pkg/scheduler"
 )
 
+func skipUnlessIntegration(t *testing.T) {
+	t.Helper()
+	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run integration tests")
+	}
+}
+
 // TestDistributedBuildExecution validates that builds can be distributed
 // to remote hosts and executed successfully
 func TestDistributedBuildExecution(t *testing.T) {
+	skipUnlessIntegration(t)
 	ctx := context.Background()
 
 	// Create mock executor and logger
@@ -162,6 +171,7 @@ func TestRemoteHostConnectivity(t *testing.T) {
 // TestResourceAwareScheduling validates that the scheduler distributes
 // containers based on available resources
 func TestResourceAwareScheduling(t *testing.T) {
+	skipUnlessIntegration(t)
 	logger := logging.NopLogger{}
 	executor, err := remote.NewSSHExecutor(logger)
 	if err != nil {

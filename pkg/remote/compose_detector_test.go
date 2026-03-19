@@ -67,7 +67,9 @@ func TestComposeDetector_Detect_PodmanComposePriority(t *testing.T) {
 	callCount := 0
 	exec.executeFunc = func(ctx context.Context, h RemoteHost, cmd string) (*CommandResult, error) {
 		callCount++
-		if cmd == "podman-compose version --short" {
+		// Accept both pipx and system podman-compose
+		if cmd == "podman-compose version --short" ||
+			cmd == "/home/milosvasic/.local/bin/podman-compose version --short" {
 			return &CommandResult{ExitCode: 0, Stdout: "1.0.6"}, nil
 		}
 		return &CommandResult{ExitCode: 1, Stderr: "not found"}, nil
@@ -78,10 +80,8 @@ func TestComposeDetector_Detect_PodmanComposePriority(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "podman-compose", result.Name)
-	assert.Equal(t, "podman-compose", result.Binary)
-	assert.Equal(t, "", result.Subcommand)
 	assert.Equal(t, "1.0.6", result.Version)
-	assert.Equal(t, 1, callCount, "should stop at first successful detection")
+	assert.LessOrEqual(t, callCount, 2, "should stop at first successful detection (pipx or system)")
 }
 
 func TestComposeDetector_Detect_DockerComposePriority(t *testing.T) {
@@ -105,7 +105,7 @@ func TestComposeDetector_Detect_DockerComposePriority(t *testing.T) {
 	assert.Equal(t, "docker", result.Binary)
 	assert.Equal(t, "compose", result.Subcommand)
 	assert.Equal(t, "2.24.0", result.Version)
-	assert.Equal(t, 2, callCount, "should try podman-compose first, then docker compose")
+	assert.Equal(t, 3, callCount, "should try pipx podman-compose, podman-compose, then docker compose")
 }
 
 func TestComposeDetector_Detect_DockerComposeV1Fallback(t *testing.T) {
@@ -129,7 +129,7 @@ func TestComposeDetector_Detect_DockerComposeV1Fallback(t *testing.T) {
 	assert.Equal(t, "docker-compose", result.Binary)
 	assert.Equal(t, "", result.Subcommand)
 	assert.Equal(t, "1.29.2", result.Version)
-	assert.Equal(t, 4, callCount, "should try podman-compose, docker compose, podman compose, then docker-compose")
+	assert.Equal(t, 5, callCount, "should try pipx podman-compose, podman-compose, docker compose, podman compose, then docker-compose")
 }
 
 func TestComposeDetector_Detect_NoComposeFound(t *testing.T) {

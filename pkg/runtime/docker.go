@@ -58,6 +58,7 @@ func (e *defaultExecutor) Execute(
 	ctx context.Context, name string, args ...string,
 ) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.WaitDelay = 2 * time.Second
 	return cmd.Output()
 }
 
@@ -65,6 +66,7 @@ func (e *defaultExecutor) ExecuteWithStderr(
 	ctx context.Context, name string, args ...string,
 ) ([]byte, []byte, int, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.WaitDelay = 2 * time.Second
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
