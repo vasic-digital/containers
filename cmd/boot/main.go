@@ -10,12 +10,9 @@ import (
 	"time"
 
 	"digital.vasic.containers/pkg/boot"
-	"digital.vasic.containers/pkg/compose"
-	"digital.vasic.containers/pkg/discovery"
 	"digital.vasic.containers/pkg/distribution"
 	"digital.vasic.containers/pkg/endpoint"
 	"digital.vasic.containers/pkg/envconfig"
-	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/runtime"
@@ -32,7 +29,7 @@ var (
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: boot [options]\n\n")
-		fmt.Fprintf(os.Stderr, "Boot Bear Messenger services using the Containers module.\n")
+		fmt.Fprintf(os.Stderr, "Boot services using the Containers module.\n")
 		fmt.Fprintf(os.Stderr, "Distributes containers to remote hosts based on .env configuration.\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
@@ -49,7 +46,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// Determine env file path
 	envFile := *flagEnvFile
 	if envFile == "" {
 		locations := []string{
@@ -66,7 +62,6 @@ func main() {
 		}
 	}
 
-	// Determine project directory
 	projectDir := *flagProject
 	if projectDir == "" {
 		projectDir = "../../../"
@@ -99,9 +94,8 @@ func (d *distributorAdapter) DistributeEndpoints(ctx context.Context, names []st
 
 func runBoot(ctx context.Context, envFile, projectDir string) error {
 	logger := logging.NewStdLogger("boot")
-	logger.Info("Starting Bear Messenger boot process...")
+	logger.Info("Starting boot process...")
 
-	// Load configuration
 	var cfg *envconfig.DistributionConfig
 	var err error
 
@@ -118,20 +112,17 @@ func runBoot(ctx context.Context, envFile, projectDir string) error {
 	logger.Info("Configuration loaded: remote=%v, hosts=%d, scheduler=%s",
 		cfg.Enabled, len(cfg.Hosts), cfg.Scheduler)
 
-	// Auto-detect runtime
 	rt, err := runtime.AutoDetect(ctx)
 	if err != nil {
 		return fmt.Errorf("auto-detect runtime: %w", err)
 	}
 	logger.Info("Using runtime: %s", rt.Name())
 
-	// Create SSH executor
 	exec, err := remote.NewSSHExecutor(logger)
 	if err != nil {
 		return fmt.Errorf("create SSH executor: %w", err)
 	}
 
-	// Create host manager and register remote hosts
 	hostManager := remote.NewHostManager(exec, logger)
 	for _, host := range cfg.ToRemoteHosts() {
 		if err := hostManager.AddHost(host); err != nil {
@@ -141,10 +132,8 @@ func runBoot(ctx context.Context, envFile, projectDir string) error {
 		logger.Info("Registered remote host: %s (%s)", host.Name, host.Address)
 	}
 
-	// Create scheduler
 	sched := scheduler.NewScheduler(hostManager, logger)
 
-	// Create distributor if remote is enabled
 	var distributor boot.Distributor
 	if cfg.Enabled && len(cfg.Hosts) > 0 {
 		defaultDist := distribution.NewDistributor(
@@ -156,44 +145,27 @@ func runBoot(ctx context.Context, envFile, projectDir string) error {
 		logger.Info("Remote distribution enabled with scheduler: %s", cfg.Scheduler)
 	}
 
-	// Create health checker
-	healthChecker := health.NewDispatcher(logger)
-
-	// Create discovery
-	disc := discovery.NewFileDiscovery(projectDir, logger)
-
-	// Create compose orchestrator
-	composeOrch := compose.NewDockerCompose(compose.WithLogger(logger))
-
-	// Create endpoints map (services to boot)
 	endpoints := map[string]endpoint.ServiceEndpoint{
-		"backend": {
-			Name:        "backend",
-			ComposeFile: projectDir + "/backend/docker-compose.yml",
-			ServiceName: "backend",
-			Enabled:     true,
-			Required:    true,
+		"helixagent": {
+			Host:    "localhost",
+			Port:    "7061",
+			Enabled: true,
 		},
 	}
 
-	// Create boot manager
 	bm := boot.NewBootManager(
 		endpoints,
 		boot.WithRuntime(rt),
 		boot.WithLogger(logger),
-		boot.WithHealthChecker(healthChecker),
 		boot.WithProjectDir(projectDir),
 		boot.WithDistributor(distributor),
 		boot.WithHostManager(hostManager),
 		boot.WithScheduler(sched),
-		boot.WithDiscoverer(disc),
-		boot.WithOrchestrator(composeOrch),
 	)
 
-	// Boot all services
 	logger.Info("Booting services...")
-	bootCtx, cancel := context.WithTimeout(ctx, *flagTimeout)
-	defer cancel()
+	bootCtx, bootCancel := context.WithTimeout(ctx, *flagTimeout)
+	defer bootCancel()
 
 	result, err := bm.BootAll(bootCtx)
 	if err != nil {
@@ -203,7 +175,7 @@ func runBoot(ctx context.Context, envFile, projectDir string) error {
 
 	logger.Info("Boot completed: %d services processed", len(result.Results))
 	for name, res := range result.Results {
-		logger.Info("  - %s: %s (host=%s)", name, res.State, res.Host)
+		logger.Info("  - %s: %s (duration=%s)", name, res.Status, res.Duration)
 	}
 
 	return nil

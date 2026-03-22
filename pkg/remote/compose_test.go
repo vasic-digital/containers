@@ -252,16 +252,16 @@ func TestRemoteComposeOrchestrator_AutoDetection(t *testing.T) {
 		ctx context.Context, h RemoteHost, cmd string,
 	) (*CommandResult, error) {
 		callCount++
-		// First call is detection: podman-compose version --short
+		// Detection calls: version --short
 		if strings.Contains(cmd, "version --short") {
-			// Simulate podman-compose being available
-			if strings.HasPrefix(cmd, "podman-compose") {
+			// Simulate podman-compose being available (system or pipx path)
+			if strings.Contains(cmd, "podman-compose") {
 				return &CommandResult{ExitCode: 0, Stdout: "1.0.6"}, nil
 			}
 			return &CommandResult{ExitCode: 1, Stderr: "not found"}, nil
 		}
-		// Second call is compose up
-		assert.True(t, strings.HasPrefix(cmd, "podman-compose -f"))
+		// Compose up call
+		assert.Contains(t, cmd, "podman-compose")
 		assert.Contains(t, cmd, "up -d")
 		return &CommandResult{ExitCode: 0}, nil
 	}

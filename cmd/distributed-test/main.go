@@ -670,7 +670,7 @@ func generateHTMLReport(summary *TestSummary) string {
 		.pass { color: #4CAF50; }
 		.fail { color: #f44336; }
 		.skip { color: #ff9800; }
-		table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+		table { width: 100%%; border-collapse: collapse; margin-top: 20px; }
 		th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
 		th { background: #f5f5f5; font-weight: 600; }
 		.status-pass { color: #4CAF50; font-weight: bold; }
