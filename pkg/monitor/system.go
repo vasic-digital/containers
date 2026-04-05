@@ -194,17 +194,5 @@ func (c *DefaultSystemCollector) collectDiskLinux(
 
 // collectDiskLinuxFromPath reads disk stats from the specified path.
 // Separated for testability.
-func (c *DefaultSystemCollector) collectDiskLinuxFromPath(
-	res *SystemResources,
-	path string,
-) {
-	// Use os.Stat to at least verify path is accessible. Real disk
-	// stats require syscall; kept minimal to avoid cgo dependency.
-	info, err := os.Stat(path)
-	if err != nil || info == nil {
-		return
-	}
-	// Disk stats via statfs would go here. Left as zero values to
-	// avoid platform-specific syscall imports. A production
-	// implementation should use golang.org/x/sys/unix.Statfs.
-}
+// Implementation is in system_disk_linux.go (via syscall.Statfs) and
+// system_disk_other.go (no-op stub for non-Linux platforms).
