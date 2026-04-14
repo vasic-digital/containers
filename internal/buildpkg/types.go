@@ -116,11 +116,7 @@ func (p BuildPlan) RemoteAssignments() []BuildAssignment {
 func (p BuildPlan) ByHost() map[string][]BuildAssignment {
 	groups := make(map[string][]BuildAssignment)
 	for _, a := range p.Assignments {
-		host := a.Host
-		if host == "" {
-			host = ""
-		}
-		groups[host] = append(groups[host], a)
+		groups[a.Host] = append(groups[a.Host], a)
 	}
 	return groups
 }
