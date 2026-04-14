@@ -38,6 +38,11 @@ func loadDotEnv(path string) error {
 	return scanner.Err()
 }
 
+// LoadDotEnv is the exported version of loadDotEnv.
+func LoadDotEnv(path string) error {
+	return loadDotEnv(path)
+}
+
 // parseDotEnvLine parses a KEY=VALUE line, handling quotes and
 // inline comments.
 func parseDotEnvLine(line string) (key, value string, ok bool) {

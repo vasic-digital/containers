@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"digital.vasic.containers/internal/buildpkg"
@@ -14,6 +15,52 @@ import (
 	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/scheduler"
 )
+
+// convertBuildEnvVars converts BUILD_* environment variables to
+// CONTAINERS_REMOTE_* equivalents for backward compatibility.
+func convertBuildEnvVars() {
+	for _, env := range os.Environ() {
+		parts := strings.SplitN(env, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		key := parts[0]
+		value := parts[1]
+		if !strings.HasPrefix(key, "BUILD_") {
+			continue
+		}
+		// Mapping from BUILD_ to CONTAINERS_REMOTE_
+		var newKey string
+		switch {
+		case key == "BUILD_DISTRIBUTED":
+			newKey = "CONTAINERS_REMOTE_ENABLED"
+		case key == "BUILD_SCHEDULER_STRATEGY":
+			newKey = "CONTAINERS_REMOTE_SCHEDULER"
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_NAME"):
+			newKey = strings.Replace(key, "BUILD_HOST_", "CONTAINERS_REMOTE_HOST_", 1)
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_ADDRESS"):
+			newKey = strings.Replace(key, "BUILD_HOST_", "CONTAINERS_REMOTE_HOST_", 1)
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_USER"):
+			newKey = strings.Replace(key, "BUILD_HOST_", "CONTAINERS_REMOTE_HOST_", 1)
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_KEY_PATH"):
+			// Convert KEY_PATH to KEY
+			base := strings.TrimSuffix(key, "_KEY_PATH")
+			base = strings.TrimPrefix(base, "BUILD_HOST_")
+			newKey = "CONTAINERS_REMOTE_HOST_" + base + "_KEY"
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_RUNTIME"):
+			newKey = strings.Replace(key, "BUILD_HOST_", "CONTAINERS_REMOTE_HOST_", 1)
+		case strings.HasPrefix(key, "BUILD_HOST_") && strings.HasSuffix(key, "_LABELS"):
+			newKey = strings.Replace(key, "BUILD_HOST_", "CONTAINERS_REMOTE_HOST_", 1)
+		default:
+			// Unknown BUILD_ variable, ignore
+			continue
+		}
+		// Only set if not already defined
+		if os.Getenv(newKey) == "" {
+			os.Setenv(newKey, value)
+		}
+	}
+}
 
 func main() {
 	projectDir := flag.String("project", ".", "Path to Catalogizer project root")
@@ -39,6 +86,10 @@ func main() {
 	}
 	if len(cfg.Hosts) == 0 {
 		log.Fatal("no remote hosts configured — set CONTAINERS_REMOTE_HOST_* env vars or use --env flag")
+	}
+	log.Printf("Loaded %d hosts:", len(cfg.Hosts))
+	for i, h := range cfg.Hosts {
+		log.Printf("  Host %d: %s (%s) runtime=%s labels=%v", i+1, h.Name, h.Address, h.Runtime, h.Labels)
 	}
 
 	sshExec, err := remote.NewSSHExecutor(nil)
@@ -165,9 +216,23 @@ func main() {
 }
 
 func loadConfig(envFile string) (*envconfig.DistributionConfig, error) {
+	// First, convert any existing BUILD_* environment variables
+	convertBuildEnvVars()
+
+	// If env file exists, load it and convert any BUILD_* variables from file
 	if _, err := os.Stat(envFile); err == nil {
-		return envconfig.LoadFromFile(envFile)
+		log.Printf("Loading environment from %s", envFile)
+		// Load .env file into environment variables
+		if err := envconfig.LoadDotEnv(envFile); err != nil {
+			return nil, fmt.Errorf("load %s: %w", envFile, err)
+		}
+		// Convert any BUILD_* variables that were loaded from the file
+		convertBuildEnvVars()
+	} else {
+		log.Printf("Environment file %s does not exist: %v", envFile, err)
 	}
+
+	// Load configuration from environment variables
 	cfg := envconfig.LoadFromEnv()
 	if len(cfg.Hosts) == 0 {
 		return nil, fmt.Errorf("no remote hosts configured — set CONTAINERS_REMOTE_HOST_* env vars or use --env flag")
