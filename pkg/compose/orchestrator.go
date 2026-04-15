@@ -60,9 +60,9 @@ type realCmd struct {
 	cmd *exec.Cmd
 }
 
-func (r *realCmd) SetDir(dir string)     { r.cmd.Dir = dir }
-func (r *realCmd) Start() error          { return r.cmd.Start() }
-func (r *realCmd) Wait() error           { return r.cmd.Wait() }
+func (r *realCmd) SetDir(dir string) { r.cmd.Dir = dir }
+func (r *realCmd) Start() error      { return r.cmd.Start() }
+func (r *realCmd) Wait() error       { return r.cmd.Wait() }
 func (r *realCmd) StdoutPipe() (io.ReadCloser, error) {
 	return r.cmd.StdoutPipe()
 }
@@ -318,11 +318,17 @@ func (o *DefaultOrchestrator) run(
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 
+	o.logger.Debug("executing: %s %s (dir: %s)", o.composeCmd, strings.Join(allArgs, " "), o.workDir)
 	if err := cmd.Run(); err != nil {
+		stderrStr := stderr.String()
+		o.logger.Error("%s %s failed: %v\nstderr: %s",
+			o.composeCmd, strings.Join(allArgs, " "),
+			err, stderrStr)
 		return fmt.Errorf("%s %s failed: %w\nstderr: %s",
 			o.composeCmd, strings.Join(allArgs, " "),
-			err, stderr.String())
+			err, stderrStr)
 	}
+	o.logger.Debug("compose command completed successfully")
 	return nil
 }
 

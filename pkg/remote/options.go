@@ -28,7 +28,7 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		ConnectTimeout:       10 * time.Second,
-		CommandTimeout:       60 * time.Second,
+		CommandTimeout:       300 * time.Second, // 5 minutes for large file transfers
 		MaxConnections:       5,
 		KeepAlive:            30 * time.Second,
 		StrictHostKeyCheck:   false,
