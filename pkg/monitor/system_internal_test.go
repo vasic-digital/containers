@@ -2,6 +2,7 @@ package monitor
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -210,14 +211,20 @@ func TestCollectDiskLinux_StatErrors(t *testing.T) {
 	c := &DefaultSystemCollector{}
 	res := &SystemResources{}
 
-	// The function should not panic even with edge cases
-	// The current implementation only verifies root is accessible
+	// The function should not panic even with edge cases.
 	c.collectDiskLinux(res)
 
-	// Disk values should be zero since full implementation is not done
-	assert.Equal(t, uint64(0), res.DiskTotal)
-	assert.Equal(t, uint64(0), res.DiskUsed)
-	assert.Equal(t, 0.0, res.DiskPercent)
+	// On Linux, syscall.Statfs returns real values for "/".
+	if runtime.GOOS == "linux" {
+		assert.Greater(t, res.DiskTotal, uint64(0),
+			"DiskTotal should be non-zero on Linux")
+		assert.Greater(t, res.DiskPercent, 0.0,
+			"DiskPercent should be non-zero on Linux")
+	} else {
+		assert.Equal(t, uint64(0), res.DiskTotal)
+		assert.Equal(t, uint64(0), res.DiskUsed)
+		assert.Equal(t, 0.0, res.DiskPercent)
+	}
 }
 
 // TestCollectMemoryLinux_EdgeCases tests edge cases in memory collection.
@@ -312,18 +319,28 @@ func TestCollectCPULinux_SameTotal(t *testing.T) {
 	t.Logf("Current idle=%d total=%d", idle, total)
 }
 
-// TestCollectDiskLinux_VerifyDiskZero verifies disk values are zero in
-// current implementation since statfs is not implemented.
-func TestCollectDiskLinux_VerifyDiskZero(t *testing.T) {
+// TestCollectDiskLinux_VerifyDiskValues verifies disk values are populated
+// on Linux via syscall.Statfs and remain zero on other platforms.
+func TestCollectDiskLinux_VerifyDiskValues(t *testing.T) {
 	c := &DefaultSystemCollector{}
 	res := &SystemResources{}
 
 	c.collectDiskLinux(res)
 
-	// Current implementation doesn't set disk values
-	assert.Equal(t, uint64(0), res.DiskTotal)
-	assert.Equal(t, uint64(0), res.DiskUsed)
-	assert.Equal(t, 0.0, res.DiskPercent)
+	if runtime.GOOS == "linux" {
+		assert.Greater(t, res.DiskTotal, uint64(0),
+			"DiskTotal should be non-zero on Linux")
+		assert.Greater(t, res.DiskUsed, uint64(0),
+			"DiskUsed should be non-zero on Linux")
+		assert.Greater(t, res.DiskPercent, 0.0,
+			"DiskPercent should be non-zero on Linux")
+		assert.LessOrEqual(t, res.DiskPercent, 100.0,
+			"DiskPercent should not exceed 100")
+	} else {
+		assert.Equal(t, uint64(0), res.DiskTotal)
+		assert.Equal(t, uint64(0), res.DiskUsed)
+		assert.Equal(t, 0.0, res.DiskPercent)
+	}
 }
 
 // TestCollect_LinuxPath verifies the Linux-specific collection path.
@@ -616,8 +633,16 @@ func TestCollectDiskLinuxFromPath_ErrorCases(t *testing.T) {
 		res := &SystemResources{}
 		c.collectDiskLinuxFromPath(res, "/")
 
-		// Current implementation doesn't set disk values, but should not panic
-		assert.Equal(t, uint64(0), res.DiskTotal)
+		// On Linux the syscall.Statfs implementation returns real values.
+		// On other platforms the no-op stub leaves them at zero.
+		if runtime.GOOS == "linux" {
+			assert.Greater(t, res.DiskTotal, uint64(0),
+				"DiskTotal should be non-zero on Linux")
+			assert.Greater(t, res.DiskPercent, 0.0,
+				"DiskPercent should be non-zero on Linux")
+		} else {
+			assert.Equal(t, uint64(0), res.DiskTotal)
+		}
 	})
 
 	t.Run("file instead of directory", func(t *testing.T) {
@@ -629,7 +654,13 @@ func TestCollectDiskLinuxFromPath_ErrorCases(t *testing.T) {
 		res := &SystemResources{}
 		c.collectDiskLinuxFromPath(res, path)
 
-		// Should work (stat succeeds on files too)
-		assert.Equal(t, uint64(0), res.DiskTotal)
+		// On Linux, statfs works on files too and returns the
+		// containing filesystem stats.
+		if runtime.GOOS == "linux" {
+			assert.Greater(t, res.DiskTotal, uint64(0),
+				"DiskTotal should be non-zero for file path on Linux")
+		} else {
+			assert.Equal(t, uint64(0), res.DiskTotal)
+		}
 	})
 }

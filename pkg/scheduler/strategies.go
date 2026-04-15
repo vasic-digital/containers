@@ -22,15 +22,21 @@ func scheduleResourceAware(
 	req ContainerRequirements,
 	localName string,
 ) PlacementDecision {
+
 	var candidates []hostScore
 
 	// Score local host if snapshot exists.
 	if snap, ok := snapshots[localName]; ok {
+
 		if scorer.CanFit(snap, req) {
+			score := scorer.Score(snap, req)
+
 			candidates = append(candidates, hostScore{
 				name:  localName,
-				score: scorer.Score(snap, req),
+				score: score,
 			})
+		} else {
+
 		}
 	}
 
@@ -40,19 +46,25 @@ func scheduleResourceAware(
 		if !ok {
 			continue
 		}
+
 		if !labelsMatch(h.Labels, req.Labels) {
+
 			continue
 		}
 		if !scorer.CanFit(snap, req) {
+
 			continue
 		}
+		score := scorer.Score(snap, req)
+
 		candidates = append(candidates, hostScore{
 			name:  h.Name,
-			score: scorer.Score(snap, req),
+			score: score,
 		})
 	}
 
 	if len(candidates) == 0 {
+
 		return PlacementDecision{
 			Requirement: req,
 			Score:       0,
@@ -79,6 +91,7 @@ func scheduleResourceAware(
 	})
 
 	best := candidates[0]
+
 	return PlacementDecision{
 		Requirement: req,
 		HostName:    best.name,
