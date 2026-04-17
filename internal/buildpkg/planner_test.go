@@ -111,7 +111,24 @@ func setupMultiHostPlanner() *Planner {
 		Labels:  map[string]string{},
 	})
 
-	return NewPlanner(hm)
+	// Caller-supplied component catalogue — HelixQA's Containers
+	// library no longer ships a hardcoded list, so every test must
+	// describe its own set.
+	return NewPlanner(hm, testComponents())
+}
+
+// testComponents returns a synthetic catalogue used only by this
+// test file. It intentionally avoids any project-specific name.
+func testComponents() []BuildComponent {
+	return []BuildComponent{
+		{Name: "svc-api", HasGo: true},
+		{Name: "svc-web", HasNPM: true},
+		{Name: "svc-client", HasNPM: true},
+		{Name: "svc-desktop", HasNPM: true, HasRust: true},
+		{Name: "svc-installer", HasNPM: true, HasRust: true},
+		{Name: "svc-android", HasNPM: true, HasJDK: true},
+		{Name: "svc-tv", HasNPM: true, HasJDK: true},
+	}
 }
 
 func TestPlanner_PlanAll(t *testing.T) {
@@ -141,19 +158,19 @@ func TestPlanner_PlanSingle(t *testing.T) {
 		DiskPercent:   40,
 	}
 
-	p := NewPlanner(hm)
+	p := NewPlanner(hm, testComponents())
 
-	plan, err := p.PlanSingle(context.Background(), "catalog-api")
+	plan, err := p.PlanSingle(context.Background(), "svc-api")
 	require.NoError(t, err)
 	require.NotNil(t, plan)
 
 	assert.Len(t, plan.Assignments, 1)
-	assert.Equal(t, "catalog-api", plan.Assignments[0].Component.Name)
+	assert.Equal(t, "svc-api", plan.Assignments[0].Component.Name)
 }
 
 func TestPlanner_PlanSingleUnknownComponent(t *testing.T) {
 	hm := newStubHostManager()
-	p := NewPlanner(hm)
+	p := NewPlanner(hm, testComponents())
 
 	_, err := p.PlanSingle(context.Background(), "nonexistent")
 	assert.Error(t, err)

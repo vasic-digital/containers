@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -15,6 +16,24 @@ import (
 	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/scheduler"
 )
+
+// loadComponents decodes the caller-supplied component catalogue so
+// the CLI carries no project-specific component list of its own. The
+// JSON file is an array of BuildComponent entries.
+func loadComponents(path string) ([]buildpkg.BuildComponent, error) {
+	if path == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read components %q: %w", path, err)
+	}
+	var out []buildpkg.BuildComponent
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, fmt.Errorf("parse components %q: %w", path, err)
+	}
+	return out, nil
+}
 
 // convertBuildEnvVars converts BUILD_* environment variables to
 // CONTAINERS_REMOTE_* equivalents for backward compatibility.
@@ -63,7 +82,7 @@ func convertBuildEnvVars() {
 }
 
 func main() {
-	projectDir := flag.String("project", ".", "Path to Catalogizer project root")
+	projectDir := flag.String("project", ".", "Path to the project root to build")
 	envFile := flag.String("env", ".env", "Path to .env file with host configuration")
 	component := flag.String("component", "", "Build single component (default: all)")
 	version := flag.String("version", "", "Version string (default: auto-detect)")
@@ -71,6 +90,11 @@ func main() {
 	dryRun := flag.Bool("dry-run", false, "Show plan without executing")
 	timeoutMin := flag.Int("timeout", 30, "Build timeout in minutes")
 	schedStrategy := flag.String("strategy", "resource_aware", "Scheduling strategy")
+	// --components is how every project describes its own build
+	// catalogue. The file is a JSON array of BuildComponent entries
+	// (name, HasGo, HasNPM, HasJDK, HasRust, BuilderImage). Required
+	// — the CLI carries no project-specific component defaults.
+	componentsFile := flag.String("components", "", "Path to JSON file listing the project's BuildComponents")
 	flag.Parse()
 
 	absProject, err := filepath.Abs(*projectDir)
@@ -78,7 +102,11 @@ func main() {
 		log.Fatalf("resolve project path: %v", err)
 	}
 
-	remoteDir := fmt.Sprintf("/tmp/catalogizer-build-%d", time.Now().UnixMilli())
+	// Remote scratch directory for this build. The path is a generic
+	// vasic-builds prefix so the library carries no project-specific
+	// directory naming — integrators who need a custom prefix can
+	// wrap this CLI.
+	remoteDir := fmt.Sprintf("/tmp/vasic-build-%d", time.Now().UnixMilli())
 
 	cfg, err := loadConfig(*envFile)
 	if err != nil {
@@ -109,7 +137,14 @@ func main() {
 	strategy := scheduler.PlacementStrategy(*schedStrategy)
 	sched := scheduler.NewScheduler(hostMgr, nil, scheduler.WithStrategy(strategy))
 
-	planner := buildpkg.NewPlannerWithScheduler(hostMgr, sched)
+	components, err := loadComponents(*componentsFile)
+	if err != nil {
+		log.Fatalf("load components: %v", err)
+	}
+	if len(components) == 0 {
+		log.Fatal("--components is required: supply a JSON file listing the project's build components")
+	}
+	planner := buildpkg.NewPlannerWithScheduler(hostMgr, sched, components)
 
 	ctx := context.Background()
 
