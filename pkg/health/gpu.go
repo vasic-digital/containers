@@ -34,7 +34,7 @@ func (c *GPUHealthCheck) Check(ctx context.Context) error {
 	}
 	free, err := c.probe.Probe(ctx)
 	if err != nil {
-		return fmt.Errorf("%w: probe: %v", ErrGPUUnhealthy, err)
+		return fmt.Errorf("%w: probe: %w", ErrGPUUnhealthy, err)
 	}
 	if free < c.minMB {
 		return fmt.Errorf("%w: free VRAM %d MB < %d MB",

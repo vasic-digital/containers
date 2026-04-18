@@ -34,4 +34,10 @@ func TestGPUHealthCheck_ProbeError(t *testing.T) {
 	c := NewGPUHealthCheck(&gpuProbe{err: errors.New("boom")}, 2048)
 	err := c.Check(context.Background())
 	require.Error(t, err)
+	require.True(t, errors.Is(err, ErrGPUUnhealthy))
+	// Ensure the upstream probe error is chained via %w and still reachable.
+	probeErr := errors.New("boom")
+	c2 := NewGPUHealthCheck(&gpuProbe{err: probeErr}, 2048)
+	err2 := c2.Check(context.Background())
+	require.True(t, errors.Is(err2, probeErr))
 }

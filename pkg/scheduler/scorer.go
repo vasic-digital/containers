@@ -256,8 +256,8 @@ func matchingGPUs(
 }
 
 func capabilitiesMatch(g remote.GPUDevice, req []string) bool {
-	for _, cap := range req {
-		switch cap {
+	for _, c := range req {
+		switch c {
 		case "cuda":
 			if !g.CUDASupported {
 				return false
