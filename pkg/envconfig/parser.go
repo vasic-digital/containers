@@ -48,10 +48,26 @@ func LoadFromEnv() *DistributionConfig {
 			Runtime:  envString(hostPrefix+"RUNTIME", ""),
 			Labels:   parseLabels(envString(hostPrefix+"LABELS", "")),
 		}
+		if v := os.Getenv(fmt.Sprintf(
+			"%sHOST_%d_GPU_AUTOPROBE", prefix, n,
+		)); v != "" {
+			if host.Labels == nil {
+				host.Labels = map[string]string{}
+			}
+			host.Labels["gpu_autoprobe"] = v
+		}
 		cfg.Hosts = append(cfg.Hosts, host)
 	}
 
 	return cfg
+}
+
+// Parse loads the distribution configuration from environment
+// variables. It is a convenience wrapper around LoadFromEnv that
+// returns a (config, error) pair so callers can use the standard
+// Go idiom: cfg, err := Parse().
+func Parse() (*DistributionConfig, error) {
+	return LoadFromEnv(), nil
 }
 
 // LoadFromFile loads configuration from a .env file, then
