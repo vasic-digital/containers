@@ -61,3 +61,8 @@ BootManager.BootAll(ctx) -> for each endpoint:
 ## Testing Strategy
 
 Unit tests with `testify` and race detection. Integration tests require a container runtime (Docker or Podman). Tests cover runtime auto-detection, health check retries, compose orchestration, event publishing, lifecycle management, scheduler strategy selection, and SSH tunnel creation.
+
+## GPU-Aware Scheduling
+
+See `docs/gpu-scheduling.md`. GPU support is fully additive: callers
+that ignore it get the exact pre-2026-04 behaviour.
