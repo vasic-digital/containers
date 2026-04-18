@@ -11,7 +11,7 @@ func TestDefaultOptions(t *testing.T) {
 	opts := DefaultOptions()
 
 	assert.Equal(t, 10*time.Second, opts.ConnectTimeout)
-	assert.Equal(t, 60*time.Second, opts.CommandTimeout)
+	assert.Equal(t, 300*time.Second, opts.CommandTimeout)
 	assert.Equal(t, 5, opts.MaxConnections)
 	assert.Equal(t, 30*time.Second, opts.KeepAlive)
 	assert.False(t, opts.StrictHostKeyCheck)
