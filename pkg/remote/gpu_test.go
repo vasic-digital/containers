@@ -18,7 +18,7 @@ func TestGPUDevice_FieldsAccessible(t *testing.T) {
 		VRAMFreeMB: 5800, UtilPercent: 3,
 		CUDASupported: true, CUDAVersion: "12.2",
 		ComputeCapability: "8.6",
-		NVENCSupported: true, NVDECSupported: true,
+		NVENCSupported:    true, NVDECSupported: true,
 		VulkanSupported: true, OpenCLSupported: true,
 		ROCmSupported: false, NVIDIARuntime: true,
 	}

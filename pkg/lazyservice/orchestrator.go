@@ -29,7 +29,7 @@ type ServiceDefinition struct {
 	// Dependencies are service names that must start before this one
 	Dependencies []string
 	// HealthCheck defines how to verify service health
-	HealthCheck *health.Check
+	HealthCheck *health.HealthTarget
 	// StartTimeout is the maximum time to wait for service startup
 	StartTimeout time.Duration
 	// StopTimeout is the maximum time to wait for service shutdown
@@ -55,10 +55,10 @@ type LazyOrchestrator struct {
 	started       map[string]bool
 	failed        map[string]error
 	workDir       string
-	// Registry of available container runtimes
-	runtimes map[runtime.RuntimeType]runtime.ContainerRuntime
-	// Preferred runtime order
-	runtimePreference []runtime.RuntimeType
+	// Registry of available container runtimes (keyed by runtime.Name()).
+	runtimes map[string]runtime.ContainerRuntime
+	// Preferred runtime order (by name: "podman", "docker", etc.)
+	runtimePreference []string
 }
 
 // Option configures the LazyOrchestrator.
@@ -87,7 +87,7 @@ func WithWorkDir(dir string) Option {
 // WithRuntime adds a container runtime to the registry.
 func WithRuntime(rt runtime.ContainerRuntime) Option {
 	return func(lo *LazyOrchestrator) {
-		lo.runtimes[rt.Type()] = rt
+		lo.runtimes[rt.Name()] = rt
 	}
 }
 
@@ -98,8 +98,8 @@ func NewLazyOrchestrator(opts ...Option) (*LazyOrchestrator, error) {
 		booters:           make(map[string]*lifecycle.LazyBooter),
 		started:           make(map[string]bool),
 		failed:            make(map[string]error),
-		runtimes:          make(map[runtime.RuntimeType]runtime.ContainerRuntime),
-		runtimePreference: []runtime.RuntimeType{runtime.Docker, runtime.Podman, runtime.Kubernetes},
+		runtimes:          make(map[string]runtime.ContainerRuntime),
+		runtimePreference: []string{"podman", "docker", "kubernetes"},
 		logger:            logging.NopLogger{},
 		workDir:           ".",
 	}
@@ -119,7 +119,7 @@ func NewLazyOrchestrator(opts ...Option) (*LazyOrchestrator, error) {
 
 	// Create default health checker if not provided
 	if lo.healthChecker == nil {
-		lo.healthChecker = health.NewDefaultChecker(lo.logger)
+		lo.healthChecker = health.NewDefaultChecker()
 	}
 
 	return lo, nil
@@ -336,7 +336,7 @@ func (lo *LazyOrchestrator) startServiceInternal(svc *ServiceDefinition) error {
 	defer cancel()
 
 	// Start the service
-	if err := lo.orchestrator.Up(ctx, project, compose.WithDetach(true), compose.WithWait(true)); err != nil {
+	if err := lo.orchestrator.Up(ctx, project, compose.WithUpDetach(true), compose.WithWait(true)); err != nil {
 		lo.mu.Lock()
 		lo.failed[svc.Name] = err
 		lo.mu.Unlock()
