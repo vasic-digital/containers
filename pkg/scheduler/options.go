@@ -20,6 +20,9 @@ type Options struct {
 	// ReservePercent is the percentage of host resources to
 	// reserve (not schedulable). Default 10%.
 	ReservePercent float64
+	// GPUWeight is the weight for GPU scoring (0.0-1.0).
+	// Default 0 = GPU score contributes nothing (backward-compatible).
+	GPUWeight float64
 }
 
 // DefaultSchedulerOptions returns sensible defaults.
