@@ -22,6 +22,9 @@ const (
 	// StrategyBinPack packs containers tightly onto as few hosts
 	// as possible.
 	StrategyBinPack PlacementStrategy = "bin_pack"
+	// StrategyGPUAffinity places GPU containers on hosts with a
+	// matching GPUDevice (vendor + VRAM + capabilities).
+	StrategyGPUAffinity PlacementStrategy = "gpu_affinity"
 )
 
 // ContainerRequirements describes what a container needs from
@@ -46,6 +49,8 @@ type ContainerRequirements struct {
 	ComposeFile string
 	// ServiceName is the service name within the compose file.
 	ServiceName string
+	// GPU is optional; nil = no GPU needed.
+	GPU *GPURequirement
 }
 
 // PlacementDecision records where a single container was placed.
