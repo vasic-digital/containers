@@ -72,4 +72,3 @@ func TestTunnelOverlay_Connect_And_Disconnect(t *testing.T) {
 	err = overlay.Disconnect(ctx, "missing-net", "c1")
 	assert.Error(t, err)
 }
-

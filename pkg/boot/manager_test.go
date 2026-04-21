@@ -519,10 +519,10 @@ func TestBootManager_BootAll_RemoteWithoutCompose(t *testing.T) {
 
 	endpoints := map[string]endpoint.ServiceEndpoint{
 		"remote": {
-			Host:     "remote.host",
-			Port:     "443",
-			Enabled:  true,
-			Remote:   true,
+			Host:    "remote.host",
+			Port:    "443",
+			Enabled: true,
+			Remote:  true,
 			// No ComposeFile - should still be marked as remote.
 		},
 	}

@@ -8,11 +8,11 @@ import (
 // IdleShutdown monitors a service for inactivity and triggers a
 // callback when the idle timeout elapses without any Touch calls.
 type IdleShutdown struct {
-	mu       sync.Mutex
-	timeout  time.Duration
-	onIdle   func()
-	timer    *time.Timer
-	stopped  bool
+	mu        sync.Mutex
+	timeout   time.Duration
+	onIdle    func()
+	timer     *time.Timer
+	stopped   bool
 	lastTouch time.Time
 }
 

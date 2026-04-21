@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"digital.vasic.containers/pkg/compose"
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/remote"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockComposeOrch struct{}

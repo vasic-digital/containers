@@ -75,11 +75,11 @@ func AutoDetect(ctx context.Context) (ContainerRuntime, error) {
 // If a runtime is not in the priority list, it's tried last.
 func AutoDetectWithPriority(ctx context.Context, priority []string) (ContainerRuntime, error) {
 	runtimes := defaultRuntimeFactory()
-	
+
 	// Reorder runtimes based on priority
 	ordered := make([]ContainerRuntime, 0, len(runtimes))
 	seen := make(map[string]bool)
-	
+
 	for _, name := range priority {
 		for _, rt := range runtimes {
 			if !seen[rt.Name()] && rt.Name() == name {
@@ -88,7 +88,7 @@ func AutoDetectWithPriority(ctx context.Context, priority []string) (ContainerRu
 			}
 		}
 	}
-	
+
 	// Add remaining runtimes
 	for _, rt := range runtimes {
 		if !seen[rt.Name()] {
@@ -96,7 +96,7 @@ func AutoDetectWithPriority(ctx context.Context, priority []string) (ContainerRu
 			seen[rt.Name()] = true
 		}
 	}
-	
+
 	return autoDetectWith(ctx, ordered)
 }
 
@@ -109,11 +109,11 @@ func DetectAll(ctx context.Context) []ContainerRuntime {
 // The first runtime in the result is the highest priority available.
 func DetectByPriority(ctx context.Context, priority []string) []ContainerRuntime {
 	runtimes := defaultRuntimeFactory()
-	
+
 	// Reorder based on priority
 	ordered := make([]ContainerRuntime, 0, len(runtimes))
 	seen := make(map[string]bool)
-	
+
 	for _, name := range priority {
 		for _, rt := range runtimes {
 			if !seen[rt.Name()] && rt.Name() == name && rt.IsAvailable(ctx) {
@@ -122,14 +122,14 @@ func DetectByPriority(ctx context.Context, priority []string) []ContainerRuntime
 			}
 		}
 	}
-	
+
 	// Add remaining available runtimes
 	for _, rt := range runtimes {
 		if !seen[rt.Name()] && rt.IsAvailable(ctx) {
 			ordered = append(ordered, rt)
 		}
 	}
-	
+
 	return ordered
 }
 

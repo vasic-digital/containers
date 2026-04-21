@@ -3,8 +3,8 @@ package distribution
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"digital.vasic.containers/pkg/logging"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestApplyOptions_Defaults(t *testing.T) {

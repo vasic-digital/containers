@@ -13,32 +13,32 @@ type ContainerProcess struct {
 	Runtime  string `json:"runtime"`
 	Host     string `json:"host"`
 	Location string `json:"location"` // "local" or "remote:<hostname>"
-	
+
 	// State
 	State     string    `json:"state"`
 	Status    string    `json:"status"`
 	Created   time.Time `json:"created"`
 	StartedAt time.Time `json:"started_at"`
 	Uptime    string    `json:"uptime"`
-	
+
 	// Resource Usage
 	CPUPercent    float64 `json:"cpu_percent"`
 	MemoryUsage   uint64  `json:"memory_usage"`
 	MemoryLimit   uint64  `json:"memory_limit"`
 	MemoryPercent float64 `json:"memory_percent"`
-	
+
 	// I/O
-	NetworkRx       uint64 `json:"network_rx"`
-	NetworkTx       uint64 `json:"network_tx"`
-	BlockRead       uint64 `json:"block_read"`
-	BlockWrite      uint64 `json:"block_write"`
-	
+	NetworkRx  uint64 `json:"network_rx"`
+	NetworkTx  uint64 `json:"network_tx"`
+	BlockRead  uint64 `json:"block_read"`
+	BlockWrite uint64 `json:"block_write"`
+
 	// Process Count
 	PIDs int `json:"pids"`
-	
+
 	// Labels
 	Labels map[string]string `json:"labels"`
-	
+
 	// Ports
 	Ports []string `json:"ports"`
 }
@@ -101,16 +101,16 @@ func DefaultDisplayConfig() DisplayConfig {
 
 // SystemInfo holds system-wide resource information
 type SystemInfo struct {
-	Hostname      string    `json:"hostname"`
-	OSType        string    `json:"os_type"`
-	TotalCPU      int       `json:"total_cpu"`
-	TotalMemory   uint64    `json:"total_memory"`
-	UsedCPU       float64   `json:"used_cpu"`
-	UsedMemory    uint64    `json:"used_memory"`
-	TotalLoad     string    `json:"total_load"`   // e.g., "0.5, 0.8, 1.2"
-	Uptime        string    `json:"uptime"`
-	ContainerCount int      `json:"container_count"`
-	Timestamp     time.Time `json:"timestamp"`
+	Hostname       string    `json:"hostname"`
+	OSType         string    `json:"os_type"`
+	TotalCPU       int       `json:"total_cpu"`
+	TotalMemory    uint64    `json:"total_memory"`
+	UsedCPU        float64   `json:"used_cpu"`
+	UsedMemory     uint64    `json:"used_memory"`
+	TotalLoad      string    `json:"total_load"` // e.g., "0.5, 0.8, 1.2"
+	Uptime         string    `json:"uptime"`
+	ContainerCount int       `json:"container_count"`
+	Timestamp      time.Time `json:"timestamp"`
 }
 
 // HostSummary summarizes containers per host
@@ -128,11 +128,11 @@ type HostSummary struct {
 
 // CollectorStats holds collector statistics
 type CollectorStats struct {
-	TotalContainers int           `json:"total_containers"`
-	LocalContainers int           `json:"local_containers"`
-	RemoteContainers int          `json:"remote_containers"`
-	HostCount       int           `json:"host_count"`
-	LastUpdate      time.Time     `json:"last_update"`
-	UpdateDuration  time.Duration `json:"update_duration"`
-	Errors          int           `json:"errors"`
+	TotalContainers  int           `json:"total_containers"`
+	LocalContainers  int           `json:"local_containers"`
+	RemoteContainers int           `json:"remote_containers"`
+	HostCount        int           `json:"host_count"`
+	LastUpdate       time.Time     `json:"last_update"`
+	UpdateDuration   time.Duration `json:"update_duration"`
+	Errors           int           `json:"errors"`
 }

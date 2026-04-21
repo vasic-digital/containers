@@ -189,7 +189,7 @@ func TestContainerCollector_CollectAll(t *testing.T) {
 			},
 		},
 		{
-			name: "empty container list",
+			name:        "empty container list",
 			containers:  []runtime.ContainerInfo{},
 			stats:       make(map[string]*runtime.ContainerStats),
 			statsErr:    make(map[string]error),

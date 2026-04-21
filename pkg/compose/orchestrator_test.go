@@ -1463,9 +1463,9 @@ type mockCmd struct {
 	waitErr       error
 }
 
-func (c *mockCmd) SetDir(_ string)  {}
-func (c *mockCmd) Start() error     { return c.startErr }
-func (c *mockCmd) Wait() error      { return c.waitErr }
+func (c *mockCmd) SetDir(_ string) {}
+func (c *mockCmd) Start() error    { return c.startErr }
+func (c *mockCmd) Wait() error     { return c.waitErr }
 func (c *mockCmd) StdoutPipe() (io.ReadCloser, error) {
 	if c.stdoutPipeErr != nil {
 		return nil, c.stdoutPipeErr

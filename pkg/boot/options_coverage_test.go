@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"digital.vasic.containers/pkg/remote"
 	"digital.vasic.containers/pkg/scheduler"
+	"github.com/stretchr/testify/assert"
 )
 
 // mockDistributor implements the boot.Distributor interface.
@@ -19,10 +19,10 @@ func (m *mockDistributor) DistributeEndpoints(ctx context.Context, names []strin
 // mockHostManagerForBoot implements remote.HostManager with all required methods.
 type mockHostManagerForBoot struct{}
 
-func (m *mockHostManagerForBoot) AddHost(host remote.RemoteHost) error          { return nil }
-func (m *mockHostManagerForBoot) RemoveHost(name string) error                   { return nil }
+func (m *mockHostManagerForBoot) AddHost(host remote.RemoteHost) error            { return nil }
+func (m *mockHostManagerForBoot) RemoveHost(name string) error                    { return nil }
 func (m *mockHostManagerForBoot) GetHost(name string) (*remote.RemoteHost, error) { return nil, nil }
-func (m *mockHostManagerForBoot) ListHosts() []remote.RemoteHost                 { return nil }
+func (m *mockHostManagerForBoot) ListHosts() []remote.RemoteHost                  { return nil }
 func (m *mockHostManagerForBoot) ProbeHost(ctx context.Context, name string) (*remote.HostResources, error) {
 	return nil, nil
 }

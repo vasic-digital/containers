@@ -127,7 +127,7 @@ func (m *moreTestHostMgr) ListHosts() []remote.RemoteHost {
 // moreComposeOrch is a minimal ComposeOrchestrator satisfying the local
 // orchestrator.ComposeOrchestrator interface (Up and Down without variadic).
 type moreComposeOrch struct {
-	downErr error
+	downErr    error
 	downCalled bool
 }
 

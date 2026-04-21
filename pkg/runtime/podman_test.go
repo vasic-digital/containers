@@ -20,12 +20,12 @@ func TestPodmanRuntime_Name(t *testing.T) {
 
 func TestPodmanRuntime_Version(t *testing.T) {
 	tests := []struct {
-		name       string
-		callCount  int
-		outputs    []string
-		errors     []error
-		want       string
-		wantErr    bool
+		name      string
+		callCount int
+		outputs   []string
+		errors    []error
+		want      string
+		wantErr   bool
 	}{
 		{
 			name:      "server version success",

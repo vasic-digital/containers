@@ -99,7 +99,7 @@ func (l *LXDRuntime) Status(ctx context.Context, id string) (*ContainerStatus, e
 
 type lxdContainerJSON struct {
 	Name         string                 `json:"name"`
-	Description string                 `json:"description"`
+	Description  string                 `json:"description"`
 	Status       string                 `json:"status"`
 	StatusCode   int                    `json:"status_code"`
 	Architecture string                 `json:"architecture"`
