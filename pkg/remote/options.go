@@ -34,7 +34,14 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		ConnectTimeout:       10 * time.Second,
-		CommandTimeout:       300 * time.Second, // 5 minutes for large file transfers
+		// 30 minutes tolerates multi-GB image pulls and multi-layer
+		// builds during `compose up`. SSH keep-alive (KeepAlive *
+		// KeepAliveCountMax) detects genuinely dead connections
+		// much sooner; this cap is the backstop for remote commands
+		// that simply take a long time to complete. The previous
+		// 300s / 5-minute default was too aggressive for cold-cache
+		// hosts building Dockerfiles from scratch.
+		CommandTimeout: 1800 * time.Second,
 		MaxConnections:       5,
 		KeepAlive:            30 * time.Second,
 		KeepAliveCountMax:    10,

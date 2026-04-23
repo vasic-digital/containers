@@ -243,7 +243,11 @@ func TestLoadFromEnv_SSHOptionDefaults(t *testing.T) {
 	cfg := LoadFromEnv()
 
 	assert.Equal(t, 10, cfg.ConnectTimeout)
-	assert.Equal(t, 120, cfg.CommandTimeout)
+	// 1800 (30 min) default — large enough for `compose up` with
+	// image builds on cold-cache remote hosts. See parser.go for
+	// the rationale; SSH keep-alive (30s * 10) is the real
+	// dead-connection detector.
+	assert.Equal(t, 1800, cfg.CommandTimeout)
 	assert.True(t, cfg.ControlMasterEnabled)
 	assert.Equal(t, 300, cfg.ControlPersist)
 	assert.Equal(t, 10, cfg.MaxConnections)

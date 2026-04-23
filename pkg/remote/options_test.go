@@ -11,9 +11,17 @@ func TestDefaultOptions(t *testing.T) {
 	opts := DefaultOptions()
 
 	assert.Equal(t, 10*time.Second, opts.ConnectTimeout)
-	assert.Equal(t, 300*time.Second, opts.CommandTimeout)
+	// CommandTimeout must be large enough for `compose up` on a
+	// cold-cache remote host that has to build images from
+	// scratch. The previous 300s default routinely killed such
+	// deploys at the 5-minute mark. SSH keep-alive catches dead
+	// connections sooner; this cap is only the hard backstop.
+	assert.Equal(t, 1800*time.Second, opts.CommandTimeout)
 	assert.Equal(t, 5, opts.MaxConnections)
 	assert.Equal(t, 30*time.Second, opts.KeepAlive)
+	assert.Equal(t, 10, opts.KeepAliveCountMax,
+		"CountMax combined with KeepAlive yields 5-min silence "+
+			"tolerance before SSH drops the session")
 	assert.False(t, opts.StrictHostKeyCheck)
 	assert.True(t, opts.ControlMasterEnabled)
 	assert.Equal(t, "/tmp/containers-ssh-ctrl", opts.ControlSocketDir)
