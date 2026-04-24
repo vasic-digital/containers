@@ -10,15 +10,21 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ### Acceptance demo for this module
 
-<!-- TODO: replace this block with the exact command(s) that exercise this
-     module end-to-end against real dependencies, and the expected output.
-     The commands must run the real artifact (built binary, deployed
-     container, real service) — no in-process fakes, no mocks, no
-     `httptest.NewServer`, no Robolectric, no JSDOM as proof of done. -->
-
 ```bash
-# TODO
+# Real orchestration flow (Hard Stop #2 canonical demo)
+# Builds HelixAgent and boots every container declared in Containers/.env.
+cd /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+make build
+GOMAXPROCS=2 nice -n 19 ./bin/helixagent &
+HELIXAGENT_PID=$!
+sleep 20
+# All registered service health checks must pass:
+curl -fsS http://localhost:8100/v1/health | jq -e '.status == "healthy"'
+curl -fsS http://localhost:8100/v1/monitoring/status | jq -e '.services | all(.status == "healthy")'
+kill $HELIXAGENT_PID
 ```
+Expect: both `jq -e` exits 0; the binary's boot log shows each service from `Containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
+
 
 ## MANDATORY: Project-Agnostic / 100% Decoupled
 
