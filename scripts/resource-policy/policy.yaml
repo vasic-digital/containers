@@ -1,0 +1,279 @@
+# Resource policy — single source of truth for container memory/pid caps.
+#
+# How matching works: each pattern below is checked against the service name
+# (NOT image name) using glob-style matching with the leftmost (most specific)
+# pattern winning. Service names are normalised to lowercase first.
+#
+# Caps:
+#   mem        — hard memory cap (`mem_limit` in compose)
+#   memswap    — hard memory+swap cap (`memswap_limit`); equals `mem` to avoid
+#                masking real growth via swap. Override only when justified.
+#   pids       — `pids_limit`; baseline 1024 unless service is browser/CI heavy
+#   oom_adj    — `oom_score_adj`; positive value makes the container a preferred
+#                OOM-killer victim, protecting the user manager. Default 500.
+#
+# Total host budget assumption: 62 GiB RAM + 16 GiB swap. We aim to leave
+# >=12 GiB for kernel + GUI + AI agents. Heavy stacks should not all be
+# enabled simultaneously.
+
+defaults:
+  mem: "2g"
+  memswap: "2g"
+  pids: 1024
+  oom_adj: 500
+
+# Order matters: first match wins. Use most-specific patterns at the top.
+patterns:
+
+  # -- LLM inference (heaviest) --
+  - match: "ollama*"
+    mem: "12g"
+    memswap: "12g"
+    pids: 2048
+    notes: "LLM weights live in RAM."
+  - match: "*tensorrt*"
+    mem: "12g"
+    memswap: "12g"
+    pids: 2048
+  - match: "*triton*"
+    mem: "12g"
+    memswap: "12g"
+    pids: 2048
+  - match: "vllm*"
+    mem: "12g"
+    memswap: "12g"
+    pids: 2048
+  - match: "*-llm-*"
+    mem: "8g"
+    memswap: "8g"
+
+  # -- Browser-based MCP servers --
+  - match: "mcp-puppeteer*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 4096
+    notes: "Headless Chromium needs RAM and many threads."
+  - match: "mcp-playwright*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 4096
+  - match: "mcp-browserbase*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 4096
+  - match: "mcp-firecrawl*"
+    mem: "2g"
+    memswap: "2g"
+    pids: 2048
+
+  # -- Image/ML MCP servers --
+  - match: "mcp-stable-diffusion*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "mcp-imagesorcery*"
+    mem: "3g"
+    memswap: "3g"
+  - match: "mcp-vision*"
+    mem: "3g"
+    memswap: "3g"
+
+  # -- Generic MCP servers (most are thin Node/Python wrappers) --
+  - match: "mcp-*"
+    mem: "1g"
+    memswap: "1g"
+    pids: 1024
+
+  # -- Search engines (JVM heap eaters) --
+  - match: "elasticsearch*"
+    mem: "6g"
+    memswap: "6g"
+    pids: 2048
+    notes: "JVM with 4G heap + 2G overhead."
+  - match: "opensearch*"
+    mem: "6g"
+    memswap: "6g"
+    pids: 2048
+  - match: "logstash*"
+    mem: "3g"
+    memswap: "3g"
+  - match: "kibana*"
+    mem: "2g"
+    memswap: "2g"
+
+  # -- SonarQube (JVM, big) --
+  - match: "sonarqube*"
+    mem: "8g"
+    memswap: "8g"
+    pids: 2048
+
+  # -- Vector databases --
+  - match: "qdrant*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "weaviate*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "chroma*"
+    mem: "3g"
+    memswap: "3g"
+  - match: "milvus*"
+    mem: "6g"
+    memswap: "6g"
+  - match: "vespa*"
+    mem: "6g"
+    memswap: "6g"
+
+  # -- SQL databases --
+  - match: "postgres*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "*-postgres"
+    mem: "4g"
+    memswap: "4g"
+  - match: "mysql*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "mariadb*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "mongodb*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "mongo*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "clickhouse*"
+    mem: "8g"
+    memswap: "8g"
+  - match: "cassandra*"
+    mem: "6g"
+    memswap: "6g"
+  - match: "neo4j*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+
+  # -- Caches --
+  - match: "redis*"
+    mem: "1g"
+    memswap: "1g"
+  - match: "memcached*"
+    mem: "1g"
+    memswap: "1g"
+  - match: "valkey*"
+    mem: "1g"
+    memswap: "1g"
+
+  # -- Messaging --
+  - match: "kafka*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 2048
+  - match: "rabbitmq*"
+    mem: "2g"
+    memswap: "2g"
+  - match: "nats*"
+    mem: "1g"
+    memswap: "1g"
+  - match: "pulsar*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "zookeeper*"
+    mem: "1g"
+    memswap: "1g"
+
+  # -- Object storage --
+  - match: "minio*"
+    mem: "4g"
+    memswap: "4g"
+  - match: "*-minio"
+    mem: "4g"
+    memswap: "4g"
+
+  # -- Observability stack --
+  - match: "prometheus*"
+    mem: "2g"
+    memswap: "2g"
+  - match: "grafana*"
+    mem: "1g"
+    memswap: "1g"
+  - match: "loki*"
+    mem: "2g"
+    memswap: "2g"
+  - match: "tempo*"
+    mem: "2g"
+    memswap: "2g"
+  - match: "jaeger*"
+    mem: "1g"
+    memswap: "1g"
+  - match: "alertmanager*"
+    mem: "512m"
+    memswap: "512m"
+  - match: "node-exporter*"
+    mem: "256m"
+    memswap: "256m"
+  - match: "cadvisor*"
+    mem: "512m"
+    memswap: "512m"
+  - match: "otel-collector*"
+    mem: "1g"
+    memswap: "1g"
+
+  # -- Reverse proxies / gateways --
+  - match: "nginx*"
+    mem: "512m"
+    memswap: "512m"
+  - match: "traefik*"
+    mem: "512m"
+    memswap: "512m"
+  - match: "caddy*"
+    mem: "512m"
+    memswap: "512m"
+  - match: "envoy*"
+    mem: "1g"
+    memswap: "1g"
+
+  # -- Application servers (Helix family) --
+  - match: "helixagent*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+  - match: "helixllm*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+  - match: "helixqa*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+  - match: "helixmemory*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+  - match: "helix*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 2048
+
+  # -- LLM verifier --
+  - match: "llm-verifier*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 2048
+  - match: "verifier*"
+    mem: "3g"
+    memswap: "3g"
+
+  # -- Build / CI containers (one-shot, can need more pids) --
+  - match: "*-builder*"
+    mem: "4g"
+    memswap: "4g"
+    pids: 4096
+  - match: "*-ci-*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 4096
+  - match: "*-test*"
+    mem: "3g"
+    memswap: "3g"
+    pids: 2048

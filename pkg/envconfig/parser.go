@@ -23,7 +23,14 @@ func LoadFromEnv() *DistributionConfig {
 		PortRangeEnd:         envInt(prefix+"PORT_RANGE_END", 30000),
 		VolumeType:           envString(prefix+"VOLUME_TYPE", "sshfs"),
 		ConnectTimeout:       envInt(prefix+"CONNECT_TIMEOUT", 10),
-		CommandTimeout:       envInt(prefix+"COMMAND_TIMEOUT", 120),
+		// 30 minutes — large enough for image-build `compose up`
+		// operations (multi-GB pulls + multi-minute layer builds)
+		// without relying on operators to tune this manually.
+		// SSH keep-alive (30s * 10 = 5 min silence tolerance) is
+		// the REAL detector of dead connections; this cap catches
+		// genuinely hung remote commands. Pre-fix default of 120s
+		// routinely killed compose builds on cold hosts.
+		CommandTimeout: envInt(prefix+"COMMAND_TIMEOUT", 1800),
 		ControlMasterEnabled: envBool(prefix+"SSH_CONTROL_MASTER", true),
 		ControlPersist:       envInt(prefix+"SSH_CONTROL_PERSIST", 300),
 		MaxConnections:       envInt(prefix+"SSH_MAX_CONNECTIONS", 10),

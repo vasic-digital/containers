@@ -1,5 +1,31 @@
 # CLAUDE.md - Containers Module
 
+
+## Definition of Done
+
+This module inherits HelixAgent's universal Definition of Done — see the root
+`CLAUDE.md` and `docs/development/definition-of-done.md`. In one line: **no
+task is done without pasted output from a real run of the real system in the
+same session as the change.** Coverage and green suites are not evidence.
+
+### Acceptance demo for this module
+
+```bash
+# Real orchestration flow (Hard Stop #2 canonical demo)
+# Builds HelixAgent and boots every container declared in Containers/.env.
+cd /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+make build
+GOMAXPROCS=2 nice -n 19 ./bin/helixagent &
+HELIXAGENT_PID=$!
+sleep 20
+# All registered service health checks must pass:
+curl -fsS http://localhost:8100/v1/health | jq -e '.status == "healthy"'
+curl -fsS http://localhost:8100/v1/monitoring/status | jq -e '.services | all(.status == "healthy")'
+kill $HELIXAGENT_PID
+```
+Expect: both `jq -e` exits 0; the binary's boot log shows each service from `Containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
+
+
 ## MANDATORY: Project-Agnostic / 100% Decoupled
 
 **This module is part of HelixQA's dependency graph and MUST remain 100% decoupled from any consuming project. It is designed for generic use with ANY project, not just ATMOSphere.**
@@ -98,48 +124,108 @@ go test -bench=. ./tests/benchmark/
 - **Proxy**: RemoteRuntime routes ContainerRuntime calls via SSH
 - **Facade**: Distributor composes scheduler + remote + network + volume
 
+## Composition: how the pieces combine
+
+The adapter layer that HelixAgent uses (`internal/adapters/containers/adapter.go`) wires the module together as follows:
+
+```
+HelixAgent BootManager → Adapter.BootAll(endpoints)
+         │
+         ├── ContainerRuntime  (auto-detected: Docker / Podman / containerd)
+         ├── ComposeOrchestrator  (compose file parse + up/down, local or remote)
+         └── HealthChecker  (TCP / HTTP / gRPC, with retry)
+                 │
+                 ▼ (if CONTAINERS_REMOTE_ENABLED=true)
+         DefaultDistributor
+             │
+             ├── Scheduler  (chooses host per container: resource_aware default)
+             ├── RemoteRuntime = proxy(ContainerRuntime) over SSHExecutor
+             ├── TunnelManager  (SSH port forwarding for cross-host networking)
+             └── VolumeManager  (SSHFS / NFS / rsync)
+```
+
+Distributor receives a batch of container requirements, asks Scheduler which host each should land on (local or a named remote), then either calls the local runtime directly or wraps it in RemoteRuntime for SSH execution.
+
+## Mandatory Container Orchestration Flow (inline)
+
+This is what the root HelixAgent `CLAUDE.md` Hard Stop #2 refers to. The flow is:
+
+1. **Build:** `make build` → `./bin/helixagent`.
+2. **Env load:** HelixAgent reads `Containers/.env` via `envconfig.LoadFromFile()`:
+   - `CONTAINERS_REMOTE_ENABLED` (bool)
+   - `CONTAINERS_REMOTE_HOST_N_*` (N = 1..100; loader stops at the first absent `_NAME`)
+   - SSH pool, timeouts, scheduler strategy
+3. **Adapter init** (`internal/adapters/containers/adapter.go`, `NewAdapterFromConfig`):
+   - `runtime.AutoDetect()` picks the local container runtime.
+   - If remote enabled: build `SSHExecutor` with ControlMaster pooling; create `HostManager`; register all remote hosts; create `Scheduler` (default strategy: `resource_aware`); construct `DefaultDistributor`.
+4. **Service boot** (`BootManager.BootAll`):
+   - Register endpoints (name, compose file, health check, remote flag).
+   - For each endpoint with a compose file: `Adapter.ComposeUp()` → local compose or remote compose-via-SSH.
+   - Remote compose: SCP compose file + build contexts to host, `docker compose -f <file> up -d`.
+   - Health checker probes each service (TCP / HTTP). Required services failing = boot failure.
+5. **Container distribution** (optional, on explicit request):
+   - Caller supplies `[]ContainerRequirements` (name, image, CPU / mem / GPU, labels).
+   - `Distributor.Distribute()` → `Scheduler.ScheduleBatch()` → probes hosts → assigns each container to the best host.
+   - For each container: SSH `docker run -d` on assigned host, create tunnels, mount volumes.
+   - Returns `DistributionSummary` (local count, remote count, failures).
+6. **Health & monitoring (continuous):** periodic `HealthChecker.CheckAll()` + `HostManager.ProbeAll()` for re-balancing inputs.
+7. **Shutdown:** `Adapter.Shutdown()` → `Distributor.Undistribute()` → close SSH tunnels, unmount volumes, `ComposeDown()` on each compose file.
+
+**The correct workflow is `make build → ./bin/helixagent`.** Never run `docker compose up` / `podman-compose up` / `make test-infra-start` manually — they bypass this flow and produce the "works on my machine" class of incident that CONST-030 exists to prevent.
+
 ## Remote Distribution
 
-The module supports distributing containers across local and remote hosts via SSH. See `docs/REMOTE_DISTRIBUTION.md` for the full guide.
+**Env-var registration** (`pkg/envconfig/parser.go`): `CONTAINERS_REMOTE_HOST_N_*` entries, N = 1..100. The loader iterates until a missing `_NAME` is hit.
 
-- **SSH ControlMaster pooling** for efficient remote command execution
-- **5 scheduling strategies**: resource_aware, round_robin, affinity, spread, bin_pack
-- **SSH tunnel management** for cross-host networking (local/remote forwarding)
-- **Volume sharing** via SSHFS, NFS, or rsync
-- **Automatic failover** when remote hosts go offline
-- **Environment configuration** via `.env` files or `CONTAINERS_REMOTE_*` env vars
+```
+CONTAINERS_REMOTE_HOST_1_NAME=gpu-server-1
+CONTAINERS_REMOTE_HOST_1_ADDRESS=192.168.1.100
+CONTAINERS_REMOTE_HOST_1_PORT=22
+CONTAINERS_REMOTE_HOST_1_USER=deploy
+CONTAINERS_REMOTE_HOST_1_KEY=~/.ssh/id_rsa
+CONTAINERS_REMOTE_HOST_1_RUNTIME=docker
+CONTAINERS_REMOTE_HOST_1_LABELS=gpu=true,arch=amd64
+```
+
+Adding a host = append six env vars. No code change, N scales freely (this is CONST-031).
+
+**Deployment loop** (`pkg/distribution/distributor.go`): for each placement decision, if `local` → `LocalRuntime.Start(image)`; else → SSH `docker rm -f <name> 2>/dev/null || true` then `docker run -d --name <name> <image>`, then `TunnelManager.CreateTunnel()`, then `VolumeManager.Mount()`, then remote health check.
+
+**SSH ControlMaster pooling** (`pkg/remote/connection_pool.go`): one socket per `(user@host:port)` in `/tmp/containers-ssh-ctrl/`. `Acquire()` creates the socket if missing and bumps a ref count; `Release()` decrements. Socket persists for `ControlPersist` (default 5 min) after ref count hits zero — massive latency reduction for rapid successive calls.
+
+**Scheduler strategies** (`pkg/scheduler/strategies.go`): `resource_aware` (default), `round_robin`, `affinity`, `spread`, `bin_pack`.
+
+## Gotchas
+
+1. **ControlMaster socket semantics:** the socket can outlive the last Release() by `ControlPersist`. If the network blips during that window, queued commands can hit a dead socket. Always `IsReachable()`-probe before assuming a host is live.
+2. **CommandTimeout vs. KeepAlive:** `CONTAINERS_REMOTE_COMMAND_TIMEOUT` (default 1800s) bounds the outer SSH command. `ServerAliveInterval`×`ServerAliveCountMax` = 30s × 10 = 5 min heartbeat tolerance. Never set `CommandTimeout` < `KeepAliveTotal`, or long compose builds with multi-GB image pulls will appear to hang and then die.
+3. **Context cancellation in `ScheduleBatch`:** host probes run synchronously. If ctx cancels mid-probe, Scheduler uses whatever snapshots it has — placements may be suboptimal rather than failing. Use a realistic deadline.
+4. **Build-context skip:** `RemoteComposeUp` SCPs build contexts to the remote host *except* when the context path matches the project root (via `filepath.Clean` comparison). `build: { context: . }` pointing at the HelixAgent root is silently skipped so the whole 27 GB tree isn't shipped. This is intentional.
+5. **Volume timing:** VolumeManager mounts volumes *after* container start. If a container needs the volume at bind-mount time (read-only config at entrypoint), it fails. Use retrying health checks or init containers that wait for the mount.
+6. **No auto-failover:** a failed container is not moved to a backup host automatically. `Distribute()` is not idempotent; `Undistribute()` is. Call `Rebalance()` or the `Undistribute → Distribute` pair to retry.
+
+## Key files a developer touches
+
+- `pkg/distribution/distributor.go` — placement + deployment orchestration.
+- `pkg/scheduler/scheduler.go` + `strategies.go` — scheduling logic; add new strategies here.
+- `pkg/remote/ssh_executor.go` — SSH execution, timeouts, streaming output.
+- `pkg/remote/host_manager.go` — host registry; add host auto-discovery / state callbacks here.
+- `pkg/envconfig/parser.go` — env-var loader; add new `CONTAINERS_REMOTE_*` variables here.
+- `pkg/orchestrator/orchestrator.go` — multi-service boot ordering, rollback.
+- HelixAgent side: `internal/adapters/containers/adapter.go` — the single integration point.
+
+## Integration Seams
+
+- **Upstream:** none (this module is foundational).
+- **Downstream (sibling modules):** `Challenges`, `HelixLLM`, `HelixQA`.
+- **HelixAgent consumers:** `internal/adapters/containers/adapter.go`, `internal/services/boot_manager.go`.
+- **Hard external dependencies:** SSH client binaries, a container runtime on the local machine (Docker/Podman/etc.), SSH server + container runtime on each configured remote host, SSH network reachability.
 
 ## Commit Style
 
 Conventional Commits: `feat(runtime): add Kubernetes support`
 
 
-## ⚠️ MANDATORY: NO SUDO OR ROOT EXECUTION
+(Inherited from root `CLAUDE.md`: no-sudo / rootless-only rule applies to all modules; see root for rationale. This module exists specifically to provide the rootless-container primitives that make the rule workable — use it instead of sudo.)
 
-**ALL operations MUST run at local user level ONLY.**
-
-This is a PERMANENT and NON-NEGOTIABLE security constraint:
-
-- **NEVER** use `sudo` in ANY command
-- **NEVER** execute operations as `root` user
-- **NEVER** elevate privileges for file operations
-- **ALL** infrastructure commands MUST use user-level container runtimes (rootless podman/docker)
-- **ALL** file operations MUST be within user-accessible directories
-- **ALL** service management MUST be done via user systemd or local process management
-- **ALL** builds, tests, and deployments MUST run as the current user
-
-### Why This Matters
-- **Security**: Prevents accidental system-wide damage
-- **Reproducibility**: User-level operations are portable across systems
-- **Safety**: Limits blast radius of any issues
-- **Best Practice**: Modern container workflows are rootless by design
-
-### When You See SUDO
-If any script or command suggests using `sudo`:
-1. STOP immediately
-2. Find a user-level alternative
-3. Use rootless container runtimes
-4. Modify commands to work within user permissions
-
-**VIOLATION OF THIS CONSTRAINT IS STRICTLY PROHIBITED.**
 
