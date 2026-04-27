@@ -242,8 +242,26 @@ func (e *SSHExecutor) sshArgs(
 			int(e.opts.ConnectTimeout.Seconds()),
 		),
 		"-o", "BatchMode=yes",
-		"-p", strconv.Itoa(host.SSHPort()),
 	}
+
+	// Keep-alive probes: send every KeepAlive seconds; drop the
+	// session after KeepAliveCountMax missed probes. This keeps
+	// the TCP channel alive during long-running remote operations
+	// (e.g. multi-minute image builds over compose up).
+	if e.opts.KeepAlive > 0 && e.opts.KeepAliveCountMax > 0 {
+		args = append(args,
+			"-o", fmt.Sprintf(
+				"ServerAliveInterval=%d",
+				int(e.opts.KeepAlive.Seconds()),
+			),
+			"-o", fmt.Sprintf(
+				"ServerAliveCountMax=%d",
+				e.opts.KeepAliveCountMax,
+			),
+		)
+	}
+
+	args = append(args, "-p", strconv.Itoa(host.SSHPort()))
 
 	if e.pool != nil && e.opts.ControlMasterEnabled {
 		socketPath, err := e.pool.Acquire(ctx, host)
@@ -277,8 +295,24 @@ func (e *SSHExecutor) scpArgs(host RemoteHost) []string {
 			int(e.opts.ConnectTimeout.Seconds()),
 		),
 		"-o", "BatchMode=yes",
-		"-P", strconv.Itoa(host.SSHPort()),
 	}
+
+	// Keep scp transfers alive across network blips (same
+	// rationale as sshArgs).
+	if e.opts.KeepAlive > 0 && e.opts.KeepAliveCountMax > 0 {
+		args = append(args,
+			"-o", fmt.Sprintf(
+				"ServerAliveInterval=%d",
+				int(e.opts.KeepAlive.Seconds()),
+			),
+			"-o", fmt.Sprintf(
+				"ServerAliveCountMax=%d",
+				e.opts.KeepAliveCountMax,
+			),
+		)
+	}
+
+	args = append(args, "-P", strconv.Itoa(host.SSHPort()))
 
 	if host.KeyPath != "" {
 		args = append(args, "-i", host.KeyPath)

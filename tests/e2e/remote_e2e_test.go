@@ -20,12 +20,12 @@ import (
 // skip logic itself.
 func TestRemoteHost_SkipWithoutConfig(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	val := os.Getenv("CONTAINERS_REMOTE_ENABLED")
 	if val != "true" {
-		t.Skip(
+		t.Skip(  // SKIP-OK: #legacy-untriaged
 			"skipping remote host test: " +
 				"CONTAINERS_REMOTE_ENABLED is not true",
 		)
@@ -41,7 +41,7 @@ func TestRemoteHost_SkipWithoutConfig(t *testing.T) {
 // and verifies that Name() returns a recognized value.
 func TestLocalRuntime_Detection(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	ctx, cancel := context.WithTimeout(
@@ -78,7 +78,7 @@ func TestLocalRuntime_Detection(t *testing.T) {
 // on a non-existent compose file and expects an error.
 func TestLocalCompose_StatusOnMissing(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping e2e test in short mode")
+		t.Skip("skipping e2e test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	ctx, cancel := context.WithTimeout(

@@ -174,7 +174,7 @@ func TestDefaultRuntimeFactory(t *testing.T) {
 
 func TestAutoDetect_Integration(t *testing.T) {
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")  // SKIP-OK: #legacy-untriaged
 	}
 	ctx := context.Background()
 
@@ -190,7 +190,7 @@ func TestAutoDetect_Integration(t *testing.T) {
 
 func TestDetectAll_Integration(t *testing.T) {
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")  // SKIP-OK: #legacy-untriaged
 	}
 	ctx := context.Background()
 

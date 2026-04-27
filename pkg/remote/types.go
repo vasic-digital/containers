@@ -97,6 +97,8 @@ type HostResources struct {
 	NetworkRxBytesPerSec uint64
 	// NetworkTxBytesPerSec is the network transmit rate.
 	NetworkTxBytesPerSec uint64
+	// GPU is the list of GPU devices on this host; nil if none.
+	GPU []GPUDevice `json:"gpu,omitempty"`
 }
 
 // AvailableMemoryPercent returns the percentage of free memory.

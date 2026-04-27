@@ -43,11 +43,15 @@ func (s *ResourceScorer) Score(
 	// Network score: inversely proportional to network usage.
 	netScore := s.scoreNetwork(resources)
 
+	// GPU score: VRAM headroom above requirement.
+	gpuScore := s.scoreGPU(resources, req)
+
 	// Weighted sum.
 	total := cpuScore*s.opts.CPUWeight +
 		memScore*s.opts.MemoryWeight +
 		diskScore*s.opts.DiskWeight +
-		netScore*s.opts.NetworkWeight
+		netScore*s.opts.NetworkWeight +
+		gpuScore*s.opts.GPUWeight
 
 	return clamp(total, 0, 1)
 }
@@ -93,6 +97,18 @@ func (s *ResourceScorer) CanFit(
 		availDiskMB := float64(resources.DiskTotalMB) *
 			(resources.AvailableDiskPercent() - reserve) / 100.0
 		if availDiskMB < 0 || uint64(availDiskMB) < req.DiskMB {
+			return false
+		}
+	}
+
+	// Check GPU.
+	if req.GPU != nil {
+		matches := matchingGPUs(resources.GPU, *req.GPU)
+		need := req.GPU.Count
+		if need == 0 {
+			need = 1
+		}
+		if len(matches) < need {
 			return false
 		}
 	}
@@ -185,4 +201,90 @@ func clamp(v, min, max float64) float64 {
 		return max
 	}
 	return v
+}
+
+func (s *ResourceScorer) scoreGPU(
+	r *remote.HostResources,
+	req ContainerRequirements,
+) float64 {
+	if req.GPU == nil {
+		return 0
+	}
+	matches := matchingGPUs(r.GPU, *req.GPU)
+	if len(matches) == 0 {
+		return 0
+	}
+	// Pick the matching GPU with the most free VRAM.
+	best := matches[0]
+	for _, g := range matches[1:] {
+		if g.VRAMFreeMB > best.VRAMFreeMB {
+			best = g
+		}
+	}
+	if best.VRAMFreeMB == 0 {
+		return 0
+	}
+	ratio := float64(best.VRAMFreeMB-req.GPU.MinVRAMMB) /
+		float64(best.VRAMFreeMB)
+	return clamp(ratio, 0, 1)
+}
+
+// matchingGPUs returns the subset of host GPUs that satisfy req.
+func matchingGPUs(
+	host []remote.GPUDevice,
+	req GPURequirement,
+) []remote.GPUDevice {
+	out := make([]remote.GPUDevice, 0, len(host))
+	for _, g := range host {
+		if req.Vendor != "" && g.Vendor != req.Vendor {
+			continue
+		}
+		if req.MinVRAMMB > 0 && g.VRAMFreeMB < req.MinVRAMMB {
+			continue
+		}
+		if req.MinCompute != "" && g.ComputeCapability < req.MinCompute {
+			// string compare works for "8.6" vs "8.0"; for 10.x+ a
+			// proper parse may be needed later.
+			continue
+		}
+		if !capabilitiesMatch(g, req.Capabilities) {
+			continue
+		}
+		out = append(out, g)
+	}
+	return out
+}
+
+func capabilitiesMatch(g remote.GPUDevice, req []string) bool {
+	for _, c := range req {
+		switch c {
+		case "cuda":
+			if !g.CUDASupported {
+				return false
+			}
+		case "nvenc":
+			if !g.NVENCSupported {
+				return false
+			}
+		case "tensorrt":
+			// TensorRT requires CUDA at minimum. Refine per model in
+			// later sub-projects.
+			if !g.CUDASupported {
+				return false
+			}
+		case "vulkan":
+			if !g.VulkanSupported {
+				return false
+			}
+		case "opencl":
+			if !g.OpenCLSupported {
+				return false
+			}
+		case "rocm":
+			if !g.ROCmSupported {
+				return false
+			}
+		}
+	}
+	return true
 }

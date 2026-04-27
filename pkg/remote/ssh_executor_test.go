@@ -39,7 +39,7 @@ func newTestSSHExecutor(t *testing.T) *SSHExecutor {
 
 func TestSSHExecutor_Execute_InvalidHost(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -80,7 +80,7 @@ func TestSSHExecutor_Execute_InvalidHost(t *testing.T) {
 
 func TestSSHExecutor_Execute_EmptyCommand(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -118,7 +118,7 @@ func TestSSHExecutor_Execute_EmptyCommand(t *testing.T) {
 
 func TestSSHExecutor_CopyFile_InvalidHost(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -168,7 +168,7 @@ func TestSSHExecutor_CopyFile_InvalidHost(t *testing.T) {
 
 func TestSSHExecutor_CopyDir_InvalidHost(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -219,7 +219,7 @@ func TestSSHExecutor_CopyDir_InvalidHost(t *testing.T) {
 
 func TestSSHExecutor_IsReachable_Unreachable(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -272,7 +272,7 @@ func TestSSHExecutor_IsReachable_Unreachable(t *testing.T) {
 
 func TestSSHExecutor_ExecuteStream_InvalidHost(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping SSH executor test in short mode")
+		t.Skip("skipping SSH executor test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	tests := []struct {
@@ -350,4 +350,115 @@ func TestSSHExecutor_Close_NoPool(t *testing.T) {
 	err = exec.Close()
 	assert.NoError(t, err,
 		"Close without pool should succeed")
+}
+
+// containsSequence reports whether the needles appear in argv
+// in order (not necessarily contiguous). Used to assert that a
+// flag and its value appear consecutively.
+func containsSequence(argv []string, needle ...string) bool {
+	for i := 0; i+len(needle) <= len(argv); i++ {
+		match := true
+		for j, n := range needle {
+			if argv[i+j] != n {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+// TestSSHExecutor_SSHArgs_KeepAliveDefault verifies that the
+// default options produce ssh -o ServerAliveInterval/CountMax
+// flags — without these, long compose builds silently drop the
+// SSH session when the network stalls (exit code -1).
+func TestSSHExecutor_SSHArgs_KeepAliveDefault(t *testing.T) {
+	exec, err := NewSSHExecutor(
+		logging.NopLogger{},
+		WithControlMaster(false),
+	)
+	require.NoError(t, err)
+	defer exec.Close()
+
+	args, err := exec.sshArgs(context.Background(), unreachableHost())
+	require.NoError(t, err)
+
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveInterval=30"),
+		"default KeepAlive=30s must emit ServerAliveInterval=30; "+
+			"got args: %v", args)
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveCountMax=10"),
+		"default KeepAliveCountMax=10 must emit "+
+			"ServerAliveCountMax=10; got args: %v", args)
+}
+
+// TestSSHExecutor_SSHArgs_KeepAliveDisabled verifies that
+// WithKeepAlive(0) disables the probes entirely.
+func TestSSHExecutor_SSHArgs_KeepAliveDisabled(t *testing.T) {
+	exec, err := NewSSHExecutor(
+		logging.NopLogger{},
+		WithControlMaster(false),
+		WithKeepAlive(0),
+	)
+	require.NoError(t, err)
+	defer exec.Close()
+
+	args, err := exec.sshArgs(context.Background(), unreachableHost())
+	require.NoError(t, err)
+
+	for _, a := range args {
+		assert.NotContains(t, a, "ServerAliveInterval",
+			"KeepAlive=0 must NOT emit ServerAliveInterval")
+		assert.NotContains(t, a, "ServerAliveCountMax",
+			"KeepAlive=0 must NOT emit ServerAliveCountMax")
+	}
+}
+
+// TestSSHExecutor_SSHArgs_KeepAliveCustom verifies that non-default
+// values are propagated.
+func TestSSHExecutor_SSHArgs_KeepAliveCustom(t *testing.T) {
+	exec, err := NewSSHExecutor(
+		logging.NopLogger{},
+		WithControlMaster(false),
+		WithKeepAlive(45*time.Second),
+		WithKeepAliveCountMax(20),
+	)
+	require.NoError(t, err)
+	defer exec.Close()
+
+	args, err := exec.sshArgs(context.Background(), unreachableHost())
+	require.NoError(t, err)
+
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveInterval=45"),
+		"custom 45s interval must be propagated; args: %v", args)
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveCountMax=20"),
+		"custom count 20 must be propagated; args: %v", args)
+}
+
+// TestSSHExecutor_SCPArgs_KeepAlive verifies scpArgs also
+// includes keep-alive (parity with sshArgs for long file copies).
+func TestSSHExecutor_SCPArgs_KeepAlive(t *testing.T) {
+	exec, err := NewSSHExecutor(
+		logging.NopLogger{},
+		WithControlMaster(false),
+	)
+	require.NoError(t, err)
+	defer exec.Close()
+
+	args := exec.scpArgs(unreachableHost())
+
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveInterval=30"),
+		"scpArgs must emit ServerAliveInterval for default "+
+			"KeepAlive=30s; got args: %v", args)
+	assert.True(t,
+		containsSequence(args, "-o", "ServerAliveCountMax=10"),
+		"scpArgs must emit ServerAliveCountMax for default "+
+			"KeepAliveCountMax=10; got args: %v", args)
 }
