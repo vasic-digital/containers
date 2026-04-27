@@ -57,7 +57,7 @@ func TestPortAllocator_PortWraparound(t *testing.T) {
 	// Allocate the first port to set next forward.
 	port1, err := a.Allocate("wrap-first")
 	if err != nil {
-		t.Skip("port not available on this system")
+		t.Skip("port not available on this system")  // SKIP-OK: #requires-infra-port
 	}
 
 	// Release it so the range is free again.
@@ -66,7 +66,7 @@ func TestPortAllocator_PortWraparound(t *testing.T) {
 	// After wrap we should still be able to allocate.
 	port2, err := a.Allocate("wrap-second")
 	if err != nil {
-		t.Skip("port not available on this system")
+		t.Skip("port not available on this system")  // SKIP-OK: #requires-infra-port
 	}
 	assert.GreaterOrEqual(t, port2, 55100)
 	assert.Less(t, port2, 55103)
@@ -79,7 +79,7 @@ func TestPortAllocator_IsAllocated(t *testing.T) {
 
 	port, err := a.Allocate("is-allocated-test")
 	if err != nil {
-		t.Skip("no port available in range 57000-57010")
+		t.Skip("no port available in range 57000-57010")  // SKIP-OK: #requires-infra-port
 	}
 
 	assert.True(t, a.IsAllocated(port))
@@ -102,7 +102,7 @@ func TestPortAllocator_SkipsInUsePorts(t *testing.T) {
 	end := usedPort + 10
 
 	if end > 65535 {
-		t.Skip("port range would exceed 65535")
+		t.Skip("port range would exceed 65535")  // SKIP-OK: #legacy-untriaged
 	}
 
 	a := NewPortAllocator(start, end)
@@ -126,7 +126,7 @@ func TestPortAllocator_ListAllocations_AfterRelease(t *testing.T) {
 	p2, err2 := a.Allocate("second")
 
 	if err1 != nil || err2 != nil {
-		t.Skip("ports not available")
+		t.Skip("ports not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	assert.Len(t, a.ListAllocations(), 2)

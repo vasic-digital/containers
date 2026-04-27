@@ -41,6 +41,14 @@ var (
 	flagPlatform       = flag.String("platform", "api", "Challenge platform (api, web, desktop, android, tv, all)")
 	flagDeployOnly     = flag.Bool("deploy-only", false, "Only deploy infrastructure, don't run tests")
 	flagLocalOnly      = flag.Bool("local", false, "Force local execution (disable remote distribution)")
+	// --go-api-dir / --js-projects / --android-projects are how
+	// the CLI stays project-agnostic. Previous versions hardcoded
+	// Catalogizer directory names — now each tier of tests is
+	// driven entirely by caller configuration so any project can
+	// use this runner.
+	flagGoAPIDir       = flag.String("go-api-dir", "", "Directory (relative to --root) holding the Go API module to test. Empty = skip Go tests.")
+	flagJSProjects     = flag.String("js-projects", "", "Comma-separated list of JS/TS project directories (relative to --root) to test. Empty = skip JS tests.")
+	flagAndroidProjects = flag.String("android-projects", "", "Comma-separated list of Android project directories (relative to --root) to test. Empty = skip Android tests.")
 )
 
 type TestResult struct {
@@ -437,7 +445,12 @@ func (r *DistributedTestRunner) runGoTests(ctx context.Context) TestResult {
 
 	r.logger.Info("running Go backend tests")
 
-	apiDir := filepath.Join(r.projectRoot, "catalog-api")
+	if *flagGoAPIDir == "" {
+		result.Status = "skipped"
+		result.Error = "no --go-api-dir supplied; skipping Go tests"
+		return result
+	}
+	apiDir := filepath.Join(r.projectRoot, *flagGoAPIDir)
 	cmd := exec.CommandContext(ctx, "go", "test", "./...", "-v", "-count=1", "-timeout=10m")
 	cmd.Dir = apiDir
 	cmd.Env = append(os.Environ(),
@@ -461,7 +474,10 @@ func (r *DistributedTestRunner) runGoTests(ctx context.Context) TestResult {
 }
 
 func (r *DistributedTestRunner) runJSTests(ctx context.Context) []TestResult {
-	projects := []string{"catalog-web", "catalogizer-api-client", "installer-wizard", "catalogizer-desktop"}
+	projects := splitAndTrim(*flagJSProjects)
+	if len(projects) == 0 {
+		return nil
+	}
 	var results []TestResult
 
 	for _, project := range projects {
@@ -521,7 +537,10 @@ func (r *DistributedTestRunner) runJSTests(ctx context.Context) []TestResult {
 }
 
 func (r *DistributedTestRunner) runAndroidTests(ctx context.Context) []TestResult {
-	projects := []string{"catalogizer-android", "catalogizer-androidtv"}
+	projects := splitAndTrim(*flagAndroidProjects)
+	if len(projects) == 0 {
+		return nil
+	}
 	var results []TestResult
 
 	for _, project := range projects {
@@ -747,4 +766,22 @@ func printSummary(summary *TestSummary, logger *cliLogger) {
 			}
 		}
 	}
+}
+
+// splitAndTrim splits a comma-separated flag value, trims whitespace
+// from each entry, and discards empty entries. Used by the project-
+// layout flags (--js-projects, --android-projects, …) so the CLI
+// stays project-agnostic.
+func splitAndTrim(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := parts[:0]
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
 }

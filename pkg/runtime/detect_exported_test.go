@@ -11,13 +11,13 @@ import (
 // The internal detect_test.go covers the same logic with mocked executors.
 func TestAutoDetectWithPriority_Exported(t *testing.T) {
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")  // SKIP-OK: #legacy-untriaged
 	}
 }
 
 // TestDetectByPriority_Exported calls the exported function for coverage.
 func TestDetectByPriority_Exported(t *testing.T) {
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")  // SKIP-OK: #legacy-untriaged
 	}
 }

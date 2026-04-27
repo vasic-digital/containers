@@ -33,3 +33,5 @@ vendor/
 .env.*
 .service-registry/
 /cmd/ctop/ctop
+scripts/resource-policy/__pycache__/
+*.pyc

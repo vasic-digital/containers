@@ -155,6 +155,14 @@ func (s *DefaultScheduler) scheduleOne(
 			s.scorer, snapshots, hosts, req,
 			s.opts.LocalHostName,
 		)
+	case StrategyGPUAffinity:
+		host, reason := pickGPUAffinity(snapshots, req, s.scorer)
+		return PlacementDecision{
+			Requirement: req,
+			HostName:    host,
+			Score:       s.scorer.Score(snapshots[host], req),
+			Reason:      reason,
+		}
 	default:
 		return scheduleResourceAware(
 			s.scorer, snapshots, hosts, req,

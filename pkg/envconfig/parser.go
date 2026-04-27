@@ -23,7 +23,14 @@ func LoadFromEnv() *DistributionConfig {
 		PortRangeEnd:         envInt(prefix+"PORT_RANGE_END", 30000),
 		VolumeType:           envString(prefix+"VOLUME_TYPE", "sshfs"),
 		ConnectTimeout:       envInt(prefix+"CONNECT_TIMEOUT", 10),
-		CommandTimeout:       envInt(prefix+"COMMAND_TIMEOUT", 120),
+		// 30 minutes — large enough for image-build `compose up`
+		// operations (multi-GB pulls + multi-minute layer builds)
+		// without relying on operators to tune this manually.
+		// SSH keep-alive (30s * 10 = 5 min silence tolerance) is
+		// the REAL detector of dead connections; this cap catches
+		// genuinely hung remote commands. Pre-fix default of 120s
+		// routinely killed compose builds on cold hosts.
+		CommandTimeout: envInt(prefix+"COMMAND_TIMEOUT", 1800),
 		ControlMasterEnabled: envBool(prefix+"SSH_CONTROL_MASTER", true),
 		ControlPersist:       envInt(prefix+"SSH_CONTROL_PERSIST", 300),
 		MaxConnections:       envInt(prefix+"SSH_MAX_CONNECTIONS", 10),
@@ -48,10 +55,26 @@ func LoadFromEnv() *DistributionConfig {
 			Runtime:  envString(hostPrefix+"RUNTIME", ""),
 			Labels:   parseLabels(envString(hostPrefix+"LABELS", "")),
 		}
+		if v := os.Getenv(fmt.Sprintf(
+			"%sHOST_%d_GPU_AUTOPROBE", prefix, n,
+		)); v != "" {
+			if host.Labels == nil {
+				host.Labels = map[string]string{}
+			}
+			host.Labels["gpu_autoprobe"] = v
+		}
 		cfg.Hosts = append(cfg.Hosts, host)
 	}
 
 	return cfg
+}
+
+// Parse loads the distribution configuration from environment
+// variables. It is a convenience wrapper around LoadFromEnv that
+// returns a (config, error) pair so callers can use the standard
+// Go idiom: cfg, err := Parse().
+func Parse() (*DistributionConfig, error) {
+	return LoadFromEnv(), nil
 }
 
 // LoadFromFile loads configuration from a .env file, then

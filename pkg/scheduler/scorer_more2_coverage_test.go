@@ -185,7 +185,7 @@ func TestCanFit_MemoryAvailNegative(t *testing.T) {
 	s := NewResourceScorer(opts)
 
 	res := &remote.HostResources{
-		MemoryPercent: 50,  // 50% used → 50% free → 50%-80% = -30% after reserve
+		MemoryPercent: 50, // 50% used → 50% free → 50%-80% = -30% after reserve
 		MemoryTotalMB: 4096,
 	}
 	// availMB will be negative → cannot fit
@@ -201,7 +201,7 @@ func TestCanFit_DiskAvailNegative(t *testing.T) {
 	s := NewResourceScorer(opts)
 
 	res := &remote.HostResources{
-		DiskPercent: 20,    // 80% free − 90% reserve = negative
+		DiskPercent: 20, // 80% free − 90% reserve = negative
 		DiskTotalMB: 10000,
 	}
 	fit := s.CanFit(res, ContainerRequirements{DiskMB: 1})
@@ -421,8 +421,8 @@ func TestScheduleResourceAware_LabelMismatch(t *testing.T) {
 func TestScheduleResourceAware_CannotFitRemote(t *testing.T) {
 	scorer := NewResourceScorer(DefaultSchedulerOptions())
 	snapshots := map[string]*remote.HostResources{
-		"local":  {CPUPercent: 10, CPUCores: 8, MemoryPercent: 10, MemoryTotalMB: 16384, DiskPercent: 10, DiskTotalMB: 100000},
-		"small":  {CPUPercent: 99, CPUCores: 1, MemoryPercent: 99, MemoryTotalMB: 512, DiskPercent: 99, DiskTotalMB: 500},
+		"local": {CPUPercent: 10, CPUCores: 8, MemoryPercent: 10, MemoryTotalMB: 16384, DiskPercent: 10, DiskTotalMB: 100000},
+		"small": {CPUPercent: 99, CPUCores: 1, MemoryPercent: 99, MemoryTotalMB: 512, DiskPercent: 99, DiskTotalMB: 500},
 	}
 	hosts := []remote.RemoteHost{
 		{Name: "small", Labels: map[string]string{}},
@@ -484,7 +484,7 @@ func TestScoreMemory_AvailNegativeWithRequest(t *testing.T) {
 	s := NewResourceScorer(opts)
 
 	res := &remote.HostResources{
-		MemoryPercent: 20,  // 80% free, but 90% reserve → avail = -10
+		MemoryPercent: 20, // 80% free, but 90% reserve → avail = -10
 		MemoryTotalMB: 4096,
 	}
 	// avail = 80 - 90 = -10 → return 0
