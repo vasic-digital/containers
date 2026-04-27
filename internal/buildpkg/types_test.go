@@ -19,9 +19,9 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 		wantLabelKeys []string
 	}{
 		{
-			name: "catalog-api is Go component",
+			name: "Go component",
 			component: BuildComponent{
-				Name:  "catalog-api",
+				Name:  "svc-api",
 				HasGo: true,
 			},
 			wantCPU:    2,
@@ -32,9 +32,9 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 			},
 		},
 		{
-			name: "catalogizer-androidtv is JDK component",
+			name: "JDK + NPM component",
 			component: BuildComponent{
-				Name:   "catalogizer-androidtv",
+				Name:   "svc-tv",
 				HasNPM: true,
 				HasJDK: true,
 			},
@@ -47,9 +47,9 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 			},
 		},
 		{
-			name: "catalogizer-desktop is Rust+NPM component",
+			name: "Rust + NPM component",
 			component: BuildComponent{
-				Name:    "catalogizer-desktop",
+				Name:    "svc-desktop",
 				HasNPM:  true,
 				HasRust: true,
 			},
@@ -62,9 +62,9 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 			},
 		},
 		{
-			name: "catalog-web is NPM-only component",
+			name: "NPM-only component",
 			component: BuildComponent{
-				Name:   "catalog-web",
+				Name:   "svc-web",
 				HasNPM: true,
 			},
 			wantCPU:    1,
@@ -84,7 +84,7 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 			assert.Equal(t, tt.wantMemory, req.MemoryMB, "MemoryMB mismatch")
 			assert.Equal(t, tt.wantDisk, req.DiskMB, "DiskMB mismatch")
 			assert.Equal(t, tt.wantLabels, req.Labels, "Labels mismatch")
-			assert.Equal(t, "localhost/catalogizer-builder:latest", req.Image, "Image mismatch")
+			assert.Equal(t, DefaultBuilderImage, req.Image, "Image mismatch — should fall back to DefaultBuilderImage when BuilderImage is empty")
 			assert.Equal(t, tt.component.Name, req.Name, "Name mismatch")
 		})
 	}
@@ -92,7 +92,7 @@ func TestBuildComponent_ResourceRequirements(t *testing.T) {
 
 func TestBuildResult_Success(t *testing.T) {
 	r := BuildResult{
-		Component: "catalog-api",
+		Component: "svc-api",
 		Status:    BuildStatusSuccess,
 		Duration:  30,
 	}
@@ -102,7 +102,7 @@ func TestBuildResult_Success(t *testing.T) {
 
 func TestBuildResult_Failure(t *testing.T) {
 	r := BuildResult{
-		Component: "catalog-web",
+		Component: "svc-web",
 		Status:    BuildStatusFailed,
 		Error:     "build error",
 	}
@@ -114,15 +114,15 @@ func TestBuildPlan_Assignments(t *testing.T) {
 	plan := BuildPlan{
 		Assignments: []BuildAssignment{
 			{
-				Component: BuildComponent{Name: "catalog-api"},
+				Component: BuildComponent{Name: "svc-api"},
 				Host:      "",
 			},
 			{
-				Component: BuildComponent{Name: "catalog-web"},
+				Component: BuildComponent{Name: "svc-web"},
 				Host:      "build-server-1",
 			},
 			{
-				Component: BuildComponent{Name: "catalogizer-android"},
+				Component: BuildComponent{Name: "svc-android"},
 				Host:      "build-server-2",
 			},
 		},
@@ -130,7 +130,7 @@ func TestBuildPlan_Assignments(t *testing.T) {
 
 	local := plan.LocalAssignments()
 	assert.Len(t, local, 1)
-	assert.Equal(t, "catalog-api", local[0].Component.Name)
+	assert.Equal(t, "svc-api", local[0].Component.Name)
 
 	remote := plan.RemoteAssignments()
 	assert.Len(t, remote, 2)
@@ -141,39 +141,27 @@ func TestBuildPlan_Assignments(t *testing.T) {
 	assert.Contains(t, byHost, "build-server-1")
 	assert.Contains(t, byHost, "build-server-2")
 	assert.Len(t, byHost["build-server-1"], 1)
-	assert.Equal(t, "catalog-web", byHost["build-server-1"][0].Component.Name)
+	assert.Equal(t, "svc-web", byHost["build-server-1"][0].Component.Name)
 }
 
-func TestAllComponents(t *testing.T) {
-	components := AllComponents()
-	assert.Len(t, components, 7)
-
-	names := make(map[string]bool)
-	for _, c := range components {
-		names[c.Name] = true
+func TestFindComponentIn(t *testing.T) {
+	// The library carries no hardcoded component list — callers
+	// supply their own catalogue. This test proves FindComponentIn
+	// resolves a name inside a caller-supplied slice and reports an
+	// error for unknown names.
+	catalogue := []BuildComponent{
+		{Name: "example-api", HasGo: true},
+		{Name: "example-web", HasNPM: true},
 	}
-
-	expected := []string{
-		"catalog-api",
-		"catalog-web",
-		"catalogizer-api-client",
-		"catalogizer-desktop",
-		"installer-wizard",
-		"catalogizer-android",
-		"catalogizer-androidtv",
-	}
-	for _, name := range expected {
-		assert.True(t, names[name], "missing component: %s", name)
-	}
-}
-
-func TestFindComponent(t *testing.T) {
-	api, err := FindComponent("catalog-api")
+	api, err := FindComponentIn(catalogue, "example-api")
 	assert.NoError(t, err)
-	assert.Equal(t, "catalog-api", api.Name)
+	assert.Equal(t, "example-api", api.Name)
 	assert.True(t, api.HasGo)
 
-	_, err = FindComponent("nonexistent")
+	_, err = FindComponentIn(catalogue, "nonexistent")
+	assert.Error(t, err)
+
+	_, err = FindComponentIn(nil, "anything")
 	assert.Error(t, err)
 }
 
@@ -210,7 +198,7 @@ func TestBuildPlan_LocalAssignments_WithLocalString(t *testing.T) {
 
 func TestBuildComponent_ResourceRequirements_JDKPriorityOverNPM(t *testing.T) {
 	comp := BuildComponent{
-		Name:   "catalogizer-android",
+		Name:   "android-app",
 		HasNPM: true,
 		HasJDK: true,
 		HasGo:  true,
@@ -220,8 +208,8 @@ func TestBuildComponent_ResourceRequirements_JDKPriorityOverNPM(t *testing.T) {
 
 	assert.Equal(t, float64(3), req.CPUCores)
 	assert.Equal(t, scheduler.ContainerRequirements{
-		Name:     "catalogizer-android",
-		Image:    "localhost/catalogizer-builder:latest",
+		Name:     "android-app",
+		Image:    DefaultBuilderImage,
 		CPUCores: 3,
 		MemoryMB: 4096,
 		DiskMB:   2048,
@@ -230,4 +218,17 @@ func TestBuildComponent_ResourceRequirements_JDKPriorityOverNPM(t *testing.T) {
 			"npm": "true",
 		},
 	}, req)
+}
+
+func TestBuildComponent_ResourceRequirements_CustomBuilderImage(t *testing.T) {
+	comp := BuildComponent{
+		Name:         "android-app",
+		HasJDK:       true,
+		BuilderImage: "registry.example.com/android-builder:1.2",
+	}
+
+	req := comp.ResourceRequirements()
+
+	assert.Equal(t, "registry.example.com/android-builder:1.2", req.Image,
+		"BuilderImage on the component must override DefaultBuilderImage")
 }

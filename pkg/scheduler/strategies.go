@@ -292,3 +292,48 @@ func labelsMatch(
 	}
 	return true
 }
+
+// selectByStrategy dispatches to the appropriate strategy function
+// given a flat map of candidate host snapshots. Returns (hostName, reason).
+// Used by tests and by callers that already hold a snapshot map.
+func selectByStrategy(
+	strategy PlacementStrategy,
+	candidates map[string]*remote.HostResources,
+	req ContainerRequirements,
+	scorer *ResourceScorer,
+) (string, string) {
+	switch strategy {
+	case StrategyGPUAffinity:
+		return pickGPUAffinity(candidates, req, scorer)
+	default:
+		return "", "selectByStrategy: unsupported strategy " + string(strategy)
+	}
+}
+
+// pickGPUAffinity selects the highest-scoring GPU-bearing host.
+func pickGPUAffinity(
+	candidates map[string]*remote.HostResources,
+	req ContainerRequirements,
+	scorer *ResourceScorer,
+) (string, string) {
+	bestHost := ""
+	bestScore := 0.0
+	for name, res := range candidates {
+		if !scorer.CanFit(res, req) {
+			continue
+		}
+		if !res.HasGPU() {
+			continue
+		}
+		sc := scorer.Score(res, req)
+		if sc > bestScore {
+			bestScore = sc
+			bestHost = name
+		}
+	}
+	if bestHost == "" {
+		return "", "gpu_affinity: no host fits GPU requirement"
+	}
+	return bestHost, fmt.Sprintf(
+		"gpu_affinity: selected %s with score %.3f", bestHost, bestScore)
+}

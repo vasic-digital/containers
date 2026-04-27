@@ -243,8 +243,28 @@ func TestLoadFromEnv_SSHOptionDefaults(t *testing.T) {
 	cfg := LoadFromEnv()
 
 	assert.Equal(t, 10, cfg.ConnectTimeout)
-	assert.Equal(t, 120, cfg.CommandTimeout)
+	// 1800 (30 min) default — large enough for `compose up` with
+	// image builds on cold-cache remote hosts. See parser.go for
+	// the rationale; SSH keep-alive (30s * 10) is the real
+	// dead-connection detector.
+	assert.Equal(t, 1800, cfg.CommandTimeout)
 	assert.True(t, cfg.ControlMasterEnabled)
 	assert.Equal(t, 300, cfg.ControlPersist)
 	assert.Equal(t, 10, cfg.MaxConnections)
+}
+
+func TestParse_HostGPUAutoprobe(t *testing.T) {
+	t.Setenv("CONTAINERS_REMOTE_ENABLED", "true")
+	t.Setenv("CONTAINERS_REMOTE_HOST_1_NAME", "thinker")
+	t.Setenv("CONTAINERS_REMOTE_HOST_1_ADDRESS", "thinker.local")
+	t.Setenv("CONTAINERS_REMOTE_HOST_1_USER", "milosvasic")
+	t.Setenv("CONTAINERS_REMOTE_HOST_1_LABELS", "gpu=true,cuda=12.2")
+	t.Setenv("CONTAINERS_REMOTE_HOST_1_GPU_AUTOPROBE", "true")
+
+	cfg, err := Parse()
+	require.NoError(t, err)
+	require.Len(t, cfg.Hosts, 1)
+	h := cfg.Hosts[0]
+	require.Equal(t, "true", h.Labels["gpu_autoprobe"])
+	require.Equal(t, "12.2", h.Labels["cuda"])
 }

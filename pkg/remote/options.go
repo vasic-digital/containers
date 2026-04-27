@@ -11,8 +11,14 @@ type Options struct {
 	// MaxConnections is the maximum number of concurrent SSH
 	// connections per host.
 	MaxConnections int
-	// KeepAlive is the interval for SSH keep-alive messages.
+	// KeepAlive is the interval for SSH keep-alive messages
+	// (maps to ssh -o ServerAliveInterval). Set to 0 to disable.
 	KeepAlive time.Duration
+	// KeepAliveCountMax is the maximum number of missed keep-alive
+	// probes before SSH terminates the session (maps to ssh -o
+	// ServerAliveCountMax). Combined with KeepAlive this is the
+	// total tolerated network silence: KeepAlive * KeepAliveCountMax.
+	KeepAliveCountMax int
 	// StrictHostKeyCheck enables SSH strict host key checking.
 	StrictHostKeyCheck bool
 	// ControlMasterEnabled enables SSH ControlMaster multiplexing.
@@ -28,9 +34,17 @@ type Options struct {
 func DefaultOptions() Options {
 	return Options{
 		ConnectTimeout:       10 * time.Second,
-		CommandTimeout:       60 * time.Second,
+		// 30 minutes tolerates multi-GB image pulls and multi-layer
+		// builds during `compose up`. SSH keep-alive (KeepAlive *
+		// KeepAliveCountMax) detects genuinely dead connections
+		// much sooner; this cap is the backstop for remote commands
+		// that simply take a long time to complete. The previous
+		// 300s / 5-minute default was too aggressive for cold-cache
+		// hosts building Dockerfiles from scratch.
+		CommandTimeout: 1800 * time.Second,
 		MaxConnections:       5,
 		KeepAlive:            30 * time.Second,
+		KeepAliveCountMax:    10,
 		StrictHostKeyCheck:   false,
 		ControlMasterEnabled: true,
 		ControlSocketDir:     "/tmp/containers-ssh-ctrl",
@@ -73,10 +87,21 @@ func WithMaxConnections(n int) Option {
 	}
 }
 
-// WithKeepAlive sets the SSH keep-alive interval.
+// WithKeepAlive sets the SSH keep-alive interval (ServerAliveInterval).
+// Set to 0 to disable keep-alive probing.
 func WithKeepAlive(d time.Duration) Option {
 	return func(o *Options) {
 		o.KeepAlive = d
+	}
+}
+
+// WithKeepAliveCountMax sets the maximum number of missed SSH
+// keep-alive probes tolerated before the session is terminated
+// (ServerAliveCountMax). Total network silence tolerance is
+// KeepAlive * KeepAliveCountMax.
+func WithKeepAliveCountMax(n int) Option {
+	return func(o *Options) {
+		o.KeepAliveCountMax = n
 	}
 }
 

@@ -17,12 +17,25 @@ const (
 	BuildStatusSkipped BuildStatus = "skipped"
 )
 
+// DefaultBuilderImage is the fallback builder image reference applied
+// when BuildComponent.BuilderImage is empty. It is intentionally a
+// generic vasic-owned label so the library ships no project-specific
+// default — integrators set their own image (for example
+// "localhost/myproject-builder:latest") either on each BuildComponent
+// or via the package-level DefaultBuilderImage override at process
+// startup.
+var DefaultBuilderImage = "localhost/vasic-builder:latest"
+
 type BuildComponent struct {
-	Name    string
-	HasGo   bool
-	HasNPM  bool
-	HasJDK  bool
-	HasRust bool
+	Name         string
+	HasGo        bool
+	HasNPM       bool
+	HasJDK       bool
+	HasRust      bool
+	// BuilderImage pins the container image to schedule this
+	// component's build into. When empty the scheduler falls back to
+	// DefaultBuilderImage.
+	BuilderImage string
 }
 
 func (c BuildComponent) ResourceRequirements() scheduler.ContainerRequirements {
@@ -57,9 +70,14 @@ func (c BuildComponent) ResourceRequirements() scheduler.ContainerRequirements {
 		labels["npm"] = "true"
 	}
 
+	image := c.BuilderImage
+	if image == "" {
+		image = DefaultBuilderImage
+	}
+
 	return scheduler.ContainerRequirements{
 		Name:     c.Name,
-		Image:    "localhost/catalogizer-builder:latest",
+		Image:    image,
 		CPUCores: cpu,
 		MemoryMB: mem,
 		DiskMB:   disk,
@@ -121,20 +139,12 @@ func (p BuildPlan) ByHost() map[string][]BuildAssignment {
 	return groups
 }
 
-func AllComponents() []BuildComponent {
-	return []BuildComponent{
-		{Name: "catalog-api", HasGo: true},
-		{Name: "catalog-web", HasNPM: true},
-		{Name: "catalogizer-api-client", HasNPM: true},
-		{Name: "catalogizer-desktop", HasNPM: true, HasRust: true},
-		{Name: "installer-wizard", HasNPM: true, HasRust: true},
-		{Name: "catalogizer-android", HasNPM: true, HasJDK: true},
-		{Name: "catalogizer-androidtv", HasNPM: true, HasJDK: true},
-	}
-}
-
-func FindComponent(name string) (BuildComponent, error) {
-	for _, c := range AllComponents() {
+// FindComponentIn returns the BuildComponent named `name` from the
+// caller-supplied slice. The library carries no hardcoded component
+// list — callers register their own set via Planner constructors so
+// this package remains project-agnostic.
+func FindComponentIn(components []BuildComponent, name string) (BuildComponent, error) {
+	for _, c := range components {
 		if c.Name == name {
 			return c, nil
 		}
