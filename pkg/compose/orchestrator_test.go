@@ -306,7 +306,7 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 	// on the system. We skip if no compose command is found.
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	require.NotNil(t, o)
@@ -318,7 +318,7 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 func TestNewDefaultOrchestrator_WithLogger(t *testing.T) {
 	o, err := NewDefaultOrchestrator("/tmp", &testLogger{})
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	require.NotNil(t, o)
@@ -328,7 +328,7 @@ func TestNewDefaultOrchestrator_WithLogger(t *testing.T) {
 func TestNewDefaultOrchestrator_NilLogger(t *testing.T) {
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	require.NotNil(t, o)
@@ -1120,7 +1120,7 @@ func TestDefaultOrchestrator_Integration_StatusWithDocker(t *testing.T) {
 
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 	}
 
 	ctx := context.Background()
