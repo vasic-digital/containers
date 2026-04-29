@@ -360,3 +360,60 @@ without resolving the underlying defect is itself a §11 violation.
 **Full text:** umbrella `CONSTITUTION.md` Article XI §11.9.
 
 <!-- END user-mandate forensic anchor (Article XI §11.9) -->
+
+<!-- BEGIN CONST-035 explicit anchor (cascaded 2026-04-29) -->
+
+## CONST-035 — Anti-Bluff Tests & Challenges (explicit anchor)
+
+This rule is identified as **CONST-035** in the umbrella project's
+governance index. The rule is already enforced in this submodule via
+the Article XI / Anti-Bluff sections above. This anchor adds the
+explicit identifier so automated audits (`grep -r CONST-035 .`) can
+locate the rule by its canonical name.
+
+**Operative rule:** A test or Challenge that PASSES is a CLAIM that
+the tested behavior **works for the end user of the product**. Every
+PASS MUST guarantee:
+
+a. **Quality** — the feature behaves correctly under the inputs an
+   end user will send, including malformed input, edge cases, and
+   concurrency that real workloads produce.
+b. **Completion** — the feature is wired end-to-end from public API
+   surface down to backing infrastructure, with no stub / placeholder
+   / "wired lazily later" gaps that silently 503.
+c. **Full usability** — a CLI agent / SDK consumer / direct client
+   following the documented interface SUCCEEDS without having to know
+   internal aliases, hidden flags, or undocumented dispatch quirks.
+
+A passing test that doesn't certify all three is a **bluff** and MUST
+be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")` so absence
+of coverage is loud rather than silent.
+
+**Bluff taxonomy** (each pattern observed in HelixAgent and now
+forbidden):
+
+- **Wrapper bluff** — assertions PASS but the wrapper's exit-code
+  logic is buggy. Use `! grep -qs "|FAILED|" "$LOG"` style counters,
+  never inline arithmetic on a command that prints AND exits non-zero.
+- **Contract bluff** — the system advertises a capability but rejects
+  it in dispatch. Every advertised capability MUST be exercised by a
+  test or Challenge that actually invokes it.
+- **Structural bluff** — `check_file_exists "foo_test.go"` passes if
+  the file is present but doesn't run the test. File-existence checks
+  MUST be paired with at least one functional assertion.
+- **Comment bluff** — a code comment promises a behavior the code
+  doesn't actually have. Documentation MUST be re-verified against
+  the code on every change touching the documented function.
+- **Skip bluff** — `t.Skip("not running yet")` without a `SKIP-OK:
+  #<ticket>` marker silently passes. Every skip needs the marker; CI
+  fails on bare skips.
+
+**Verification of CONST-035 itself:** deliberately break the feature
+(e.g. `kill <service>`, swap a password, unset an env var) and re-run
+the test/Challenge. It MUST FAIL. If it still passes, the test is
+non-conformant and MUST be tightened.
+
+**Cross-reference:** umbrella `CONSTITUTION.md` Article XI §§ 11.1 –
+11.9; root `CLAUDE.md` "Mandatory Development Standards" rule 27.
+
+<!-- END CONST-035 explicit anchor (cascaded 2026-04-29) -->
