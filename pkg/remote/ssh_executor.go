@@ -173,11 +173,55 @@ func (e *SSHExecutor) CopyFile(
 }
 
 // CopyDir copies a local directory to a remote host using scp -r.
+//
+// Semantics: after this call, `remoteDir` on the remote host has the
+// same contents as `localDir` on the local host. This is NOT what
+// `scp -r local remote` natively gives you — when `remote` already
+// exists, scp nests (creates `remote/<basename(local)>`). To deliver
+// the rsync-style semantics callers expect, the function ensures the
+// remote destination is removed before the scp runs. The remote PARENT
+// dir is created if missing so the subsequent `scp -r` lands in the
+// right place.
+//
+// Forensic note (2026-04-29): without the pre-clean step, when a
+// caller copied a sibling file (e.g. Dockerfile) into the parent of
+// the destination first — which created the destination as a
+// side-effect of `mkdir -p <remoteParent>` — the directory copy then
+// nested INSIDE that pre-existing destination. Cognee build broke
+// remotely because `external/cognee/README.md` ended up at
+// `external/cognee/cognee/README.md` (one level too deep), and the
+// COPY directive in the Dockerfile failed with
+// `copier: stat: "/README.md": no such file or directory`. The
+// pre-clean step removes that ambiguity entirely: scp always creates
+// the destination, so the result is deterministic regardless of which
+// caller ran first.
 func (e *SSHExecutor) CopyDir(
 	ctx context.Context,
 	host RemoteHost,
 	localDir, remoteDir string,
 ) error {
+	// Defensive cleanup: remove the destination if it exists so scp -r
+	// creates it freshly rather than nesting inside it. Use a single
+	// SSH round-trip and ignore non-zero exits (the most common cause
+	// is "directory does not exist", which is the desired pre-state
+	// anyway).
+	cleanCmd := fmt.Sprintf("rm -rf -- %s", shellEscape(remoteDir))
+	if sshArgsList, sshErr := e.sshArgs(ctx, host); sshErr == nil {
+		cleanArgs := append(sshArgsList, fmt.Sprintf("%s@%s", host.User, host.Address), cleanCmd)
+		cleanCmdRun := exec.CommandContext(ctx, "ssh", cleanArgs...)
+		var cleanStderr bytes.Buffer
+		cleanCmdRun.Stderr = &cleanStderr
+		// Best-effort: log but don't fail. A non-existent remoteDir
+		// produces a benign `rm: cannot remove ...: No such file or
+		// directory` we explicitly want to ignore.
+		if err := cleanCmdRun.Run(); err != nil {
+			e.logger.Debug(
+				"pre-scp rm on %s (ignored): %s -> %s: %v (stderr: %s)",
+				host.Name, localDir, remoteDir, err, cleanStderr.String(),
+			)
+		}
+	}
+
 	args := e.scpArgs(host)
 	args = append([]string{"-r"}, args...)
 	args = append(args,
@@ -203,6 +247,52 @@ func (e *SSHExecutor) CopyDir(
 		)
 	}
 	return nil
+}
+
+// shellEscape wraps an arbitrary path in single quotes for safe inclusion
+// in a remote shell command, doubling any embedded single quotes.
+func shellEscape(s string) string {
+	// 'foo' -> 'foo'; foo's -> 'foo'\''s'
+	if !needsShellEscape(s) {
+		return s
+	}
+	const single = `'`
+	const escape = `'\''`
+	return single + replaceAll(s, single, escape) + single
+}
+
+func needsShellEscape(s string) bool {
+	for _, r := range s {
+		// Allow [A-Za-z0-9_./-] without quoting; everything else
+		// (including spaces, $, ", and special chars) gets quoted.
+		switch {
+		case r >= 'A' && r <= 'Z':
+		case r >= 'a' && r <= 'z':
+		case r >= '0' && r <= '9':
+		case r == '_' || r == '/' || r == '.' || r == '-':
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+func replaceAll(s, old, new string) string {
+	if old == new || old == "" {
+		return s
+	}
+	out := ""
+	i := 0
+	for i < len(s) {
+		if i+len(old) <= len(s) && s[i:i+len(old)] == old {
+			out += new
+			i += len(old)
+		} else {
+			out += string(s[i])
+			i++
+		}
+	}
+	return out
 }
 
 // IsReachable checks whether the host accepts SSH connections.
