@@ -158,6 +158,7 @@ func TestPlatformDetection_Consistency(t *testing.T) {
 
 // TestCurrentPlatform documents the current platform for test output visibility.
 func TestCurrentPlatform(t *testing.T) {
+	// bluff-scan: no-assert-ok (basic build/config smoke — must not panic)
 	t.Logf("Current platform: runtime.GOOS=%q, runtime.GOARCH=%q", runtime.GOOS, runtime.GOARCH)
 	t.Logf("IsLinux()=%v, IsDarwin()=%v, IsWindows()=%v", IsLinux(), IsDarwin(), IsWindows())
 }

@@ -26,6 +26,7 @@ func TestNoopCollector_AllMethods(t *testing.T) {
 }
 
 func TestNoopCollector_MultipleContainers(t *testing.T) {
+	// bluff-scan: no-assert-ok (null-implementation smoke — no-op type must accept all interface calls without panic)
 	c := &NoopCollector{}
 	names := []string{"pg", "redis", "chromadb", "mock-llm"}
 	for _, name := range names {

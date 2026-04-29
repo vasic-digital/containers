@@ -9,6 +9,7 @@ import (
 
 // TestNopLogger_AllMethods calls all nopLogger stub methods for coverage.
 func TestNopLogger_AllMethods(t *testing.T) {
+	// bluff-scan: no-assert-ok (null-implementation smoke — no-op type must accept all interface calls without panic)
 	l := nopLogger{}
 	l.Info("test %s", "info")
 	l.Debug("test %s", "debug")
