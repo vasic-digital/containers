@@ -323,3 +323,97 @@ the feature really worked. If they can, the test is bluff and must be hardened.
 
 **Cross-references:** parent CLAUDE.md "MANDATORY DEVELOPMENT PRINCIPLES",
 parent AGENTS.md "NO BLUFF" section, parent `scripts/testing/meta_test_false_positive_proof.sh`.
+
+<!-- BEGIN user-mandate forensic anchor (Article XI §11.9) -->
+
+## ⚠️ User-Mandate Forensic Anchor (Article XI §11.9 — 2026-04-29)
+
+Inherited from the umbrella project. Verbatim user mandate:
+
+> "We had been in position that all tests do execute with success
+> and all Challenges as well, but in reality the most of the
+> features does not work and can't be used! This MUST NOT be the
+> case and execution of tests and Challenges MUST guarantee the
+> quality, the completion and full usability by end users of the
+> product!"
+
+**The operative rule:** the bar for shipping is **not** "tests
+pass" but **"users can use the feature."**
+
+Every PASS in this codebase MUST carry positive evidence captured
+during execution that the feature works for the end user. No
+metadata-only PASS, no configuration-only PASS, no
+"absence-of-error" PASS, no grep-based PASS — all are critical
+defects regardless of how green the summary line looks.
+
+Tests and Challenges (HelixQA) are bound equally. A Challenge that
+scores PASS on a non-functional feature is the same class of
+defect as a unit test that does.
+
+**No false-success results are tolerable.** A green test suite
+combined with a broken feature is a worse outcome than an honest
+red one — it silently destroys trust in the entire suite.
+
+Adding files to scanner allowlists to silence bluff findings
+without resolving the underlying defect is itself a §11 violation.
+
+**Full text:** umbrella `CONSTITUTION.md` Article XI §11.9.
+
+<!-- END user-mandate forensic anchor (Article XI §11.9) -->
+
+<!-- BEGIN CONST-035 explicit anchor (cascaded 2026-04-29) -->
+
+## CONST-035 — Anti-Bluff Tests & Challenges (explicit anchor)
+
+This rule is identified as **CONST-035** in the umbrella project's
+governance index. The rule is already enforced in this submodule via
+the Article XI / Anti-Bluff sections above. This anchor adds the
+explicit identifier so automated audits (`grep -r CONST-035 .`) can
+locate the rule by its canonical name.
+
+**Operative rule:** A test or Challenge that PASSES is a CLAIM that
+the tested behavior **works for the end user of the product**. Every
+PASS MUST guarantee:
+
+a. **Quality** — the feature behaves correctly under the inputs an
+   end user will send, including malformed input, edge cases, and
+   concurrency that real workloads produce.
+b. **Completion** — the feature is wired end-to-end from public API
+   surface down to backing infrastructure, with no stub / placeholder
+   / "wired lazily later" gaps that silently 503.
+c. **Full usability** — a CLI agent / SDK consumer / direct client
+   following the documented interface SUCCEEDS without having to know
+   internal aliases, hidden flags, or undocumented dispatch quirks.
+
+A passing test that doesn't certify all three is a **bluff** and MUST
+be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")` so absence
+of coverage is loud rather than silent.
+
+**Bluff taxonomy** (each pattern observed in HelixAgent and now
+forbidden):
+
+- **Wrapper bluff** — assertions PASS but the wrapper's exit-code
+  logic is buggy. Use `! grep -qs "|FAILED|" "$LOG"` style counters,
+  never inline arithmetic on a command that prints AND exits non-zero.
+- **Contract bluff** — the system advertises a capability but rejects
+  it in dispatch. Every advertised capability MUST be exercised by a
+  test or Challenge that actually invokes it.
+- **Structural bluff** — `check_file_exists "foo_test.go"` passes if
+  the file is present but doesn't run the test. File-existence checks
+  MUST be paired with at least one functional assertion.
+- **Comment bluff** — a code comment promises a behavior the code
+  doesn't actually have. Documentation MUST be re-verified against
+  the code on every change touching the documented function.
+- **Skip bluff** — `t.Skip("not running yet")` without a `SKIP-OK:
+  #<ticket>` marker silently passes. Every skip needs the marker; CI
+  fails on bare skips.
+
+**Verification of CONST-035 itself:** deliberately break the feature
+(e.g. `kill <service>`, swap a password, unset an env var) and re-run
+the test/Challenge. It MUST FAIL. If it still passes, the test is
+non-conformant and MUST be tightened.
+
+**Cross-reference:** umbrella `CONSTITUTION.md` Article XI §§ 11.1 –
+11.9; root `CLAUDE.md` "Mandatory Development Standards" rule 27.
+
+<!-- END CONST-035 explicit anchor (cascaded 2026-04-29) -->

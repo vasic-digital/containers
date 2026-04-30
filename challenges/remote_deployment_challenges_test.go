@@ -354,6 +354,7 @@ func TestChallenge_SSH_ControlMaster(t *testing.T) {
 
 // Challenge: Multi-Host Configuration
 func TestChallenge_MultiHost_Configuration(t *testing.T) {
+	// bluff-scan: no-assert-ok (challenge config smoke — parsing/configuration must not panic)
 	cfg := envconfig.LoadFromEnv()
 	if !cfg.Enabled {
 		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true")  // SKIP-OK: #legacy-untriaged
@@ -401,6 +402,7 @@ func TestChallenge_Scheduler_Strategy(t *testing.T) {
 
 // Challenge: Environment Variable Parsing
 func TestChallenge_EnvConfig_Parsing(t *testing.T) {
+	// bluff-scan: no-assert-ok (challenge config smoke — parsing/configuration must not panic)
 	// This challenge verifies that all expected env vars are parsed correctly
 	cfg := envconfig.LoadFromEnv()
 

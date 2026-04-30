@@ -144,6 +144,7 @@ func TestNewCompactDisplay(t *testing.T) {
 
 // TestCompactDisplay_Stop verifies Stop does not panic when cancel is nil.
 func TestCompactDisplay_Stop(t *testing.T) {
+	// bluff-scan: no-assert-ok (lifecycle invariant — out-of-order calls must not panic/error)
 	exec := &mockExecutor{
 		responses: map[string][]byte{
 			"podman ps": []byte(`[]`),

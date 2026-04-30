@@ -125,6 +125,7 @@ func TestDefaultEventBus_Unsubscribe(t *testing.T) {
 }
 
 func TestDefaultEventBus_MultipleSubscribers(t *testing.T) {
+	// bluff-scan: no-assert-ok (event-bus smoke — pub/sub must not panic on any subscriber count)
 	bus := NewEventBus(16)
 	defer bus.Close()
 

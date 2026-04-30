@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -172,25 +173,87 @@ func (e *SSHExecutor) CopyFile(
 	return nil
 }
 
-// CopyDir copies a local directory to a remote host using scp -r.
+// CopyDir copies a local directory to a remote host so that, after
+// the call, `remoteDir` on the remote host has the same contents as
+// `localDir` on the local host.
+//
+// The natural `scp -r local remote` doesn't give those semantics:
+// when `remote` already exists, scp nests (creates
+// `remote/<basename(local)>`). To get rsync-style "make dest contain
+// what source contains" without race-hostile pre-clean (which broke
+// concurrent CopyFile siblings whose parent overlapped with the
+// destination), this implementation invokes scp with the PARENT of
+// remoteDir as the destination, relying on scp's "copy named source
+// into named parent" rule. As long as basename(localDir) ==
+// basename(remoteDir) — the universal case for the helixagent build
+// context flow — the result is deterministic regardless of pre-state:
+//
+//   scp -r /local/external/cognee user@host:/remote/external
+//     → creates/merges at /remote/external/cognee
+//
+// Forensic note (2026-04-29): the previous implementation passed
+// remoteDir directly to scp. When a sibling CopyFile created remoteDir
+// as a side-effect of its own `mkdir -p`, the subsequent CopyDir
+// nested its source inside the now-existing remoteDir. Cognee broke
+// remotely because /remote/external/cognee/README.md ended up at
+// /remote/external/cognee/cognee/README.md (one level too deep), and
+// the COPY directive in the Dockerfile failed with
+// `copier: stat: "/README.md": no such file or directory`. The
+// "scp into parent" pattern eliminates the dependence on remoteDir's
+// pre-state.
 func (e *SSHExecutor) CopyDir(
 	ctx context.Context,
 	host RemoteHost,
 	localDir, remoteDir string,
 ) error {
+	localBase := filepath.Base(localDir)
+	remoteBase := filepath.Base(remoteDir)
+	remoteParent := filepath.Dir(remoteDir)
+
 	args := e.scpArgs(host)
 	args = append([]string{"-r"}, args...)
-	args = append(args,
-		localDir,
-		fmt.Sprintf(
-			"%s@%s:%s", host.User, host.Address, remoteDir,
-		),
-	)
 
-	e.logger.Debug(
-		"scp dir to %s: %s -> %s",
-		host.Name, localDir, remoteDir,
-	)
+	if localBase == remoteBase {
+		// Universal case: copy source into the PARENT of the remote
+		// destination so scp's basename rule lands the contents where
+		// the caller expects, without any pre-state assumption.
+		args = append(args,
+			localDir,
+			fmt.Sprintf("%s@%s:%s", host.User, host.Address, remoteParent),
+		)
+		e.logger.Debug(
+			"scp dir to %s: %s -> %s (via parent %s)",
+			host.Name, localDir, remoteDir, remoteParent,
+		)
+	} else {
+		// Rare: basenames differ. We cannot rely on scp's basename rule
+		// to land the contents at the right location, so we fall back
+		// to a defensive pre-clean of the destination + scp directly
+		// to the destination. This path is race-prone if a sibling
+		// CopyFile is concurrently writing into the same parent, but
+		// it's also rarely exercised in practice.
+		cleanCmd := fmt.Sprintf("rm -rf -- %s", shellEscape(remoteDir))
+		if sshArgsList, sshErr := e.sshArgs(ctx, host); sshErr == nil {
+			cleanArgs := append(sshArgsList, cleanCmd)
+			cleanCmdRun := exec.CommandContext(ctx, "ssh", cleanArgs...)
+			var cleanStderr bytes.Buffer
+			cleanCmdRun.Stderr = &cleanStderr
+			if err := cleanCmdRun.Run(); err != nil {
+				e.logger.Debug(
+					"pre-scp rm on %s (ignored): %s -> %s: %v (stderr: %s)",
+					host.Name, localDir, remoteDir, err, cleanStderr.String(),
+				)
+			}
+		}
+		args = append(args,
+			localDir,
+			fmt.Sprintf("%s@%s:%s", host.User, host.Address, remoteDir),
+		)
+		e.logger.Debug(
+			"scp dir to %s (basename mismatch): %s -> %s",
+			host.Name, localDir, remoteDir,
+		)
+	}
 
 	cmd := exec.CommandContext(ctx, "scp", args...)
 	var stderr bytes.Buffer
@@ -203,6 +266,49 @@ func (e *SSHExecutor) CopyDir(
 		)
 	}
 	return nil
+}
+
+// shellEscape wraps an arbitrary path in single quotes for safe inclusion
+// in a remote shell command, doubling any embedded single quotes.
+func shellEscape(s string) string {
+	if !needsShellEscape(s) {
+		return s
+	}
+	const single = `'`
+	const escape = `'\''`
+	return single + replaceAll(s, single, escape) + single
+}
+
+func needsShellEscape(s string) bool {
+	for _, r := range s {
+		switch {
+		case r >= 'A' && r <= 'Z':
+		case r >= 'a' && r <= 'z':
+		case r >= '0' && r <= '9':
+		case r == '_' || r == '/' || r == '.' || r == '-':
+		default:
+			return true
+		}
+	}
+	return false
+}
+
+func replaceAll(s, old, new string) string {
+	if old == new || old == "" {
+		return s
+	}
+	out := ""
+	i := 0
+	for i < len(s) {
+		if i+len(old) <= len(s) && s[i:i+len(old)] == old {
+			out += new
+			i += len(old)
+		} else {
+			out += string(s[i])
+			i++
+		}
+	}
+	return out
 }
 
 // IsReachable checks whether the host accepts SSH connections.

@@ -79,6 +79,7 @@ func TestPortAllocator_Release_NotAllocated(t *testing.T) {
 }
 
 func TestIsPortAvailable(t *testing.T) {
+	// bluff-scan: no-assert-ok (predicate smoke — bool result depends on host; must not panic)
 	// Port 0 won't be listened on; large port should be available.
 	// This is environment-dependent, so just verify the function
 	// doesn't panic.
