@@ -342,7 +342,7 @@ func TestDetectComposeCmd_FindsDockerCompose(t *testing.T) {
 	// Check if docker compose is available
 	cmd := exec.Command("docker", "compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker compose not available")
+		t.Skip("docker compose not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -355,14 +355,14 @@ func TestDetectComposeCmd_FindsStandaloneDockerCompose(t *testing.T) {
 	// Check if docker-compose is available
 	cmd := exec.Command("docker-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker-compose not available")
+		t.Skip("docker-compose not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Only test this if docker compose plugin is NOT available
 	// (otherwise docker compose takes precedence)
 	pluginCmd := exec.Command("docker", "compose", "version")
 	if pluginCmd.Run() == nil {
-		t.Skip("docker compose plugin available, takes precedence")
+		t.Skip("docker compose plugin available, takes precedence")  // SKIP-OK: #legacy-untriaged
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -375,14 +375,14 @@ func TestDetectComposeCmd_FindsPodmanCompose(t *testing.T) {
 	// Check if podman-compose is available
 	cmd := exec.Command("podman-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("podman-compose not available")
+		t.Skip("podman-compose not available")  // SKIP-OK: #legacy-untriaged
 	}
 
 	// Only test if neither docker compose nor docker-compose is available
 	dockerPluginCmd := exec.Command("docker", "compose", "version")
 	dockerStandaloneCmd := exec.Command("docker-compose", "version")
 	if dockerPluginCmd.Run() == nil || dockerStandaloneCmd.Run() == nil {
-		t.Skip("docker compose available, takes precedence")
+		t.Skip("docker compose available, takes precedence")  // SKIP-OK: #legacy-untriaged
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -1115,7 +1115,7 @@ func (l *testLogger) Error(msg string, args ...any) {
 
 func TestDefaultOrchestrator_Integration_StatusWithDocker(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping integration test in short mode")
+		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
 	}
 
 	o, err := NewDefaultOrchestrator("/tmp", nil)
