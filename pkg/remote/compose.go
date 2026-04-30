@@ -132,7 +132,14 @@ func (o *RemoteComposeOrchestrator) Up(
 	}
 
 	args := o.projectArgs(project)
-	args = append(args, "up", "-d")
+	// `--build` forces compose to rebuild images whose Dockerfile or
+	// build context changed since the last deploy. Without it,
+	// `compose up -d` reuses the cached image even when the Dockerfile
+	// reference in the compose file points at a NEW Dockerfile —
+	// silently masking any Dockerfile fix the orchestrator just shipped.
+	// Layer caches in BuildKit / podman keep the cost low when nothing
+	// actually changed.
+	args = append(args, "up", "-d", "--build")
 	if project.Services != nil {
 		args = append(args, project.Services...)
 	}

@@ -100,6 +100,7 @@ func TestScoreNetwork_AllBranches(t *testing.T) {
 
 // TestScheduleOne_AllStrategies exercises scheduleOne for all strategies.
 func TestScheduleOne_AllStrategies(t *testing.T) {
+	// bluff-scan: no-assert-ok (enumeration smoke — every strategy/provider/adapter must not panic)
 	mgr := newMockHostManager()
 	_ = mgr.AddHost(remote.RemoteHost{Name: "host-1", Address: "1.1.1.1", User: "u", Labels: map[string]string{}})
 	mgr.snapshots["host-1"] = makeSnapshot("host-1", 20, 30, 16384, 500000, 8)

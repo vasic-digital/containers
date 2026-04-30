@@ -51,7 +51,7 @@ func TestLocalRuntime_Detection(t *testing.T) {
 
 	rt, err := runtime.AutoDetect(ctx)
 	if err != nil {
-		t.Skipf(
+		t.Skipf(  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 			"skipping: no container runtime available: %v",
 			err,
 		)
@@ -90,7 +90,7 @@ func TestLocalCompose_StatusOnMissing(t *testing.T) {
 		t.TempDir(), logging.NopLogger{},
 	)
 	if err != nil {
-		t.Skipf(
+		t.Skipf(  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
 			"skipping: no compose command available: %v",
 			err,
 		)
