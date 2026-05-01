@@ -1,0 +1,21 @@
+# CONST-035 mutation testing config (go-mutesting, Avito fork).
+# Threshold rules are enforced by challenges/scripts/mutation_ratchet_challenge.sh,
+# not by go-mutesting itself.
+#
+# Schema reference (Avito fork):
+#   https://github.com/avito-tech/go-mutesting#config-file
+#
+# We intentionally enable json_output so the ratchet script can parse a
+# stable machine-readable summary. The exclude_dirs list keeps the run
+# bounded to production code (vendored, generated, and the scanner's own
+# fixture suite are excluded).
+skip_without_test: true
+skip_with_build_tags: true
+json_output: true
+html_output: false
+silent_mode: false
+exclude_dirs:
+  - vendor
+  - scripts/anti-bluff/tests/fixtures
+  - tests/integration
+  - tests/benchmark
