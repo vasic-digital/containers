@@ -40,7 +40,16 @@ For Go tests: `<path>.go::<TestFuncName>`. Verifier greps for
 | CAP-012 | submodule:Containers | SSH executor surfaces invalid-host error cleanly | pkg/remote/ssh_executor_test.go::TestSSHExecutor_Execute_InvalidHost | SSHExecutor.Execute against unreachable host returns descriptive error, not panic | active |
 | CAP-013 | submodule:Containers | Auto-detect available container runtime, preferring Docker | pkg/runtime/detect_test.go::TestAutoDetectWith_DockerFirst | runtime.AutoDetect() prefers docker over podman/containerd when all are present | active |
 | CAP-014 | submodule:Containers | Schedule containers with resource-aware strategy | pkg/scheduler/scheduler_test.go::TestDefaultScheduler_Schedule_ResourceAware | Scheduler places containers on hosts with sufficient CPU/memory headroom | active |
+| CAP-015 | submodule:Containers | Failover handler refuses to operate without HostManager + Executor | pkg/distribution/failover_test.go::TestFailoverHandler_NoHostManagerOrExecutor | FailoverHandler.Failover() returns descriptive error when dependencies are nil | active |
+| CAP-016 | submodule:Containers | Distributed build executes across registered remote hosts | pkg/distribution/distributed_build_test.go::TestDistributedBuildExecution | Distributed build orchestrator dispatches build steps to multiple hosts and aggregates results | active |
+| CAP-017 | submodule:Containers | ctop collector constructs against a real container runtime | pkg/ctop/ctop_test.go::TestNewCollector | NewCollector() returns a usable collector wired to a runtime | active |
+| CAP-018 | submodule:Containers | Event-type constants are defined for every lifecycle stage | pkg/event/events_test.go::TestEventType_Constants | EventType has Started/Stopped/Healthy/Unhealthy/etc. constants exposed | active |
+| CAP-019 | submodule:Containers | DNS discoverer constructor accepts SRV/A record query config | pkg/discovery/dns_test.go::TestNewDNSDiscoverer | NewDNSDiscoverer() returns a configured discoverer for SRV-based service discovery | active |
+| CAP-020 | submodule:Containers | Build-package planner produces an executable plan | internal/buildpkg/planner_test.go::TestPlanner_PlanAll | Planner.PlanAll() produces a non-empty build plan covering supplied targets | active |
+| CAP-021 | submodule:Containers | Scheduler labels-match strategy correctly filters hosts | pkg/scheduler/strategies_test.go::TestLabelsMatch | LabelsMatch() returns true only when host labels are a superset of required labels | active |
+| CAP-022 | submodule:Containers | End-to-end distribution workflow exercises all phases | tests/integration/distribution_integration_test.go::TestDistributionWorkflow_AllPhases | Distribution workflow runs schedule → deploy → health-check → undistribute and reports per-phase status | active |
+| CAP-023 | submodule:Containers | SSH executor rejects connection to invalid host with descriptive error | tests/security/ssh_security_test.go::TestSSHExecutor_InvalidHost | SSHExecutor.Execute() against an unresolvable host returns a non-empty error string (no panic, no silent success) | active |
 
-(More capabilities — distributor failover, ctop monitor display, plugin
-event hooks, integration/remote/security flows — populated in subsequent
-iterations of sub-project 3.)
+(Manifest now covers core runtime+orchestration+distribution+security
++integration capabilities — 23 active rows. Long-tail: per-strategy
+scheduler tests, individual lifecycle event types, volume mount paths.)
