@@ -5,9 +5,9 @@
 # Section 2: per-file mutation kill rates, format <path>:<rate>:<mutants>.
 # Section 3: anchor-manifest gaps, format <capability-id>:MISSING_ANCHOR.
 # === SECTION 1: STATIC SCANNER HITS ===
-challenges/remote_deployment_challenges_test.go:BLUFF-G-003
-internal/platform/detect_test.go:BLUFF-G-003
-pkg/metrics/prometheus_test.go:BLUFF-G-003
-tests/integration/remote_deployment_test.go:BLUFF-G-003
+# (empty — all 4 pre-existing BLUFF-G-003 hits were already annotated
+#  with `// bluff-scan: no-assert-ok` markers; the scanner now
+#  recognizes that marker as a valid exempt convention alongside
+#  SKIP-OK and ANTI-BLUFF-EXEMPT, per sub-project 4 iter 8 update.)
 # === SECTION 2: PER-FILE MUTATION KILL RATES ===
 # === SECTION 3: ANCHOR-MANIFEST GAPS ===
