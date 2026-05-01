@@ -100,15 +100,17 @@ func TestUpdateHealth(t *testing.T) {
 }
 
 func TestDiscover_PortFound(t *testing.T) {
-	ln, err := net.Listen("tcp", "localhost:18080")
+	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	defer ln.Close()
 
+	port := ln.Addr().(*net.TCPAddr).Port
+
 	r := newTestRegistry(t)
-	svc, err := r.Discover(context.Background(), "discovered", 18080, 18080, 18090)
+	svc, err := r.Discover(context.Background(), "discovered", port, port, port+10)
 	require.NoError(t, err)
 	assert.NotNil(t, svc)
-	assert.Equal(t, 18080, svc.Port)
+	assert.Equal(t, port, svc.Port)
 }
 
 func TestDiscover_PortNotFound(t *testing.T) {
