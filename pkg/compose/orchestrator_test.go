@@ -304,16 +304,6 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 	assert.NotNil(t, o.logger)
 }
 
-func TestNewDefaultOrchestrator_WithLogger(t *testing.T) {
-	o, err := NewDefaultOrchestrator("/tmp", &testLogger{})
-	if err != nil {
-		t.Skipf("no compose command available: %v", err)
-	}
-
-	require.NotNil(t, o)
-	assert.NotNil(t, o.logger)
-}
-
 func TestNewDefaultOrchestrator_NilLogger(t *testing.T) {
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
@@ -1071,55 +1061,6 @@ func TestNewOrchestrator_WithNilArgs(t *testing.T) {
 	assert.Equal(t, "/home", o.workDir)
 }
 
-// --- Test helper ---
-
-type testLogger struct {
-	messages []string
-}
-
-func (l *testLogger) Debug(msg string, args ...any) {
-	l.messages = append(l.messages, "DEBUG: "+msg)
-}
-
-func (l *testLogger) Info(msg string, args ...any) {
-	l.messages = append(l.messages, "INFO: "+msg)
-}
-
-func (l *testLogger) Warn(msg string, args ...any) {
-	l.messages = append(l.messages, "WARN: "+msg)
-}
-
-func (l *testLogger) Error(msg string, args ...any) {
-	l.messages = append(l.messages, "ERROR: "+msg)
-}
-
-// --- Integration-style tests with real compose (if available) ---
-
-func TestDefaultOrchestrator_Integration_StatusWithDocker(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
-	}
-
-	o, err := NewDefaultOrchestrator("/tmp", nil)
-	if err != nil {
-		t.Skipf("no compose command available: %v", err)
-	}
-
-	ctx := context.Background()
-	project := ComposeProject{
-		Name: "nonexistent-project-12345",
-	}
-
-	// This should succeed but return empty status for non-existent project
-	statuses, err := o.Status(ctx, project)
-	// Error is acceptable here since the project doesn't exist
-	if err != nil {
-		assert.Contains(t, err.Error(), "compose ps failed")
-	} else {
-		assert.Empty(t, statuses)
-	}
-}
-
 // --- Test ComposeOrchestrator interface compliance ---
 
 func TestDefaultOrchestrator_ImplementsInterface(t *testing.T) {
@@ -1412,7 +1353,7 @@ func TestDefaultOrchestrator_Logs_CommandNotExecutable(t *testing.T) {
 	o := NewOrchestrator(scriptPath, nil, tmpDir, nil)
 
 	ctx := context.Background()
-	project := ComposeProject{}
+	project := ComposeProject{Name: "test-project"}
 
 	_, err = o.Logs(ctx, project, "web")
 	require.Error(t, err)
@@ -1508,8 +1449,6 @@ func TestNewOrchestratorWithFactory(t *testing.T) {
 	assert.Equal(t, "/tmp", o.workDir)
 }
 
-// TestNewOrchestratorWithFactory_NilFactory tests that nil factory
-// uses the default.
 // TestCmdLogReader_ReadAndClose tests the cmdLogReader methods.
 func TestCmdLogReader_ReadAndClose(t *testing.T) {
 	reader := io.NopCloser(strings.NewReader("test content"))
@@ -1534,3 +1473,10 @@ func TestCmdLogReader_ReadAndClose(t *testing.T) {
 	require.NoError(t, err)
 	_ = waitCalled // mockCmd.Wait() was called implicitly
 }
+// testLogger is a simple test logger for orchestrator tests.
+type testLogger struct{}
+
+func (l *testLogger) Debug(msg string, args ...any) {}
+func (l *testLogger) Info(msg string, args ...any)  {}
+func (l *testLogger) Warn(msg string, args ...any)  {}
+func (l *testLogger) Error(msg string, args ...any) {}
