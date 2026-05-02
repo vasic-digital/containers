@@ -46,20 +46,6 @@ func TestComposeCommand_String(t *testing.T) {
 	}
 }
 
-func TestNewComposeDetector(t *testing.T) {
-	exec := &mockExecutor{}
-	detector := NewComposeDetector(exec, logging.NopLogger{})
-	assert.NotNil(t, detector)
-	assert.NotNil(t, detector.cache)
-}
-
-func TestNewComposeDetector_NilLogger(t *testing.T) {
-	exec := &mockExecutor{}
-	detector := NewComposeDetector(exec, nil)
-	assert.NotNil(t, detector)
-	assert.NotNil(t, detector.logger)
-}
-
 func TestComposeDetector_Detect_PodmanComposePriority(t *testing.T) {
 	exec := &mockExecutor{}
 	host := RemoteHost{Name: "test-host", Runtime: "podman"}

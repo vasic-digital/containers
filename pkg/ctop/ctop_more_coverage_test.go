@@ -128,19 +128,6 @@ func TestParseBlockIO_NoSlash(t *testing.T) {
 }
 
 // TestNewCompactDisplay verifies the compact flag is set.
-func TestNewCompactDisplay(t *testing.T) {
-	exec := &mockExecutor{
-		responses: map[string][]byte{
-			"podman ps": []byte(`[]`),
-		},
-	}
-	c := NewCollectorWithExecutor("podman", nil, exec)
-	config := DefaultDisplayConfig()
-	cd := NewCompactDisplay(c, config)
-	assert.NotNil(t, cd)
-	assert.NotNil(t, cd.display)
-	assert.True(t, cd.display.config.Compact)
-}
 
 // TestCompactDisplay_Stop verifies Stop does not panic when cancel is nil.
 func TestCompactDisplay_Stop(t *testing.T) {

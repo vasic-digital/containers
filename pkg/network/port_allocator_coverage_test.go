@@ -102,7 +102,7 @@ func TestPortAllocator_SkipsInUsePorts(t *testing.T) {
 	end := usedPort + 10
 
 	if end > 65535 {
-		t.Skip("port range would exceed 65535")  // SKIP-OK: #legacy-untriaged
+		t.Skip("port range would exceed 65535")
 	}
 
 	a := NewPortAllocator(start, end)
@@ -126,7 +126,7 @@ func TestPortAllocator_ListAllocations_AfterRelease(t *testing.T) {
 	p2, err2 := a.Allocate("second")
 
 	if err1 != nil || err2 != nil {
-		t.Skip("ports not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("ports not available")
 	}
 
 	assert.Len(t, a.ListAllocations(), 2)

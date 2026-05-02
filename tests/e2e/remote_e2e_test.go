@@ -25,7 +25,7 @@ func TestRemoteHost_SkipWithoutConfig(t *testing.T) {
 
 	val := os.Getenv("CONTAINERS_REMOTE_ENABLED")
 	if val != "true" {
-		t.Skip(  // SKIP-OK: #legacy-untriaged
+		t.Skip(
 			"skipping remote host test: " +
 				"CONTAINERS_REMOTE_ENABLED is not true",
 		)
@@ -51,7 +51,7 @@ func TestLocalRuntime_Detection(t *testing.T) {
 
 	rt, err := runtime.AutoDetect(ctx)
 	if err != nil {
-		t.Skipf(  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf(
 			"skipping: no container runtime available: %v",
 			err,
 		)
@@ -90,7 +90,7 @@ func TestLocalCompose_StatusOnMissing(t *testing.T) {
 		t.TempDir(), logging.NopLogger{},
 	)
 	if err != nil {
-		t.Skipf(  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf(
 			"skipping: no compose command available: %v",
 			err,
 		)

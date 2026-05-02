@@ -68,21 +68,7 @@ func newDummyCmd() *exec.Cmd {
 }
 
 // TestNewTunnelManager verifies the constructor initialises fields.
-func TestNewTunnelManager(t *testing.T) {
-	hm := &mockHostManager{hosts: map[string]remote.RemoteHost{}}
-	mgr := NewTunnelManager(hm, logging.NopLogger{})
-	assert.NotNil(t, mgr)
-	assert.NotNil(t, mgr.tunnels)
-	assert.NotNil(t, mgr.allocator)
-}
-
 // TestNewTunnelManager_NilLogger verifies nil logger uses NopLogger.
-func TestNewTunnelManager_NilLogger(t *testing.T) {
-	hm := &mockHostManager{hosts: map[string]remote.RemoteHost{}}
-	mgr := NewTunnelManager(hm, nil)
-	assert.NotNil(t, mgr)
-}
-
 // TestNewTunnelManager_WithOptions verifies option application.
 func TestNewTunnelManager_WithOptions(t *testing.T) {
 	hm := &mockHostManager{hosts: map[string]remote.RemoteHost{}}

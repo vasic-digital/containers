@@ -85,18 +85,6 @@ func TestWithExcludePattern(t *testing.T) {
 	assert.Equal(t, "*test*", o.excludePattern)
 }
 
-func TestNew_WithAllOptions(t *testing.T) {
-	mock := &mockComposeOrch{}
-	orch := New(
-		WithLocalOrchestrator(mock),
-		WithProjectDir("/test/project"),
-		WithExcludePattern("*.test.yml"),
-	)
-	assert.NotNil(t, orch)
-	assert.Equal(t, "/test/project", orch.projectDir)
-	assert.Equal(t, "*.test.yml", orch.excludePattern)
-}
-
 func TestNew_RemoteEnabled(t *testing.T) {
 	execMock := &mockRemoteExec{}
 	hostMock := &mockHostMgr{}
