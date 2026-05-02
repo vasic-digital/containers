@@ -1,7 +1,9 @@
 # Containers - A generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. Supports Docker, Podman, and Kubernetes runtimes.
 # Module: digital.vasic.containers
 
-.PHONY: build test test-race test-short test-integration test-bench test-coverage fmt vet lint clean help
+.PHONY: build test test-race test-short test-integration test-bench test-coverage fmt vet lint clean help \
+	anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation anti-bluff-mutation-changed \
+	update-baseline qa-all challenge
 
 MODULE := digital.vasic.containers
 GOMAXPROCS ?= 2
@@ -46,6 +48,35 @@ clean:
 # Challenges (run from parent HelixAgent project)
 challenge:
 	../challenges/scripts/containers_challenge.sh 2>/dev/null || echo "No challenge script"
+
+# === CONST-035 anti-bluff gates ===
+
+anti-bluff-scan:
+	@bash scripts/anti-bluff/bluff-scanner.sh --mode all
+
+anti-bluff-anchors:
+	@bash challenges/scripts/anchor_manifest_challenge.sh
+
+anti-bluff-mutation:
+	@bash challenges/scripts/mutation_ratchet_challenge.sh --mode all
+
+anti-bluff-mutation-changed:
+	@bash challenges/scripts/mutation_ratchet_challenge.sh
+
+anti-bluff: anti-bluff-scan anti-bluff-anchors anti-bluff-mutation-changed
+
+update-baseline:
+	@echo "Manual baseline update — see docs/ANTI_BLUFF.md"
+	@echo "1. Run scanner: bash scripts/anti-bluff/bluff-scanner.sh --mode all"
+	@echo "2. Run mutation: bash challenges/scripts/mutation_ratchet_challenge.sh --mode all"
+	@echo "3. Edit challenges/baselines/bluff-baseline.txt to reflect new state."
+
+# Aggregated quality gate. Existing pre-CONST-035 challenges (host-power, no-suspend)
+# remain wired so qa-all asserts the union.
+qa-all:
+	@bash challenges/scripts/no_suspend_calls_challenge.sh
+	@bash challenges/scripts/host_no_auto_suspend_challenge.sh
+	@$(MAKE) anti-bluff
 
 help:
 	@echo "Containers - A generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. Supports Docker, Podman, and Kubernetes runtimes."

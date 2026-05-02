@@ -100,14 +100,14 @@ func TestUpdateHealth(t *testing.T) {
 }
 
 func TestDiscover_PortFound(t *testing.T) {
-	// Use port 0 to get an available ephemeral port, then discover it.
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err)
 	defer ln.Close()
 
 	port := ln.Addr().(*net.TCPAddr).Port
+
 	r := newTestRegistry(t)
-	svc, err := r.Discover(context.Background(), "discovered", port, port, port+1)
+	svc, err := r.Discover(context.Background(), "discovered", port, port, port+10)
 	require.NoError(t, err)
 	assert.NotNil(t, svc)
 	assert.Equal(t, port, svc.Port)
