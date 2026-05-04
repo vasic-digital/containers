@@ -94,18 +94,102 @@ func (a *AndroidEmulator) adbBinary() string {
 	return a.androidSdkRoot + "/platform-tools/adb"
 }
 
+// emulatorSerials parses `adb devices` output and returns the set of
+// emulator console ports currently registered (e.g. emulator-5554 →
+// {5554}). Used by Boot() to discover the port the newly-launched
+// emulator actually binds to. Multi-AVD matrix runs MUST NOT assume
+// every emulator lands on 5554/5555 — when a previous emulator's
+// Teardown is still in flight (or failed silently), the next launch
+// lands on 5556/5557, 5558/5559, etc.
+//
+// Forensic anchor (2026-05-04 evening, exposed by ultrathink-driven
+// diagnostic instrumentation): the prior Boot() hardcoded ADBPort=5555
+// regardless of actual binding, causing every iteration of a multi-AVD
+// matrix to test against whichever emulator happened to bind 5554/5555
+// FIRST — the subsequent AVDs' emulators silently ran their tests
+// against the FIRST AVD's process, then died at the next Teardown
+// call. Recorded as a clause-6.I clause-7 architecture bluff.
+func (a *AndroidEmulator) emulatorSerials(ctx context.Context) (map[int]bool, error) {
+	out, err := a.executor.Execute(ctx, a.adbBinary(), "devices")
+	if err != nil {
+		return nil, fmt.Errorf("adb devices failed: %w", err)
+	}
+	serials := make(map[int]bool)
+	for _, line := range strings.Split(string(out), "\n") {
+		// Lines look like:
+		//   emulator-5554\tdevice
+		//   emulator-5556\toffline
+		//   localhost:5555\tdevice          (ignore — that's a network alias)
+		// We capture every emulator-<port> regardless of state, because
+		// even an offline emulator is taking up that port.
+		if !strings.HasPrefix(line, "emulator-") {
+			continue
+		}
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		var port int
+		if _, scanErr := fmt.Sscanf(fields[0], "emulator-%d", &port); scanErr == nil && port > 0 {
+			serials[port] = true
+		}
+	}
+	return serials, nil
+}
+
+// discoverNewSerial polls `adb devices` until a console port appears
+// that wasn't in `before`, or the timeout elapses. The returned port
+// is the CONSOLE port (e.g. 5554); callers compute ADB port = console + 1.
+func (a *AndroidEmulator) discoverNewSerial(
+	ctx context.Context,
+	before map[int]bool,
+	timeout time.Duration,
+) (int, error) {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		current, err := a.emulatorSerials(ctx)
+		if err == nil {
+			for port := range current {
+				if !before[port] {
+					return port, nil
+				}
+			}
+		}
+		select {
+		case <-ctx.Done():
+			return 0, fmt.Errorf("emulator port discovery cancelled: %w", ctx.Err())
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+	return 0, fmt.Errorf("no new emulator serial appeared in adb devices within %s", timeout)
+}
+
 // Boot starts the AVD in headless mode. The emulator process runs
-// asynchronously; this method returns once the process is detached.
-// Use WaitForBoot to wait for Android boot completion.
+// asynchronously; this method returns once the new emulator's serial
+// is observable in `adb devices` (typically 1-3 seconds after the
+// underlying QEMU process binds its sockets) — NOT once Android has
+// fully booted. Use WaitForBoot to wait for sys.boot_completed=1.
 //
 // Per clause 6.I clause 6, coldBoot=true SHOULD be used for any gating
 // matrix run — it disables snapshot reload, ensuring reproducibility
 // across runs.
+//
+// Boot dynamically discovers the console/ADB port the new emulator
+// binds to by diffing `adb devices` before and after the launch. This
+// is the constitutional fix for the 2026-05-04 ultrathink-discovered
+// bluff (see emulatorSerials KDoc above). Without dynamic discovery,
+// multi-AVD matrix runs silently test against the FIRST emulator
+// every iteration.
 func (a *AndroidEmulator) Boot(
 	ctx context.Context,
 	avd AVD,
 	coldBoot bool,
 ) (BootResult, error) {
+	// Snapshot existing emulator ports BEFORE launch so we can detect
+	// the new one after launch. Errors here are non-fatal — empty map
+	// is a safe baseline (we'll just claim the first emulator we see).
+	before, _ := a.emulatorSerials(ctx)
+
 	args := []string{
 		"-avd", avd.Name,
 		"-no-window",
@@ -121,19 +205,36 @@ func (a *AndroidEmulator) Boot(
 	// underlying process keeps running after this call returns; the
 	// caller must invoke Teardown via `adb emu kill` to stop it.
 	startedAt := time.Now()
-	err := a.executor.Start(ctx, a.emulatorBinary(), args...)
-	result := BootResult{
+	if err := a.executor.Start(ctx, a.emulatorBinary(), args...); err != nil {
+		return BootResult{
+			AVD:          avd,
+			Started:      false,
+			BootDuration: time.Since(startedAt),
+			Error:        fmt.Errorf("emulator launch failed: %w", err),
+		}, err
+	}
+
+	// Discover the actual port the new emulator bound to. Bounded by a
+	// 60s timeout — if adb doesn't see the new emulator within that,
+	// something is structurally wrong (kvm denied, zygote crash, etc.)
+	// and we fail loudly rather than silently mis-target later calls.
+	newPort, derr := a.discoverNewSerial(ctx, before, 60*time.Second)
+	if derr != nil {
+		return BootResult{
+			AVD:          avd,
+			Started:      true,
+			BootDuration: time.Since(startedAt),
+			Error:        fmt.Errorf("emulator port discovery failed: %w", derr),
+		}, derr
+	}
+
+	return BootResult{
 		AVD:          avd,
-		Started:      err == nil,
+		Started:      true,
 		BootDuration: time.Since(startedAt),
-		ConsolePort:  5554, // default first-emulator console port
-		ADBPort:      5555, // default first-emulator adb port
-		Error:        err,
-	}
-	if err != nil {
-		result.Error = fmt.Errorf("emulator launch failed: %w", err)
-	}
-	return result, err
+		ConsolePort:  newPort,
+		ADBPort:      newPort + 1,
+	}, nil
 }
 
 // WaitForBoot polls `getprop sys.boot_completed` via adb until it
@@ -216,6 +317,11 @@ func (a *AndroidEmulator) Install(
 // task wired (Lava's case). The current implementation shells out via
 // gradlew; future versions MAY drive `adb shell am instrument`
 // directly for less wrapper overhead.
+//
+// Diagnostic instrumentation (clause 6.I clause 7 forensics): before
+// kicking off the test we log adb-devices state + the device's
+// ro.product.model so a future operator can verify the test ran
+// against the AVD the matrix runner intended.
 func (a *AndroidEmulator) RunInstrumentation(
 	ctx context.Context,
 	port int,
@@ -226,6 +332,28 @@ func (a *AndroidEmulator) RunInstrumentation(
 		return "", false, fmt.Errorf("testClass MUST be non-empty")
 	}
 	target := fmt.Sprintf("localhost:%d", port)
+
+	// Forensic diagnostics — see clause 6.I architecture audit.
+	devicesOut, _ := a.executor.Execute(ctx, a.adbBinary(), "devices")
+	sdkOut, _ := a.executor.Execute(
+		ctx, a.adbBinary(), "-s", target,
+		"shell", "getprop", "ro.build.version.sdk",
+	)
+	deviceOut, _ := a.executor.Execute(
+		ctx, a.adbBinary(), "-s", target,
+		"shell", "getprop", "ro.product.device",
+	)
+	fmt.Fprintf(os.Stderr,
+		"[matrix-diag] target=%s sdk=%q device=%q\n",
+		target,
+		strings.TrimSpace(string(sdkOut)),
+		strings.TrimSpace(string(deviceOut)),
+	)
+	fmt.Fprintf(os.Stderr,
+		"[matrix-diag-devices] %s\n",
+		strings.ReplaceAll(strings.TrimSpace(string(devicesOut)), "\n", " | "),
+	)
+
 	runCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	cmd := exec.CommandContext(

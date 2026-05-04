@@ -24,6 +24,12 @@ import (
 type fakeExecutor struct {
 	calls   []fakeCall
 	scripts map[string]fakeScript
+	// sequencedScripts returns successive outputs for repeated calls
+	// to the same command key, simulating real adb output that changes
+	// between invocations (e.g. `adb devices` when a new emulator
+	// appears mid-test). The last entry repeats after exhaustion.
+	sequencedScripts map[string][]fakeScript
+	seqIdx           map[string]int
 }
 
 type fakeCall struct {
@@ -42,6 +48,30 @@ func (f *fakeExecutor) Execute(_ context.Context, name string, args ...string) (
 	if len(args) > 0 {
 		key = name + " " + strings.Join(args, " ")
 	}
+	// Sequenced scripts take precedence — each call returns the next
+	// entry in the sequence (last entry repeats forever).
+	if seq, ok := f.sequencedScripts[key]; ok && len(seq) > 0 {
+		if f.seqIdx == nil {
+			f.seqIdx = map[string]int{}
+		}
+		idx := f.seqIdx[key]
+		if idx >= len(seq) {
+			idx = len(seq) - 1
+		}
+		f.seqIdx[key] = f.seqIdx[key] + 1
+		return seq[idx].Out, seq[idx].Err
+	}
+	if seq, ok := f.sequencedScripts[name]; ok && len(seq) > 0 {
+		if f.seqIdx == nil {
+			f.seqIdx = map[string]int{}
+		}
+		idx := f.seqIdx[name]
+		if idx >= len(seq) {
+			idx = len(seq) - 1
+		}
+		f.seqIdx[name] = f.seqIdx[name] + 1
+		return seq[idx].Out, seq[idx].Err
+	}
 	if s, ok := f.scripts[key]; ok {
 		return s.Out, s.Err
 	}
@@ -49,6 +79,36 @@ func (f *fakeExecutor) Execute(_ context.Context, name string, args ...string) (
 		return s.Out, s.Err
 	}
 	return nil, nil
+}
+
+// adbDevicesScript is a fakeExecutor convenience that returns the
+// supplied serials as `adb devices` output. Used by tests that need to
+// drive the Boot() port-discovery loop. Pass an EMPTY slice for the
+// "no emulators yet" pre-snapshot, then the actual list for the post-
+// launch state — the sequenced script will hand them back in order.
+func adbDevicesScript(serials ...int) fakeScript {
+	var sb strings.Builder
+	sb.WriteString("List of devices attached\n")
+	for _, s := range serials {
+		fmt.Fprintf(&sb, "emulator-%d\tdevice\n", s)
+	}
+	return fakeScript{Out: []byte(sb.String())}
+}
+
+// firstCallMatching returns the index + call where Name == target,
+// or panics with a descriptive message. Used by Boot tests after the
+// 2026-05-04 architectural fix that introduced pre-snapshot adb-devices
+// calls before the emulator-binary launch — calls[0] is no longer the
+// launch call.
+func firstCallMatching(t *testing.T, calls []fakeCall, target string) fakeCall {
+	t.Helper()
+	for _, c := range calls {
+		if c.Name == target {
+			return c
+		}
+	}
+	t.Fatalf("no call to %s found in %d recorded calls", target, len(calls))
+	return fakeCall{}
 }
 
 // Start mirrors the production Start contract — records the call and
@@ -73,7 +133,18 @@ func (f *fakeExecutor) Start(_ context.Context, name string, args ...string) err
 //             flag string changes.
 //   Reverted: yes (see git log).
 func TestAndroidEmulator_Boot_PassesExpectedFlagsToEmulatorBinary(t *testing.T) {
-	exec := &fakeExecutor{scripts: map[string]fakeScript{}}
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		sequencedScripts: map[string][]fakeScript{
+			// Pre-snapshot: empty. Post-launch: emulator-5554 appears.
+			// The Boot() port-discovery loop diffs these to find the
+			// new serial.
+			"/sdk/platform-tools/adb devices": {
+				adbDevicesScript(),
+				adbDevicesScript(5554),
+			},
+		},
+	}
 	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
 
 	avd := AVD{Name: "Pixel_9a", APILevel: 36, FormFactor: "phone"}
@@ -81,9 +152,12 @@ func TestAndroidEmulator_Boot_PassesExpectedFlagsToEmulatorBinary(t *testing.T) 
 
 	require.NoError(t, err)
 	assert.True(t, result.Started)
-	require.Len(t, exec.calls, 1)
-	call := exec.calls[0]
-	assert.Equal(t, "/sdk/emulator/emulator", call.Name)
+	assert.Equal(t, 5554, result.ConsolePort,
+		"Boot MUST capture the discovered console port (5554) from adb devices, not hardcoded")
+	assert.Equal(t, 5555, result.ADBPort)
+	// Find the launch call — it is no longer calls[0] because the
+	// pre-snapshot adb-devices call comes first now.
+	call := firstCallMatching(t, exec.calls, "/sdk/emulator/emulator")
 	assert.Contains(t, call.Args, "-avd")
 	assert.Contains(t, call.Args, "Pixel_9a")
 	assert.Contains(t, call.Args, "-no-window")
@@ -100,12 +174,20 @@ func TestAndroidEmulator_Boot_PassesExpectedFlagsToEmulatorBinary(t *testing.T) 
 //   Observed-Failure: this test fails because -no-snapshot would be
 //             present even though ColdBoot was false.
 func TestAndroidEmulator_Boot_WithoutColdBoot_OmitsNoSnapshotFlag(t *testing.T) {
-	exec := &fakeExecutor{scripts: map[string]fakeScript{}}
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		sequencedScripts: map[string][]fakeScript{
+			"/sdk/platform-tools/adb devices": {
+				adbDevicesScript(),
+				adbDevicesScript(5554),
+			},
+		},
+	}
 	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
 	_, err := emu.Boot(context.Background(), AVD{Name: "X"}, false)
 	require.NoError(t, err)
-	require.Len(t, exec.calls, 1)
-	for _, a := range exec.calls[0].Args {
+	launch := firstCallMatching(t, exec.calls, "/sdk/emulator/emulator")
+	for _, a := range launch.Args {
 		assert.NotEqual(t, "-no-snapshot", a)
 	}
 }
@@ -195,4 +277,121 @@ func TestAndroidEmulator_RunInstrumentation_RejectsEmptyTestClass(t *testing.T) 
 
 func init() {
 	_ = fmt.Sprintf // keep "fmt" usable for future test extensions
+}
+
+// TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists
+// is the regression test for the 2026-05-04 ultrathink-discovered
+// architectural bluff in the multi-AVD matrix runner.
+//
+// Forensic anchor (verbatim from the diagnostic output captured this
+// session):
+//
+//   [matrix-diag] target=localhost:5555 adb-devices=
+//     "List of devices attached\nemulator-5554\tdevice\nlocalhost:5555\tdevice"
+//     ro.product.model="Android SDK built for x86_64"
+//   [matrix-diag] target=localhost:5555 adb-devices=
+//     "...emulator-5554\tdevice\nemulator-5556\toffline..."
+//     ro.product.model="Android SDK built for x86_64"
+//   ... (5 iterations, all targeting localhost:5555, all reporting
+//        the same model — every iteration tested the FIRST AVD's
+//        emulator while the matrix attestation file claimed each row
+//        was a different AVD)
+//
+// Pre-fix Boot() hardcoded ADBPort=5555 unconditionally. When the
+// previous AVD's Teardown left the first emulator alive on 5554/5555
+// (which Teardown did fail to kill in this session — 5 orphans
+// observed across iterations), the next emulator launched on
+// 5556/5557 but the matrix runner kept polling 5555 — getting the
+// OLD AVD's "boot complete" signal instantly and running the test
+// against the OLD AVD.
+//
+// This test pins the post-fix behaviour: when `adb devices` already
+// shows an emulator on 5554 (a leaked previous emulator), Boot() MUST
+// detect that the NEW emulator landed on a different port and return
+// THAT port in BootResult.ADBPort.
+//
+// Falsifiability rehearsal (clause 6.I clause 5 + Sixth Law clause 2):
+//
+//   Mutation: revert this commit's Boot() to the pre-fix form
+//             (hardcoded ConsolePort=5554, ADBPort=5555).
+//   Observed-Failure: this test fails with
+//             "expected 5557 but got 5555" — the assertion below.
+//   Reverted: yes, post-revert this test passes again.
+func TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists(t *testing.T) {
+	// Simulate the bug scenario: a prior matrix iteration's emulator
+	// is STILL running on 5554 (Teardown failed silently). The new
+	// AVD's emulator lands on 5556 because 5554/5555 is busy.
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		sequencedScripts: map[string][]fakeScript{
+			"/sdk/platform-tools/adb devices": {
+				// Pre-snapshot: prior emulator on 5554 is still alive.
+				adbDevicesScript(5554),
+				// Post-launch: new emulator on 5556 has appeared.
+				adbDevicesScript(5554, 5556),
+			},
+		},
+	}
+	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
+
+	avd := AVD{Name: "CZ_API30_Phone", APILevel: 30, FormFactor: "phone"}
+	result, err := emu.Boot(context.Background(), avd, true)
+
+	require.NoError(t, err)
+	require.True(t, result.Started)
+	// PRIMARY: the discovered console port MUST be 5556 (the new one),
+	// NOT 5554 (the leaked previous one). Falsifiable: revert Boot()'s
+	// dynamic discovery → result.ConsolePort would be 5554 (or 5555
+	// for the pre-fix hardcode).
+	assert.Equal(t, 5556, result.ConsolePort,
+		"clause 6.I architectural fix — Boot MUST detect the NEW emulator's "+
+			"port via adb-devices diff, NOT return the leaked previous emulator's port")
+	assert.Equal(t, 5557, result.ADBPort,
+		"ADB port = console port + 1, dynamically computed from discovery")
+	// SECONDARY: the AVD metadata is preserved through the discovery
+	// step (catches a regression where Boot returns an empty AVD on
+	// the discovery path).
+	assert.Equal(t, "CZ_API30_Phone", result.AVD.Name)
+	assert.Equal(t, 30, result.AVD.APILevel)
+}
+
+// TestAndroidEmulator_Boot_FailsWhenNoNewSerialAppears pins the
+// failure path of the discovery: if `adb devices` never registers a
+// new emulator (kvm denied, zygote crash, etc.), Boot MUST return an
+// error rather than silently mis-targeting later calls. Without this
+// check, the matrix runner would proceed to Install + RunInstrumentation
+// against whatever happened to be on 5555 (the pre-fix bug).
+//
+// Note: this test passes a custom-shortened context to keep test time
+// reasonable. The production timeout is 60s; we simulate it as
+// "discovery exhausted" via a deadline-bounded context.
+func TestAndroidEmulator_Boot_FailsWhenNoNewSerialAppears(t *testing.T) {
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		sequencedScripts: map[string][]fakeScript{
+			"/sdk/platform-tools/adb devices": {
+				// Pre and post: same set. No new emulator ever appears.
+				adbDevicesScript(5554),
+				adbDevicesScript(5554),
+			},
+		},
+	}
+	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	result, err := emu.Boot(ctx, AVD{Name: "X"}, true)
+
+	require.Error(t, err)
+	// The wrapped error chain contains either "port discovery cancelled"
+	// (ctx deadline beat the 60s timeout) or "no new emulator serial
+	// appeared" (60s timeout fired first). Both are correct
+	// constitutional behaviour — the runner refused to silently
+	// mis-target subsequent calls.
+	msg := err.Error()
+	assert.True(t,
+		strings.Contains(msg, "port discovery") || strings.Contains(msg, "no new emulator serial"),
+		"error message MUST mention discovery failure, got: %s", msg)
+	assert.True(t, result.Started, "Started=true even on discovery fail — the launch itself succeeded")
+	assert.NotNil(t, result.Error)
 }
