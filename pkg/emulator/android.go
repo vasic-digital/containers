@@ -151,10 +151,25 @@ func (a *AndroidEmulator) WaitForBoot(
 	deadline := startedAt.Add(timeout)
 	target := fmt.Sprintf("localhost:%d", port)
 
-	// Connect adb to the emulator's port. Idempotent.
-	_, _ = a.executor.Execute(ctx, a.adbBinary(), "connect", target)
-
+	// Forensic anchor (2026-05-04 evening): the previous form called
+	// `adb connect localhost:<port>` ONCE before the poll loop.
+	// On cold boot the emulator's ADB socket is not ready for ~30-60s
+	// after the emulator process starts, so the pre-loop connect failed
+	// silently (its err was discarded with `_, _`). Subsequent
+	// `adb -s localhost:<port> shell getprop` calls then all returned
+	// "device not found", the loop swallowed those errors as expected
+	// "boot not yet ready" signals, and the timeout fired even though
+	// the emulator booted successfully a few minutes in. Recorded as a
+	// 6.A real-binary contract bug class — script's expectation of the
+	// adb binary did not match the binary's reality.
+	//
+	// Fix: retry `adb connect` on every poll iteration. Connect is
+	// idempotent (returns "already connected to ..." on second+ call)
+	// so retrying carries no cost. The first iteration after the ADB
+	// socket comes up actually establishes the connection; subsequent
+	// `-s` calls then succeed and the boot-completed prop is read.
 	for time.Now().Before(deadline) {
+		_, _ = a.executor.Execute(ctx, a.adbBinary(), "connect", target)
 		out, err := a.executor.Execute(
 			ctx, a.adbBinary(), "-s", target,
 			"shell", "getprop", "sys.boot_completed",
