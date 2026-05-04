@@ -372,8 +372,25 @@ func (a *AndroidEmulator) RunInstrumentation(
 	return output, passed, err
 }
 
-// Teardown stops the emulator via `adb -s localhost:<port> emu kill`.
-// Returns nil on success.
+// Teardown stops the emulator via `adb -s localhost:<port> emu kill`,
+// then waits for the emulator process to actually exit before returning.
+//
+// Forensic anchor (2026-05-05): `adb emu kill` returns "OK: killing
+// emulator, bye bye" almost immediately, but the underlying qemu-system
+// process can take 10-30 seconds to actually exit. The pre-fix Teardown
+// returned as soon as the kill command came back — so the next iteration's
+// Boot started before the previous emulator's port (5554/5555) was freed.
+// The new emulator landed on 5556/5557, and after the discovery-fix in
+// commit 648a4bb the matrix correctly tested it, but accumulated 5
+// concurrently-running emulators by iteration 5 — causing CPU/RAM
+// pressure that produced flakes in the API 35 row of the 5-AVD matrix
+// (whose standalone single-AVD run passed cleanly).
+//
+// Fix: after `adb emu kill`, poll `adb devices` until the localhost:<port>
+// entry transitions out of "device" state (typically becomes "offline"
+// or is removed entirely). Bound the wait at 30 seconds. If the process
+// is still alive past the timeout, return an error so the matrix
+// runner's caller can decide whether to escalate (SIGKILL the qemu pid).
 func (a *AndroidEmulator) Teardown(ctx context.Context, port int) error {
 	target := fmt.Sprintf("localhost:%d", port)
 	out, err := a.executor.Execute(
@@ -382,5 +399,40 @@ func (a *AndroidEmulator) Teardown(ctx context.Context, port int) error {
 	if err != nil {
 		return fmt.Errorf("adb emu kill failed: %w; output=%s", err, out)
 	}
-	return nil
+
+	// Poll up to 30 seconds for the emulator to actually exit.
+	// "Exit" means: the localhost:<port> entry is no longer in
+	// `adb devices` output as "device" (it may briefly show "offline"
+	// while disconnecting; that's fine — we treat that as gone).
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		devicesOut, derr := a.executor.Execute(ctx, a.adbBinary(), "devices")
+		if derr != nil {
+			// Best effort; if adb itself fails, treat as kill-success
+			// so we don't deadlock the matrix runner.
+			return nil
+		}
+		stillAlive := false
+		for _, line := range strings.Split(string(devicesOut), "\n") {
+			if !strings.HasPrefix(line, target) {
+				continue
+			}
+			fields := strings.Fields(line)
+			// "localhost:5555\tdevice" → still alive
+			// "localhost:5555\toffline" → transitioning, treat as gone
+			if len(fields) >= 2 && fields[1] == "device" {
+				stillAlive = true
+				break
+			}
+		}
+		if !stillAlive {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(1 * time.Second):
+		}
+	}
+	return fmt.Errorf("emulator on %s did not exit within 30s after `adb emu kill`", target)
 }

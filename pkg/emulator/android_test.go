@@ -250,17 +250,78 @@ func TestAndroidEmulator_Install_RejectsMissingAPK(t *testing.T) {
 
 // TestAndroidEmulator_Teardown_InvokesAdbEmuKill pins the teardown
 // path. Falsifiability: change "kill" to anything else → this test
-// fails because the Args slice no longer contains "kill".
+// fails because the kill-call args no longer contain "kill".
 func TestAndroidEmulator_Teardown_InvokesAdbEmuKill(t *testing.T) {
-	exec := &fakeExecutor{scripts: map[string]fakeScript{}}
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		// 2026-05-05 wait-for-exit: simulate the emulator disappearing
+		// from `adb devices` immediately after `adb emu kill`. Without
+		// this, the polling loop in Teardown would time out.
+		sequencedScripts: map[string][]fakeScript{
+			"/sdk/platform-tools/adb devices": {
+				{Out: []byte("List of devices attached\n")},
+			},
+		},
+	}
 	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
 	err := emu.Teardown(context.Background(), 5555)
 	require.NoError(t, err)
-	require.Len(t, exec.calls, 1)
-	c := exec.calls[0]
-	assert.Equal(t, "/sdk/platform-tools/adb", c.Name)
+	// Expect the kill call AND at least one adb-devices poll. The
+	// kill must come first so the device is on its way out before we poll.
+	require.GreaterOrEqual(t, len(exec.calls), 1)
+	first := exec.calls[0]
+	assert.Equal(t, "/sdk/platform-tools/adb", first.Name)
 	expected := []string{"-s", "localhost:5555", "emu", "kill"}
-	assert.Equal(t, expected, c.Args)
+	assert.Equal(t, expected, first.Args, "first call MUST be the kill")
+}
+
+// TestAndroidEmulator_Teardown_WaitsForEmulatorToActuallyExit is the
+// regression test for the 2026-05-05 Teardown wait-for-exit fix.
+//
+// Forensic anchor: `adb -s localhost:5555 emu kill` returns "OK"
+// almost immediately, but the qemu-system process can take 10-30s to
+// actually exit. The pre-fix Teardown returned immediately, causing
+// the matrix runner's next iteration to start while the previous
+// emulator was still alive on 5554/5555. The new emulator landed on
+// a different port — which the discovery fix (commit 648a4bb) handles
+// correctly — but 5 simultaneous emulators caused CPU/RAM contention
+// that produced flakes in late iterations.
+//
+// This test simulates: kill returns OK → first poll shows device
+// still alive → second poll shows device gone. Teardown MUST return
+// only AFTER the second poll, NOT after the first.
+//
+// Falsifiability:
+//   Mutation: revert Teardown to the pre-fix form (return immediately
+//             after kill, no polling).
+//   Observed-Failure: this test would fail because the call count
+//             would be 1 (kill only), not 2+ (kill + at least one poll).
+//   Reverted: yes — post-revert this test passes.
+func TestAndroidEmulator_Teardown_WaitsForEmulatorToActuallyExit(t *testing.T) {
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{},
+		sequencedScripts: map[string][]fakeScript{
+			"/sdk/platform-tools/adb devices": {
+				// First poll: emulator still alive (qemu hasn't exited yet)
+				{Out: []byte("List of devices attached\nemulator-5554\tdevice\nlocalhost:5555\tdevice\n")},
+				// Second poll: emulator gone
+				{Out: []byte("List of devices attached\n")},
+			},
+		},
+	}
+	emu := NewAndroidEmulatorWithExecutor("/sdk", exec)
+	err := emu.Teardown(context.Background(), 5555)
+	require.NoError(t, err)
+	// We expect 1 kill call + at least 2 poll calls (one that saw
+	// "still alive", one that saw "gone"). Total >= 3.
+	devicesCalls := 0
+	for _, c := range exec.calls {
+		if c.Name == "/sdk/platform-tools/adb" && len(c.Args) == 1 && c.Args[0] == "devices" {
+			devicesCalls++
+		}
+	}
+	assert.GreaterOrEqual(t, devicesCalls, 2,
+		"Teardown MUST poll adb devices at least twice (once seeing 'alive', once seeing 'gone'); got %d", devicesCalls)
 }
 
 // TestAndroidEmulator_RunInstrumentation_RejectsEmptyTestClass pins
