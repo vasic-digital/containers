@@ -70,8 +70,14 @@ func (r *AndroidMatrixRunner) RunMatrix(
 	}
 	for _, avd := range config.AVDs {
 		boot, err := r.emulator.Boot(ctx, avd, config.ColdBoot)
-		result.Boots = append(result.Boots, boot)
+		// We append the Boot result LATER (after WaitForBoot decides
+		// whether BootCompleted is true) so AllPassed() reflects
+		// reality. A Boot row with Started=true but
+		// BootCompleted=false is the user-visible "process started but
+		// Android never came up" outcome that clause 6.B explicitly
+		// flags as un-healthy.
 		if err != nil {
+			result.Boots = append(result.Boots, boot)
 			result.Tests = append(result.Tests, TestResult{
 				AVD:       avd,
 				TestClass: config.TestClass,
@@ -82,6 +88,8 @@ func (r *AndroidMatrixRunner) RunMatrix(
 			continue
 		}
 		if _, err := r.emulator.WaitForBoot(ctx, boot.ADBPort, bootTimeout); err != nil {
+			boot.Error = err
+			result.Boots = append(result.Boots, boot)
 			result.Tests = append(result.Tests, TestResult{
 				AVD:       avd,
 				TestClass: config.TestClass,
@@ -92,6 +100,10 @@ func (r *AndroidMatrixRunner) RunMatrix(
 			_ = r.emulator.Teardown(ctx, boot.ADBPort)
 			continue
 		}
+		// Android booted (sys.boot_completed == 1). Mark the Boot row
+		// completed and append. AllPassed() will see this as healthy.
+		boot.BootCompleted = true
+		result.Boots = append(result.Boots, boot)
 		if err := r.emulator.Install(ctx, boot.ADBPort, config.APKPath); err != nil {
 			result.Tests = append(result.Tests, TestResult{
 				AVD:       avd,

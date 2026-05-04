@@ -241,6 +241,41 @@ func TestAndroidMatrixRunner_BootFailure_RecordsRowAndContinues(t *testing.T) {
 		"both AVDs MUST have a Test row even when the first boot failed")
 }
 
+// TestAndroidMatrixRunner_BootSuccess_FlipsBootCompleted pins the
+// happy-path Boot-row state. Without this, the Boot rows in the
+// attestation file would always report BootCompleted=false (zero
+// value) even when the AVD booted successfully — which would lie to
+// scripts/tag.sh's gating check.
+//
+// Falsifiability:
+//   Mutation: in matrix.go, drop the `boot.BootCompleted = true` line
+//             added after WaitForBoot succeeds.
+//   Observed-Failure: this test asserts BootCompleted=true on the
+//             happy-path Boot row; the assertion fires.
+//   Reverted: yes (see git log).
+//
+// Forensic anchor: the 2026-05-04 first-matrix-smoke-run produced
+// `all_passed=false` even though the test passed, because the Boot
+// row had BootCompleted=false. This test prevents that regression.
+func TestAndroidMatrixRunner_BootSuccess_FlipsBootCompleted(t *testing.T) {
+	fake := &fakeEmulator{
+		runPassed:  []bool{true},
+		runOutputs: []string{"BUILD SUCCESSFUL"},
+	}
+	runner := NewAndroidMatrixRunner(fake)
+	result, err := runner.RunMatrix(context.Background(), MatrixConfig{
+		AVDs:        []AVD{{Name: "A"}},
+		APKPath:     writeFakeAPK(t),
+		TestClass:   "T",
+		EvidenceDir: t.TempDir(),
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Boots, 1)
+	assert.True(t, result.Boots[0].BootCompleted,
+		"happy-path Boot row MUST have BootCompleted=true so AllPassed() reflects reality")
+	assert.True(t, result.AllPassed())
+}
+
 // TestAndroidMatrixRunner_TestFailure_PropagatesToAttestation pins the
 // failing-test path. Falsifiability: in writeAttestation, hard-code
 // all_passed=true → this test fails because the attestation file
