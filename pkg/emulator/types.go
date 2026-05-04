@@ -1,0 +1,184 @@
+// Package emulator provides multi-target emulator orchestration for the
+// vasic-digital container ecosystem. The package is the constitutional
+// landing for clause 6.K (Builds-Inside-Containers Mandate) and clause
+// 6.I (Multi-Emulator Container Matrix) — see the parent Lava project
+// CLAUDE.md for the full clauses; this package's CLAUDE.md inheritance
+// applies them locally.
+//
+// The first supported target is Android. QEMU + non-Android OS emulators
+// are roadmap items recorded in the parent Lava plan doc
+// (docs/superpowers/plans/2026-05-04-pending-completion-plan.md) under
+// the 6.K-debt close criteria.
+//
+// Anti-bluff posture (clauses 6.J/6.L inherited from Containers' parent):
+// every public function in this package MUST have at least one
+// falsifiability-rehearsed test. The test files in this directory
+// document the rehearsal protocol per function. A green test that
+// cannot be made to fail by deliberate-mutation of the production
+// path is, by definition, a bluff and MUST be either rewritten or
+// removed.
+package emulator
+
+import (
+	"context"
+	"time"
+)
+
+// AVD describes a single Android Virtual Device entry as it appears in
+// the host's `emulator -list-avds` output. The Name is the canonical
+// identifier (e.g. "Pixel_9a"). The optional fields capture metadata
+// the matrix runner uses to plan + report.
+type AVD struct {
+	// Name is the canonical AVD identifier (matches `emulator -list-avds`).
+	Name string
+
+	// APILevel is the Android API level the AVD targets (e.g. 28, 30,
+	// 34). Zero means "unknown" — callers MAY supply it explicitly when
+	// `emulator -list-avds` cannot be parsed for the level.
+	APILevel int
+
+	// FormFactor is one of "phone", "tablet", "tv", "wear",
+	// "automotive", or "unknown". Used by the matrix planner to
+	// satisfy clause 6.I clause 3 (Screen-size coverage).
+	FormFactor string
+}
+
+// BootResult captures the outcome of a single emulator boot attempt.
+// A successful boot requires `getprop sys.boot_completed == 1`.
+type BootResult struct {
+	AVD          AVD
+	Started      bool
+	BootCompleted bool
+	BootDuration time.Duration
+	ConsolePort  int
+	ADBPort      int
+	Error        error
+}
+
+// TestResult captures the outcome of a single instrumentation-test
+// execution against a booted emulator. Failed indicates whether the
+// gradle task reported a non-zero exit AND/OR the JUnit XML reported
+// any test class as failed.
+type TestResult struct {
+	AVD       AVD
+	TestClass string
+	Started   time.Time
+	Duration  time.Duration
+	Passed    bool
+	// Output is the captured stdout+stderr of the test runner. May be
+	// truncated for the matrix-report file; the full output stays in
+	// the per-AVD log directory under EvidenceDir.
+	Output string
+	Error  error
+}
+
+// MatrixConfig describes a single matrix-run invocation: which AVDs to
+// boot, what APK/test class to run against each, where to record the
+// per-AVD attestation rows that satisfy clause 6.I clause 4.
+type MatrixConfig struct {
+	// AVDs to run in sequence. Per clause 6.I clause 6, each MUST be
+	// cold-booted (no snapshot reload) for the gating run.
+	AVDs []AVD
+
+	// AndroidSdkRoot is the host path to the Android SDK. The runner
+	// uses `${AndroidSdkRoot}/emulator/emulator` and
+	// `${AndroidSdkRoot}/platform-tools/adb`.
+	AndroidSdkRoot string
+
+	// APKPath is the host path to the debug APK to install on each AVD.
+	APKPath string
+
+	// TestClass is the fully-qualified instrumentation test class to
+	// run. Empty means "run the default suite" (the project's
+	// connectedAndroidTest task discovers tests).
+	TestClass string
+
+	// EvidenceDir is where the matrix runner writes its per-AVD
+	// attestation rows + log files. Per clause 6.I clause 4: one row
+	// per AVD-test pair.
+	EvidenceDir string
+
+	// BootTimeout is the per-AVD cold-boot timeout. Default 5 minutes.
+	BootTimeout time.Duration
+
+	// TestTimeout is the per-test execution timeout. Default 10 minutes.
+	TestTimeout time.Duration
+
+	// ColdBoot enforces no-snapshot-reload (clause 6.I clause 6) when
+	// true. The gating-run convention is true.
+	ColdBoot bool
+}
+
+// MatrixResult holds the per-AVD outcomes from a single RunMatrix call.
+type MatrixResult struct {
+	Config     MatrixConfig
+	Boots      []BootResult
+	Tests      []TestResult
+	StartedAt  time.Time
+	FinishedAt time.Time
+	// AttestationFile is the on-disk path the matrix runner wrote a
+	// machine-readable attestation file to (typically
+	// EvidenceDir/real-device-verification.json). Empty if the run
+	// errored before the file could be written.
+	AttestationFile string
+}
+
+// AllPassed returns true iff every BootResult succeeded AND every
+// TestResult passed. Used by the gating signal that decides whether
+// scripts/tag.sh may proceed (clause 6.I clause 7).
+func (r MatrixResult) AllPassed() bool {
+	for _, b := range r.Boots {
+		if !b.BootCompleted {
+			return false
+		}
+	}
+	for _, t := range r.Tests {
+		if !t.Passed {
+			return false
+		}
+	}
+	return true
+}
+
+// Emulator is the contract a target-specific emulator implementation
+// satisfies. Today the only implementation is the Android emulator
+// (android.go); QEMU and other-OS emulators implement the same shape
+// when they ship.
+//
+// Methods MUST be safe to call sequentially (Boot → WaitForBoot →
+// Install → RunInstrumentation → Teardown). Concurrent calls against
+// the same instance are NOT supported.
+type Emulator interface {
+	// Boot launches the AVD in the background and returns once the
+	// emulator process is started (NOT once it has booted Android).
+	// Use WaitForBoot to wait for Android boot completion.
+	Boot(ctx context.Context, avd AVD, coldBoot bool) (BootResult, error)
+
+	// WaitForBoot polls `getprop sys.boot_completed` until it returns
+	// "1" or the timeout elapses. Returns the elapsed duration.
+	WaitForBoot(ctx context.Context, port int, timeout time.Duration) (time.Duration, error)
+
+	// Install installs the APK onto the running emulator.
+	Install(ctx context.Context, port int, apkPath string) error
+
+	// RunInstrumentation runs the named instrumentation test class via
+	// `adb shell am instrument` against the specified port. Returns
+	// the captured output and pass/fail signal.
+	RunInstrumentation(
+		ctx context.Context,
+		port int,
+		testClass string,
+		timeout time.Duration,
+	) (output string, passed bool, err error)
+
+	// Teardown stops the emulator and frees its resources.
+	Teardown(ctx context.Context, port int) error
+}
+
+// MatrixRunner orchestrates a sequence of (AVD, test) pairs against an
+// Emulator implementation. The matrix runner is the constitutional
+// landing for clause 6.I; one MatrixRunner satisfies one matrix-run
+// gate.
+type MatrixRunner interface {
+	RunMatrix(ctx context.Context, config MatrixConfig) (MatrixResult, error)
+}
