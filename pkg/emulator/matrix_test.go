@@ -22,6 +22,7 @@ import (
 // declares.
 type fakeEmulator struct {
 	bootResults     []BootResult
+	waitDurations   []time.Duration
 	waitErrors      []error
 	installErrors   []error
 	runOutputs      []string
@@ -54,7 +55,16 @@ func (f *fakeEmulator) WaitForBoot(_ context.Context, _ int, _ time.Duration) (t
 	idx := f.waitCallCount
 	f.waitCallCount++
 	if idx < len(f.waitErrors) {
+		// Even on error the contract returns the elapsed time (matters
+		// for the "boot timed out at 5m12s" diagnostic). Use the
+		// caller-supplied waitDurations[idx] if present.
+		if idx < len(f.waitDurations) {
+			return f.waitDurations[idx], f.waitErrors[idx]
+		}
 		return 0, f.waitErrors[idx]
+	}
+	if idx < len(f.waitDurations) {
+		return f.waitDurations[idx], nil
 	}
 	return 100 * time.Millisecond, nil
 }
@@ -307,4 +317,66 @@ func TestAndroidMatrixRunner_TestFailure_PropagatesToAttestation(t *testing.T) {
 	row := rows[0].(map[string]any)
 	assert.Equal(t, false, row["test_passed"])
 	assert.NotEmpty(t, row["test_error"])
+}
+
+// TestAndroidMatrixRunner_BootDuration_IncludesWaitForBootElapsed pins
+// the clause 6.I clause 6 cold-boot-only audit fix (2026-05-04 evening):
+// the user-visible "boot_seconds" in the attestation file MUST be the
+// total time from emulator launch to sys.boot_completed=1 — i.e. the
+// sum of the launch-command duration and the WaitForBoot poll duration.
+//
+// Before this fix, matrix.go reported only the launch-command duration
+// (microseconds in practice — the emulator binary returns immediately
+// after backgrounding itself), making `boot_seconds` near-zero and the
+// clause 6.I clause 6 audit ("cold-boot only for the gate run") vacuous
+// because the field could not distinguish a true 5-minute cold boot
+// from a snapshot reload.
+//
+// Falsifiability rehearsal:
+//   Mutation: in matrix.go, remove the line `boot.BootDuration += waitDuration`.
+//   Observed-Failure: this test fails — boot_seconds in the attestation
+//             is 0.05 (the launch-command duration) instead of the 7.05
+//             total (5s wait + 0.05 launch).
+//   Reverted: yes — post-revert the test passes.
+func TestAndroidMatrixRunner_BootDuration_IncludesWaitForBootElapsed(t *testing.T) {
+	fake := &fakeEmulator{
+		bootResults: []BootResult{
+			{
+				Started:      true,
+				BootDuration: 50 * time.Millisecond,
+				ConsolePort:  5554,
+				ADBPort:      5555,
+			},
+		},
+		waitDurations: []time.Duration{7 * time.Second},
+		runPassed:     []bool{true},
+		runOutputs:    []string{"BUILD SUCCESSFUL"},
+	}
+	runner := NewAndroidMatrixRunner(fake)
+	evidenceDir := t.TempDir()
+	result, err := runner.RunMatrix(context.Background(), MatrixConfig{
+		AVDs:        []AVD{{Name: "A", APILevel: 34, FormFactor: "phone"}},
+		APKPath:     writeFakeAPK(t),
+		TestClass:   "T",
+		EvidenceDir: evidenceDir,
+	})
+	require.NoError(t, err)
+	require.Len(t, result.Boots, 1)
+
+	// PRIMARY assertion: boot duration on the result equals launch + wait
+	expected := 50*time.Millisecond + 7*time.Second
+	assert.Equal(t, expected, result.Boots[0].BootDuration,
+		"boot_seconds MUST capture launch-command duration PLUS WaitForBoot elapsed")
+
+	// SECONDARY assertion: the on-disk attestation reflects the same.
+	bytes, err := os.ReadFile(result.AttestationFile)
+	require.NoError(t, err)
+	var doc map[string]any
+	require.NoError(t, json.Unmarshal(bytes, &doc))
+	rows := doc["rows"].([]any)
+	require.Len(t, rows, 1)
+	row := rows[0].(map[string]any)
+	bootSec := row["boot_seconds"].(float64)
+	assert.InDelta(t, 7.05, bootSec, 0.01,
+		"on-disk boot_seconds MUST reflect the user-visible cold-boot wall-clock; got %v", bootSec)
 }

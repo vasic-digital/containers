@@ -87,7 +87,17 @@ func (r *AndroidMatrixRunner) RunMatrix(
 			})
 			continue
 		}
-		if _, err := r.emulator.WaitForBoot(ctx, boot.ADBPort, bootTimeout); err != nil {
+		waitDuration, err := r.emulator.WaitForBoot(ctx, boot.ADBPort, bootTimeout)
+		// Per clause 6.I clause 6 (cold-boot-only audit): the
+		// user-relevant "boot duration" is the total time from emulator
+		// launch to sys.boot_completed=1. The Boot() call's launch-
+		// command duration alone is microseconds (it just exec's the
+		// emulator binary detached) — that under-measures the gate the
+		// operator cares about. Add the WaitForBoot elapsed time so
+		// `boot_seconds` in the attestation file reflects the real
+		// boot wall-clock.
+		boot.BootDuration += waitDuration
+		if err != nil {
 			boot.Error = err
 			result.Boots = append(result.Boots, boot)
 			result.Tests = append(result.Tests, TestResult{
