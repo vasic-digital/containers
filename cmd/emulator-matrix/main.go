@@ -13,7 +13,8 @@
 //     --test-class lava.app.challenges.Challenge01AppLaunchAndTrackerSelectionTest \
 //     --evidence-dir .lava-ci-evidence/Lava-1.2.2 \
 //     --avds CZ_API28_Phone,CZ_API30_Phone,CZ_API34_Phone,Pixel_9a \
-//     --cold-boot
+//     --cold-boot \
+//     --image-manifest tools/lava-containers/vm-images.json
 //
 // Each comma-separated AVD entry MAY include the API level after a
 // colon: `Pixel_9a:36:phone` (name:apiLevel:formFactor). The api level
@@ -96,6 +97,8 @@ func main() {
 		"Developer-iteration mode; permits snapshot reload, sets MatrixResult.Gating=false")
 	flagTestReportGlob := flag.String("test-report-glob", "",
 		"Host-glob pattern (CWD-relative) for JUnit XML test reports; empty disables JUnit parsing")
+	flagImageManifest := flag.String("image-manifest", "",
+		"Optional path to a vm-images.json manifest. When set AND the AVD's required system-image is absent under ANDROID_SDK_ROOT, fetch via pkg/cache. Empty preserves the pre-Phase-B behavior.")
 	flag.Parse()
 
 	if *flagAPK == "" {
@@ -124,17 +127,18 @@ func main() {
 	emu := emulator.NewAndroidEmulator(*flagSdkRoot)
 	runner := emulator.NewAndroidMatrixRunner(emu)
 	result, err := runner.RunMatrix(ctx, emulator.MatrixConfig{
-		AVDs:           avds,
-		AndroidSdkRoot: *flagSdkRoot,
-		APKPath:        *flagAPK,
-		TestClass:      *flagTestClass,
-		EvidenceDir:    *flagEvidence,
-		BootTimeout:    *flagBootTimeout,
-		TestTimeout:    *flagTestTimeout,
-		ColdBoot:       *flagColdBoot,
-		Concurrent:     *flagConcurrent,
-		Dev:            *flagDev,
-		TestReportGlob: *flagTestReportGlob,
+		AVDs:              avds,
+		AndroidSdkRoot:    *flagSdkRoot,
+		APKPath:           *flagAPK,
+		TestClass:         *flagTestClass,
+		EvidenceDir:       *flagEvidence,
+		BootTimeout:       *flagBootTimeout,
+		TestTimeout:       *flagTestTimeout,
+		ColdBoot:          *flagColdBoot,
+		Concurrent:        *flagConcurrent,
+		Dev:               *flagDev,
+		TestReportGlob:    *flagTestReportGlob,
+		ImageManifestPath: *flagImageManifest,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: matrix runner failed: %v\n", err)
