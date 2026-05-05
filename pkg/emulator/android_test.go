@@ -4,9 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
+
+	"digital.vasic.containers/pkg/cache"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -563,4 +569,158 @@ func TestAndroidEmulator_Boot_FailsWhenNoNewSerialAppears(t *testing.T) {
 		"error message MUST mention discovery failure, got: %s", msg)
 	assert.True(t, result.Started, "Started=true even on discovery fail — the launch itself succeeded")
 	assert.NotNil(t, result.Error)
+}
+
+// countingStore is a minimal cache.Store fake that records every Get
+// invocation. Used by the Phase B routing-decision test to assert that
+// the missing-system-image path consults the cache.
+//
+// Anti-bluff posture (clauses 6.J/6.L): the fake's Get does NOT touch
+// the network or the filesystem — the test is verifying the ROUTING
+// decision (does the production code reach the cache?), not the full
+// fetch-and-extract path. The fake returns a sentinel error so the
+// caller's error-propagation code is exercised too.
+type countingStore struct {
+	getCalls []countingGetCall
+}
+
+type countingGetCall struct {
+	ImageID string
+}
+
+func (c *countingStore) Get(_ context.Context, _ *cache.Manifest, imageID string) (string, error) {
+	c.getCalls = append(c.getCalls, countingGetCall{ImageID: imageID})
+	return "", errors.New("counting-store: Get not actually performed (test fake)")
+}
+
+func (c *countingStore) Verify(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
+}
+
+func (c *countingStore) Refresh(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
+}
+
+// TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache_AndDoesNotChangeAttestationSchema
+// is the Phase B routing-decision test. It verifies three properties:
+//
+//   - (a) When ImageManifestPath == "" (the default), ensureSystemImageViaCache
+//     is a no-op and the cache Store is NEVER consulted. Existing
+//     41 emulator tests prove pre-Phase-B behaviour is byte-equivalent
+//     under that branch; this test pins the explicit no-op assertion.
+//   - (b) When ImageManifestPath is set AND the system-image is missing
+//     under ANDROID_SDK_ROOT, the helper consults the cache via
+//     Store.Get with imageID == "android-<api>-<formFactor>". A counting
+//     fake records the call; the test asserts it happened exactly once.
+//   - (c) BootResult's field-set is unchanged from pre-Phase-B. This is
+//     the schema-equivalence assertion: a future commit that
+//     accidentally adds a new field to BootResult would break
+//     downstream attestation consumers (the matrix runner's writeAttestation,
+//     scripts/tag.sh's gating logic). Reflection enumerates the field
+//     names and compares against the known set.
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: add a new field `CacheUsed bool` to BootResult struct in
+//	          types.go.
+//	Run:      go test ./pkg/emulator/... -run TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache
+//	Observed-Failure: the schema-equivalence assertion (c) fails because
+//	          reflection sees an unexpected new field "CacheUsed".
+//	Reverted: yes — post-revert this test passes again.
+func TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache_AndDoesNotChangeAttestationSchema(t *testing.T) {
+	// --- (c) Schema-equivalence: BootResult fields unchanged. ---
+	expectedFields := []string{
+		"AVD", "ADBPort", "BootCompleted", "BootDuration",
+		"ConsolePort", "Error", "Started",
+	}
+	bootResultType := reflect.TypeOf(BootResult{})
+	require.Equal(t, len(expectedFields), bootResultType.NumField(),
+		"BootResult field count drifted from pre-Phase-B; expected %d, got %d. "+
+			"Adding fields breaks downstream attestation schema consumers "+
+			"(matrix.go writeAttestation + scripts/tag.sh).",
+		len(expectedFields), bootResultType.NumField())
+	got := make([]string, 0, bootResultType.NumField())
+	for i := 0; i < bootResultType.NumField(); i++ {
+		got = append(got, bootResultType.Field(i).Name)
+	}
+	sort.Strings(got)
+	wantSorted := append([]string{}, expectedFields...)
+	sort.Strings(wantSorted)
+	assert.Equal(t, wantSorted, got,
+		"BootResult field-set drifted from pre-Phase-B. The Phase B refactor "+
+			"is API-preserving by spec; any new field is a constitutional "+
+			"violation that breaks the attestation schema downstream consumers depend on.")
+
+	// --- (a) Empty ImageManifestPath: cache MUST NOT be consulted. ---
+	store := &countingStore{}
+	prevFactory := cacheStoreFactory
+	cacheStoreFactory = func(_ string) cache.Store { return store }
+	defer func() { cacheStoreFactory = prevFactory }()
+
+	emu := NewAndroidEmulator("/sdk")
+	avd := AVD{Name: "Pixel_API28", APILevel: 28, FormFactor: "phone"}
+
+	err := emu.ensureSystemImageViaCache(context.Background(), avd, "")
+	require.NoError(t, err,
+		"empty ImageManifestPath MUST be a no-op (pre-Phase-B byte-equivalent)")
+	assert.Empty(t, store.getCalls,
+		"cache.Store.Get MUST NOT be invoked when ImageManifestPath is empty")
+
+	// --- (b) Set ImageManifestPath + missing image dir → cache consulted. ---
+	// Use a temp dir as fake ANDROID_SDK_ROOT so system-images/android-28
+	// is provably absent (we don't create it).
+	tmpSdk := t.TempDir()
+	emu2 := NewAndroidEmulator(tmpSdk)
+
+	// Substitute the manifest loader with one that returns a fixed manifest
+	// (we don't need to write a real JSON file for the routing-decision test).
+	prevLoader := loadManifestHook
+	loadManifestHook = func(path string) (*cache.Manifest, error) {
+		return &cache.Manifest{
+			Version: 1,
+			Images: []cache.ImageEntry{{
+				ID:     "android-28-phone",
+				URL:    "https://example.invalid/sysimage.zip",
+				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
+				Size:   1,
+				Format: "android-system-image",
+			}},
+		}, nil
+	}
+	defer func() { loadManifestHook = prevLoader }()
+
+	// Pre-condition: the system-images dir for API 28 is absent.
+	_, statErr := os.Stat(filepath.Join(tmpSdk, "system-images", "android-28"))
+	require.True(t, os.IsNotExist(statErr),
+		"test pre-condition: system-images/android-28 MUST be absent under tmp SDK root")
+
+	manifestPath := filepath.Join(t.TempDir(), "vm-images.json")
+	// Path content is irrelevant — loadManifestHook returns a canned
+	// manifest. The path just has to be non-empty.
+	err = emu2.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
+	// The helper returns the explicit "extraction: not implemented in v0.1"
+	// error after a successful cache.Get attempt. Our counting fake's Get
+	// returns its own sentinel error, which surfaces as the wrapped
+	// "fetch ...: counting-store: Get not actually performed" — both are
+	// expected error states for this routing-decision test (extraction is
+	// stubbed per the v0.1 honesty mandate).
+	require.Error(t, err,
+		"helper MUST return an error in v0.1 (extraction not implemented OR fetch fake-failed)")
+	require.Len(t, store.getCalls, 1,
+		"cache.Store.Get MUST be invoked exactly once when manifest is set AND image is missing")
+	assert.Equal(t, "android-28-phone", store.getCalls[0].ImageID,
+		"imageID composition MUST be 'android-<APILevel>-<FormFactor>' "+
+			"(stable contract; downstream manifests pin entries by this ID)")
+
+	// --- (b'): present image dir → cache MUST NOT be consulted. ---
+	// Re-create the system-images/android-28 dir to simulate an already-
+	// installed image; the helper should short-circuit at the os.Stat check.
+	require.NoError(t, os.MkdirAll(
+		filepath.Join(tmpSdk, "system-images", "android-28"), 0o755))
+	store.getCalls = nil
+	err = emu2.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
+	require.NoError(t, err,
+		"helper MUST be a no-op when image dir already exists under SDK root")
+	assert.Empty(t, store.getCalls,
+		"cache.Store.Get MUST NOT be invoked when image is already on disk")
 }

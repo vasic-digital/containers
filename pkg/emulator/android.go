@@ -5,8 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
+
+	"digital.vasic.containers/pkg/cache"
 )
 
 // NOTE: tests that override killByPortHook or teardownGracePeriod
@@ -20,6 +23,39 @@ import (
 // KillByPort; tests override this so they don't have to spawn real
 // QEMU processes to test the fast-path branch.
 var killByPortHook = KillByPort
+
+// loadManifestHook is the package-level seam tests use to substitute a
+// fake manifest loader. Production code uses cache.LoadManifest; tests
+// override to inject a manifest without writing a JSON file.
+//
+// Anti-bluff posture (clauses 6.J/6.L): the seam exists ONLY for
+// testing. Production code uses the real cache.LoadManifest. A test
+// that uses the fake to assert "the routing decision was reached"
+// is asserting on observable behaviour — did the missing-image path
+// consult the cache? — not on internal state.
+var loadManifestHook = cache.LoadManifest
+
+// cacheStoreFactory is the package-level seam tests use to substitute
+// a fake Store. Production code constructs a real FilesystemStore
+// rooted at defaultCacheRoot(). Tests override to record Get() calls.
+var cacheStoreFactory = func(root string) cache.Store {
+	return cache.NewFilesystemStore(root)
+}
+
+// defaultCacheRoot returns the production cache root directory:
+//
+//	$XDG_CACHE_HOME/vasic-digital/containers-images/
+//
+// Mirrors cmd/vm-matrix's resolution so a single XDG_CACHE_HOME
+// honours both the VM and the emulator paths. See pkg/cache/store.go
+// KDoc for the on-disk layout.
+func defaultCacheRoot() string {
+	root := os.Getenv("XDG_CACHE_HOME")
+	if root == "" {
+		root = filepath.Join(os.Getenv("HOME"), ".cache")
+	}
+	return filepath.Join(root, "vasic-digital", "containers-images")
+}
 
 // teardownGracePeriod is the wall-clock time Teardown waits after
 // `adb emu kill` before invoking the KillByPort fast-path. Set short
@@ -102,6 +138,84 @@ func NewAndroidEmulatorWithExecutor(
 	executor CommandExecutor,
 ) *AndroidEmulator {
 	return &AndroidEmulator{executor: executor, androidSdkRoot: androidSdkRoot}
+}
+
+// systemImageDir is the conventional ANDROID_SDK_ROOT layout location
+// for an AVD's system-image. The Android SDK installs system-images at
+//
+//	${ANDROID_SDK_ROOT}/system-images/android-<api>/<tag>/<abi>/
+//
+// We do NOT know <tag> or <abi> from the AVD struct alone (those live
+// in the AVD's config.ini under config/<AVD-name>.avd). For the
+// existence-check we look one level up — the per-API-level directory.
+// If that directory is absent, we know no system-image is installed for
+// this API level; if present, we conservatively assume the image is
+// usable (matching the SDK's own "AVD launch" behaviour). A future
+// stricter check could parse the AVD's config.ini.
+func (a *AndroidEmulator) systemImageDir(apiLevel int) string {
+	return filepath.Join(
+		a.androidSdkRoot,
+		"system-images",
+		fmt.Sprintf("android-%d", apiLevel),
+	)
+}
+
+// ensureSystemImageViaCache routes the missing-system-image fallback
+// path through pkg/cache when manifestPath is non-empty.
+//
+// Behaviour matrix (anti-bluff: every branch is observable):
+//
+//  1. manifestPath == "" → no-op, returns nil. Pre-Phase-B behaviour
+//     preserved byte-for-byte. The matrix runner's existing
+//     fail-fast on missing system-image runs unchanged.
+//  2. manifestPath != "" AND the image dir under ANDROID_SDK_ROOT
+//     exists → no-op, returns nil. We do not re-fetch what is
+//     already on disk (cache hit at the SDK layer).
+//  3. manifestPath != "" AND the image dir is missing → load the
+//     manifest, compute imageID = "android-<api>-<formFactor>",
+//     call cache.Store.Get(...) to fetch + verify the bytes, and
+//     return the explicit "extraction: not implemented in v0.1"
+//     error per the v0.1 honesty mandate.
+//
+// HONESTY: full extraction of the fetched bytes into the SDK's
+// system-images layout (qcow2 → raw → repackage as
+// system-images/android-<api>/<tag>/<abi>/) is non-trivial and out of
+// scope for the Phase B fix-up. The v0.1 behaviour is to fetch + verify
+// the bytes via the cache (so the routing decision is observable + the
+// SHA-256 verify-on-fetch property holds), then surface an explicit
+// "extraction: not implemented in v0.1" error so the operator knows the
+// next manual step. The unit test verifies the routing decision (does
+// the cache Get call happen?), NOT the full end-to-end installation
+// path.
+func (a *AndroidEmulator) ensureSystemImageViaCache(
+	ctx context.Context,
+	avd AVD,
+	manifestPath string,
+) error {
+	// Branch 1: empty manifest path → pre-Phase-B no-op.
+	if manifestPath == "" {
+		return nil
+	}
+	// Branch 2: image already present under ANDROID_SDK_ROOT.
+	if _, err := os.Stat(a.systemImageDir(avd.APILevel)); err == nil {
+		return nil
+	}
+	// Branch 3: image missing → consult the cache.
+	manifest, err := loadManifestHook(manifestPath)
+	if err != nil {
+		return fmt.Errorf("ensureSystemImageViaCache: load manifest %s: %w", manifestPath, err)
+	}
+	imageID := fmt.Sprintf("android-%d-%s", avd.APILevel, avd.FormFactor)
+	store := cacheStoreFactory(defaultCacheRoot())
+	if _, err := store.Get(ctx, manifest, imageID); err != nil {
+		return fmt.Errorf("ensureSystemImageViaCache: fetch %s: %w", imageID, err)
+	}
+	// v0.1 honesty: routing + fetch + verify is implemented, but
+	// extraction into ANDROID_SDK_ROOT/system-images/... is not.
+	return fmt.Errorf(
+		"cache-routed system-image extraction: not implemented in v0.1; operator end-to-end run only (image %q fetched + verified, manual install required)",
+		imageID,
+	)
 }
 
 func (a *AndroidEmulator) emulatorBinary() string {

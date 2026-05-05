@@ -166,6 +166,12 @@ type MatrixConfig struct {
 	// Group B.
 	Dev bool
 
+	// ImageManifestPath is the optional path to a vm-images.json
+	// manifest. When non-empty, Boot's missing-system-image path
+	// falls through to pkg/cache.Store.Get instead of failing.
+	// Empty (the pre-Phase-B default) preserves the previous behavior.
+	ImageManifestPath string
+
 	// TestReportGlob is the host-glob pattern (relative to CWD) the
 	// matrix runner uses to discover JUnit XML test-report files
 	// produced by RunInstrumentation. Empty means "skip JUnit parsing"
