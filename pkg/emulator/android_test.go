@@ -1,6 +1,7 @@
 package emulator
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -653,13 +654,16 @@ func TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache(t *testing.T) 
 
 	// Substitute the manifest loader with one that returns a fixed manifest
 	// (we don't need to write a real JSON file for the routing-decision test).
+	// URL uses the canonical .../sys-img/<tag>/<abi>-<api>_r<rev>.zip pattern
+	// so parseSystemImageURL succeeds and the test reaches the cache.Get
+	// call (which is the routing-decision the test pins).
 	prevLoader := loadManifestHook
 	loadManifestHook = func(path string) (*cache.Manifest, error) {
 		return &cache.Manifest{
 			Version: 1,
 			Images: []cache.ImageEntry{{
 				ID:     "android-28-phone",
-				URL:    "https://example.invalid/sysimage.zip",
+				URL:    "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r12.zip",
 				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
 				Size:   1,
 				Format: "android-system-image",
@@ -691,17 +695,21 @@ func TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache(t *testing.T) 
 		"imageID composition MUST be 'android-<APILevel>-<FormFactor>' "+
 			"(stable contract; downstream manifests pin entries by this ID)")
 
-	// --- (b'): present image dir → cache MUST NOT be consulted. ---
-	// Re-create the system-images/android-28 dir to simulate an already-
-	// installed image; the helper should short-circuit at the os.Stat check.
-	require.NoError(t, os.MkdirAll(
-		filepath.Join(tmpSdk, "system-images", "android-28"), 0o755))
+	// --- (b'): present extracted target → cache MUST NOT be consulted. ---
+	// Pre-populate the per-AVD target dir with the canonical pair
+	// (system.img + build.prop) — the SOLE post-Phase-3 idempotence
+	// check. An empty parent dir is no longer enough; the helper now
+	// requires the actual extracted artifacts to be present.
+	target := filepath.Join(tmpSdk, "system-images", "android-28", "google_apis", "x86_64")
+	require.NoError(t, os.MkdirAll(target, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(target, "system.img"), []byte("FAKE"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(target, "build.prop"), []byte("FAKE"), 0o644))
 	store.getCalls = nil
 	err = emu2.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
 	require.NoError(t, err,
-		"helper MUST be a no-op when image dir already exists under SDK root")
+		"helper MUST be a no-op when target dir already has the canonical pair")
 	assert.Empty(t, store.getCalls,
-		"cache.Store.Get MUST NOT be invoked when image is already on disk")
+		"cache.Store.Get MUST NOT be invoked when extraction is already on disk")
 }
 
 // TestBootResult_AttestationSchemaUnchanged pins BootResult's field-set
@@ -742,31 +750,147 @@ func TestBootResult_AttestationSchemaUnchanged(t *testing.T) {
 			"violation that breaks the attestation schema downstream consumers depend on.")
 }
 
-// TestEnsureSystemImageViaCache_StubReturnsTypedSentinel verifies the
-// v0.1-honesty contract for the cache-routed extraction stub: when the
-// helper successfully reaches the cache, fetches+verifies, and then
-// stops at the not-yet-implemented extraction step, it returns an error
-// chain that wraps ErrExtractionNotImplemented. Callers (matrix runner,
-// future v0.2 extractor) can use errors.Is to detect the v0.1 gap
-// precisely without relying on string-matching the error message.
+// TestErrExtractionNotImplemented_BackwardCompatExport verifies the
+// v0.1 sentinel remains exported after the Phase 3 extraction work. The
+// production path no longer emits this sentinel (extraction is now
+// implemented), but downstream v0.1 callers may still do
+// `errors.Is(err, ErrExtractionNotImplemented)`. Removing the symbol
+// would be a compile-break we must not ship.
 //
-// We use a fake cache.Store whose Get returns nil error (mimicking
-// successful fetch+verify) so the helper proceeds past the cache call
-// and reaches the sentinel return. Substituting an error-returning Get
-// would short-circuit before the sentinel — that branch is covered by
-// TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache.
+// Anti-bluff posture (clauses 6.J/6.L): this test guards the contract
+// surface, NOT a production behaviour — so it is paired with
+// TestEnsureSystemImageViaCache_ExtractsZipSuccessfully (which proves
+// the production path now actually extracts files) and
+// TestEnsureSystemImageViaCache_RejectsMalformedZip (which proves the
+// new ErrSystemImageMalformed sentinel fires honestly). Together those
+// three tests pin the new contract: extraction works, malformed input
+// is rejected, and the legacy sentinel survives as a compile symbol.
+func TestErrExtractionNotImplemented_BackwardCompatExport(t *testing.T) {
+	require.NotNil(t, ErrExtractionNotImplemented,
+		"ErrExtractionNotImplemented MUST remain exported for v0.1 backward compat; "+
+			"downstream callers using errors.Is would compile-break otherwise")
+	require.NotEmpty(t, ErrExtractionNotImplemented.Error(),
+		"sentinel error message MUST remain non-empty so downstream debug logs stay legible")
+}
+
+// pathStore is a cache.Store fake that returns a fixed local path
+// (typically pointing to a synthetic ZIP fixture written under
+// t.TempDir()). Used by the Phase 3 extraction tests to drive the
+// helper through the real archive/zip code path without making any
+// network calls.
 //
-// Falsifiability rehearsal (Sixth Law clause 2):
+// Anti-bluff posture (clauses 6.J/6.L): the fake is behaviorally
+// equivalent to FilesystemStore.Get for the assertions we care about
+// — it returns a string path, callers feed that path to
+// archive/zip.OpenReader, and the production extraction code runs
+// unchanged. A test that uses this fake is exercising the SAME
+// extraction code path the production matrix runner exercises after a
+// real cache fetch.
+type pathStore struct {
+	path string
+	err  error
+}
+
+func (p *pathStore) Get(_ context.Context, _ *cache.Manifest, _ string) (string, error) {
+	return p.path, p.err
+}
+
+func (p *pathStore) Verify(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
+}
+
+func (p *pathStore) Refresh(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
+}
+
+// writeSystemImageZip constructs a real archive/zip blob at t.TempDir()
+// containing the supplied entries (relative to the inner directory) and
+// returns the absolute path. Mirrors the upstream Android system-image
+// ZIP layout: `<inner>/system.img`, `<inner>/build.prop`, ... where
+// <inner> is typically the abi name (e.g. "x86_64").
 //
-//	Mutation: in android.go ensureSystemImageViaCache, change the wrap
-//	          to fmt.Errorf("...not implemented...") (drop the %w + sentinel).
-//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_StubReturnsTypedSentinel
-//	Observed-Failure: errors.Is(err, ErrExtractionNotImplemented) returns
-//	          false; the test fails with the t.Fatalf assertion message.
+// Anti-bluff posture: the ZIP is a real archive/zip file, not a
+// pre-made byte slice — the same archive/zip reader the production
+// extractor uses also reads it. Mutating the production extractor to
+// not actually write any files to disk produces a real test failure
+// because the post-extraction file-existence asserts cannot be passed
+// without bytes hitting the filesystem.
+func writeSystemImageZip(t *testing.T, innerDir string, entries map[string][]byte) string {
+	t.Helper()
+	dir := t.TempDir()
+	zipPath := filepath.Join(dir, "sysimage.zip")
+	f, err := os.Create(zipPath)
+	require.NoError(t, err)
+	defer f.Close()
+
+	w := zip.NewWriter(f)
+	defer w.Close()
+
+	for name, body := range entries {
+		var entryName string
+		if innerDir == "" {
+			entryName = name
+		} else {
+			entryName = innerDir + "/" + name
+		}
+		hdr := &zip.FileHeader{
+			Name:   entryName,
+			Method: zip.Deflate,
+		}
+		hdr.SetMode(0o644)
+		zw, err := w.CreateHeader(hdr)
+		require.NoError(t, err)
+		_, err = zw.Write(body)
+		require.NoError(t, err)
+	}
+	require.NoError(t, w.Close())
+	return zipPath
+}
+
+// TestEnsureSystemImageViaCache_ExtractsZipSuccessfully is the Phase 3
+// end-to-end extraction test. A synthetic ZIP carrying the canonical
+// upstream layout (system.img + build.prop + a few siblings under the
+// abi inner-dir) is fed through a pathStore fake; the helper unzips it
+// into the expected ANDROID_SDK_ROOT/system-images/android-<api>/<tag>/<abi>/
+// target dir, the inner-dir prefix is stripped, and the result on disk
+// is asserted byte-for-byte (NOT just "function returned nil").
+//
+// Falsifiability rehearsal (Sixth Law clause 2 + clause 6.J/6.L
+// "primary assertion on user-visible state"):
+//
+//	Mutation: in android.go extractSystemImageZip, replace the
+//	          `for _, f := range r.File { ... }` body with a no-op
+//	          (continue) so no files are written.
+//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_ExtractsZipSuccessfully
+//	Observed-Failure: the post-extraction validation in the production
+//	          code returns ErrSystemImageMalformed (because system.img
+//	          doesn't appear at the target path). The test fails with
+//	          the require.NoError on err, AND the file-existence
+//	          asserts would fail too if we got past the err check.
 //	Reverted: yes — post-revert this test passes again.
-func TestEnsureSystemImageViaCache_StubReturnsTypedSentinel(t *testing.T) {
+func TestEnsureSystemImageViaCache_ExtractsZipSuccessfully(t *testing.T) {
+	systemImgBytes := []byte("FAKE-SYSTEM-IMG-BYTES-FOR-TEST")
+	buildPropBytes := []byte("ro.product.device=fake_device\nro.build.version.sdk=28\n")
+	ramdiskBytes := []byte("FAKE-RAMDISK")
+	sourcePropBytes := []byte("Pkg.Desc=Fake System Image\n")
+
+	// Real archive/zip with canonical upstream layout: every file
+	// under "x86_64/" inner dir.
+	zipPath := writeSystemImageZip(t, "x86_64", map[string][]byte{
+		"system.img":        systemImgBytes,
+		"build.prop":        buildPropBytes,
+		"ramdisk.img":       ramdiskBytes,
+		"source.properties": sourcePropBytes,
+	})
+
+	tmpSdk := t.TempDir()
+	emu := NewAndroidEmulator(tmpSdk)
+	avd := AVD{Name: "Pixel_API28", APILevel: 28, FormFactor: "phone"}
+
 	prevFactory := cacheStoreFactory
-	cacheStoreFactory = func(_ string) cache.Store { return &nilStore{} }
+	cacheStoreFactory = func(_ string) cache.Store {
+		return &pathStore{path: zipPath}
+	}
 	defer func() { cacheStoreFactory = prevFactory }()
 
 	prevLoader := loadManifestHook
@@ -774,8 +898,8 @@ func TestEnsureSystemImageViaCache_StubReturnsTypedSentinel(t *testing.T) {
 		return &cache.Manifest{
 			Version: 1,
 			Images: []cache.ImageEntry{{
-				ID:     "android-30-phone",
-				URL:    "https://example.invalid/sysimage.zip",
+				ID:     "android-28-phone",
+				URL:    "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r12.zip",
 				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
 				Size:   1,
 				Format: "android-system-image",
@@ -784,32 +908,239 @@ func TestEnsureSystemImageViaCache_StubReturnsTypedSentinel(t *testing.T) {
 	}
 	defer func() { loadManifestHook = prevLoader }()
 
-	tmpSdk := t.TempDir()
-	emu := NewAndroidEmulator(tmpSdk)
-	avd := AVD{Name: "Pixel_API30", APILevel: 30, FormFactor: "phone"}
 	manifestPath := filepath.Join(t.TempDir(), "vm-images.json")
-
 	err := emu.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
-	require.Error(t, err,
-		"helper MUST return an error in v0.1 (extraction not implemented)")
-	if !errors.Is(err, ErrExtractionNotImplemented) {
-		t.Fatalf("expected error to wrap ErrExtractionNotImplemented, got: %v", err)
+	require.NoError(t, err,
+		"helper MUST extract a well-formed ZIP and return nil; got: %v", err)
+
+	// PRIMARY: assert on user-visible filesystem state. The matrix
+	// runner's NEXT step (emulator.Boot) reads exactly these paths;
+	// the test asserts they exist with the right bytes.
+	target := filepath.Join(tmpSdk, "system-images", "android-28", "google_apis", "x86_64")
+	for relPath, expected := range map[string][]byte{
+		"system.img":        systemImgBytes,
+		"build.prop":        buildPropBytes,
+		"ramdisk.img":       ramdiskBytes,
+		"source.properties": sourcePropBytes,
+	} {
+		got, rerr := os.ReadFile(filepath.Join(target, relPath))
+		require.NoError(t, rerr,
+			"extracted file %s MUST exist under %s (anti-bluff: silent-success-on-empty-zip is a §6.J violation)",
+			relPath, target)
+		assert.Equal(t, expected, got,
+			"extracted file %s bytes MUST match the ZIP entry's bytes", relPath)
 	}
 }
 
-// nilStore is a cache.Store whose Get reports success without doing any
-// work. Used by TestEnsureSystemImageViaCache_StubReturnsTypedSentinel
-// to drive the helper past the cache.Get call into the sentinel return.
-type nilStore struct{}
+// TestEnsureSystemImageViaCache_RejectsMalformedZip is the Phase 3
+// negative test. A synthetic ZIP missing system.img must trigger the
+// ErrSystemImageMalformed error AND leave NO partial files under the
+// target dir (cleanup-on-failure is the difference between an
+// idempotent retry and a poisoned-state retry — see §6.J).
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in android.go extractSystemImageZip, drop the
+//	          post-extraction validation block (the
+//	          `if !hasExtractedSystemImage(targetDir) { ... }` branch).
+//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_RejectsMalformedZip
+//	Observed-Failure: the helper now silently returns nil for the
+//	          malformed ZIP. require.Error fires; errors.Is check
+//	          fires too; the cleanup assertion would also fire because
+//	          the build.prop file would now be left on disk.
+//	Reverted: yes — post-revert this test passes again.
+func TestEnsureSystemImageViaCache_RejectsMalformedZip(t *testing.T) {
+	// ZIP missing system.img. build.prop is present but on its own is
+	// not a valid system-image — emulator boot would later fail with
+	// "system.img not found" and the operator would chase ghosts. The
+	// extraction validation surfaces the failure at the right layer.
+	zipPath := writeSystemImageZip(t, "x86_64", map[string][]byte{
+		"build.prop":        []byte("ro.product.device=fake_device\n"),
+		"source.properties": []byte("Pkg.Desc=Fake\n"),
+	})
 
-func (nilStore) Get(_ context.Context, _ *cache.Manifest, _ string) (string, error) {
-	return "", nil
+	tmpSdk := t.TempDir()
+	emu := NewAndroidEmulator(tmpSdk)
+	avd := AVD{Name: "Pixel_API30", APILevel: 30, FormFactor: "phone"}
+
+	prevFactory := cacheStoreFactory
+	cacheStoreFactory = func(_ string) cache.Store {
+		return &pathStore{path: zipPath}
+	}
+	defer func() { cacheStoreFactory = prevFactory }()
+
+	prevLoader := loadManifestHook
+	loadManifestHook = func(_ string) (*cache.Manifest, error) {
+		return &cache.Manifest{
+			Version: 1,
+			Images: []cache.ImageEntry{{
+				ID:     "android-30-phone",
+				URL:    "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-30_r12.zip",
+				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
+				Size:   1,
+				Format: "android-system-image",
+			}},
+		}, nil
+	}
+	defer func() { loadManifestHook = prevLoader }()
+
+	manifestPath := filepath.Join(t.TempDir(), "vm-images.json")
+	err := emu.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
+
+	// PRIMARY: typed-error assertion. errors.Is must walk through the
+	// fmt.Errorf wraps and find ErrSystemImageMalformed at the bottom
+	// of the chain.
+	require.Error(t, err,
+		"helper MUST surface a malformed-ZIP error; silent success would be a §6.J bluff")
+	assert.True(t, errors.Is(err, ErrSystemImageMalformed),
+		"error chain MUST wrap ErrSystemImageMalformed; got: %v", err)
+
+	// PRIMARY (cleanup-on-failure): the target dir MUST contain NO
+	// partial extracted files. A leftover build.prop would poison the
+	// next retry — the helper's cleanup-on-failure is what makes
+	// extraction idempotent.
+	target := filepath.Join(tmpSdk, "system-images", "android-30", "google_apis", "x86_64")
+	if _, err := os.Stat(filepath.Join(target, "build.prop")); err == nil {
+		t.Fatalf("build.prop MUST NOT survive a failed extraction; cleanup-on-failure is mandatory (§6.J)")
+	}
+	if _, err := os.Stat(filepath.Join(target, "source.properties")); err == nil {
+		t.Fatalf("source.properties MUST NOT survive a failed extraction; cleanup-on-failure is mandatory (§6.J)")
+	}
 }
 
-func (nilStore) Verify(_ context.Context, _ *cache.Manifest, _ string) error {
-	return nil
+// TestEnsureSystemImageViaCache_IdempotentOnExistingExtraction pins
+// Branch 4 (fine-grained idempotence): when the per-AVD target dir
+// already contains the canonical pair (system.img + build.prop), the
+// helper MUST NOT consult the cache at all (no SHA-256 work, no zip
+// re-extraction). Pre-populates the target, then asserts the helper
+// returns nil AND no Get() call was recorded by a counting fake.
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in android.go ensureSystemImageViaCache, drop the
+//	          `if hasExtractedSystemImage(targetDir) { return nil }`
+//	          early-return.
+//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_IdempotentOnExistingExtraction
+//	Observed-Failure: store.getCalls becomes 1 (the cache was
+//	          consulted unnecessarily); the assertion on len(getCalls)
+//	          fires. Bonus: redundant SHA-256 work would slow every
+//	          matrix iteration's start-up.
+//	Reverted: yes — post-revert this test passes again.
+func TestEnsureSystemImageViaCache_IdempotentOnExistingExtraction(t *testing.T) {
+	tmpSdk := t.TempDir()
+	avd := AVD{Name: "Pixel_API34", APILevel: 34, FormFactor: "phone"}
+	target := filepath.Join(tmpSdk, "system-images", "android-34", "google_apis", "x86_64")
+	require.NoError(t, os.MkdirAll(target, 0o755))
+	preExistingSystemImg := []byte("PRE-EXISTING-SYSTEM-IMG-BYTES")
+	preExistingBuildProp := []byte("ro.product.device=pre_existing\n")
+	require.NoError(t, os.WriteFile(filepath.Join(target, "system.img"), preExistingSystemImg, 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(target, "build.prop"), preExistingBuildProp, 0o644))
+
+	// Counting store — Get() MUST NOT be invoked when the extraction
+	// is already on disk.
+	store := &countingStore{}
+	prevFactory := cacheStoreFactory
+	cacheStoreFactory = func(_ string) cache.Store { return store }
+	defer func() { cacheStoreFactory = prevFactory }()
+
+	prevLoader := loadManifestHook
+	loadManifestHook = func(_ string) (*cache.Manifest, error) {
+		return &cache.Manifest{
+			Version: 1,
+			Images: []cache.ImageEntry{{
+				ID:     "android-34-phone",
+				URL:    "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-34_r12.zip",
+				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
+				Size:   1,
+				Format: "android-system-image",
+			}},
+		}, nil
+	}
+	defer func() { loadManifestHook = prevLoader }()
+
+	// Post-Phase-3 there is NO coarse API-level dir short-circuit;
+	// the SOLE idempotence check is the fine-grained one that
+	// requires system.img + build.prop in the per-AVD target. Dropping
+	// that check is the canonical falsifiability rehearsal for this
+	// test (see KDoc above).
+	emu := NewAndroidEmulator(tmpSdk)
+	manifestPath := filepath.Join(t.TempDir(), "vm-images.json")
+	err := emu.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
+	require.NoError(t, err,
+		"helper MUST be a no-op when target dir already has system.img + build.prop")
+	require.Empty(t, store.getCalls,
+		"cache.Store.Get MUST NOT be invoked when extraction is already on disk; "+
+			"redundant fetch would slow every matrix iteration's start-up")
+
+	// Belt-and-suspenders: the pre-existing files MUST NOT have been
+	// overwritten by a redundant extraction.
+	got, rerr := os.ReadFile(filepath.Join(target, "system.img"))
+	require.NoError(t, rerr)
+	assert.Equal(t, preExistingSystemImg, got,
+		"pre-existing system.img MUST NOT be overwritten by redundant extraction")
+	got, rerr = os.ReadFile(filepath.Join(target, "build.prop"))
+	require.NoError(t, rerr)
+	assert.Equal(t, preExistingBuildProp, got,
+		"pre-existing build.prop MUST NOT be overwritten by redundant extraction")
 }
 
-func (nilStore) Refresh(_ context.Context, _ *cache.Manifest, _ string) error {
-	return nil
+// TestParseSystemImageURL_HappyPathsAndRejections pins the URL parser's
+// contract: canonical upstream URLs yield (tag, abi); anything else is
+// an error rather than a silent mis-parse. This is a unit-level pin of
+// the helper used by ensureSystemImageViaCache; the higher-level
+// integration tests above exercise it transitively.
+func TestParseSystemImageURL_HappyPathsAndRejections(t *testing.T) {
+	cases := []struct {
+		name    string
+		url     string
+		wantTag string
+		wantABI string
+		wantErr bool
+	}{
+		{
+			name:    "canonical google_apis x86_64 28",
+			url:     "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r12.zip",
+			wantTag: "google_apis",
+			wantABI: "x86_64",
+		},
+		{
+			name:    "google_apis_playstore arm64-v8a",
+			url:     "https://dl.google.com/android/repository/sys-img/google_apis_playstore/arm64-v8a-34_r3.zip",
+			wantTag: "google_apis_playstore",
+			wantABI: "arm64-v8a",
+		},
+		{
+			name:    "android-tv x86",
+			url:     "https://dl.google.com/android/repository/sys-img/android-tv/x86-30_r4.zip",
+			wantTag: "android-tv",
+			wantABI: "x86",
+		},
+		{
+			name:    "missing sys-img segment",
+			url:     "https://example.invalid/sysimage.zip",
+			wantErr: true,
+		},
+		{
+			name:    "non-zip filename",
+			url:     "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r12.tar",
+			wantErr: true,
+		},
+		{
+			name:    "filename without revision suffix",
+			url:     "https://dl.google.com/android/repository/sys-img/google_apis/x86_64.zip",
+			wantErr: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			tag, abi, err := parseSystemImageURL(tc.url)
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantTag, tag)
+			assert.Equal(t, tc.wantABI, abi)
+		})
+	}
 }

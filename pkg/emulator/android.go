@@ -1,11 +1,15 @@
 package emulator
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -149,66 +153,76 @@ func NewAndroidEmulatorWithExecutor(
 	return &AndroidEmulator{executor: executor, androidSdkRoot: androidSdkRoot}
 }
 
-// ErrExtractionNotImplemented signals that the v0.1 cache-routing
-// flow successfully fetched + verified the system-image artifact
-// but does not yet repackage it into ANDROID_SDK_ROOT/system-images/.
-// Future v0.2 implements the extraction; until then, callers of
-// ensureSystemImageViaCache see this sentinel via errors.Is.
+// ErrExtractionNotImplemented was the v0.1 sentinel signalling that
+// fetch+verify succeeded but extraction was not yet implemented. The
+// v0.2 flow (this package, post Phase 3) implements the extraction
+// fully; the sentinel is retained as an exported symbol for backward
+// compatibility with any v0.1 caller that still does
+// `errors.Is(err, ErrExtractionNotImplemented)` to identify the v0.1
+// gap. New code MUST NOT consult this sentinel — the production path
+// no longer returns it. New callers wanting to detect a structural
+// extraction failure should use ErrSystemImageMalformed.
 //
-// Anti-bluff posture: this is an honest signal — the caller knows
-// fetch+verify succeeded; only extraction is the v0.1 gap. The matrix
-// runner's runOne wraps this with `cache-routed system-image: %w`,
-// which chains through; a tag-time gate that wants to identify the
-// v0.1 gap precisely uses errors.Is(err, ErrExtractionNotImplemented).
+// Anti-bluff posture: keeping the export prevents downstream compile
+// breakage; production code never returns this error so green tests
+// against ErrExtractionNotImplemented in v0.1 callers naturally stop
+// firing — which is the desired outcome (the v0.1 gap is closed).
 var ErrExtractionNotImplemented = errors.New("cache-routed system-image extraction: not implemented in v0.1; operator end-to-end run only")
 
-// systemImageDir is the conventional ANDROID_SDK_ROOT layout location
-// for an AVD's system-image. The Android SDK installs system-images at
+// ErrSystemImageMalformed signals that the cache-fetched ZIP did not
+// contain the minimum set of files an Android system-image MUST carry
+// (canonically: system.img + build.prop). Callers — the matrix runner
+// in particular — use errors.Is(err, ErrSystemImageMalformed) to
+// distinguish a transport-level failure (network, SHA mismatch) from
+// a content-level failure (the ZIP fetched fine but is not a valid
+// Android system-image).
 //
-//	${ANDROID_SDK_ROOT}/system-images/android-<api>/<tag>/<abi>/
-//
-// We do NOT know <tag> or <abi> from the AVD struct alone (those live
-// in the AVD's config.ini under config/<AVD-name>.avd). For the
-// existence-check we look one level up — the per-API-level directory.
-// If that directory is absent, we know no system-image is installed for
-// this API level; if present, we conservatively assume the image is
-// usable (matching the SDK's own "AVD launch" behaviour). A future
-// stricter check could parse the AVD's config.ini.
-func (a *AndroidEmulator) systemImageDir(apiLevel int) string {
-	return filepath.Join(
-		a.androidSdkRoot,
-		"system-images",
-		fmt.Sprintf("android-%d", apiLevel),
-	)
-}
+// Anti-bluff posture (clauses 6.J/6.L): this is the load-bearing
+// post-extraction validation. Without it, an empty or trimmed ZIP
+// would silently extract zero useful files into ANDROID_SDK_ROOT and
+// the next emulator boot would fail with a confusing "system.img not
+// found" error far from the root cause. Returning a typed error at
+// the extraction boundary keeps the failure attributable.
+var ErrSystemImageMalformed = errors.New("system-image ZIP is malformed: missing required files")
 
 // ensureSystemImageViaCache routes the missing-system-image fallback
-// path through pkg/cache when manifestPath is non-empty.
+// path through pkg/cache when manifestPath is non-empty, and (Phase 3)
+// extracts the fetched ZIP into ANDROID_SDK_ROOT/system-images/...
 //
-// Behaviour matrix (anti-bluff: every branch is observable):
+// Behaviour matrix (anti-bluff: every branch is observable AND the
+// fine-grained idempotence check is reachable in production — there
+// is no coarser short-circuit that would mask a Branch 4 bug):
 //
 //  1. manifestPath == "" → no-op, returns nil. Pre-Phase-B behaviour
 //     preserved byte-for-byte. The matrix runner's existing
 //     fail-fast on missing system-image runs unchanged.
-//  2. manifestPath != "" AND the image dir under ANDROID_SDK_ROOT
-//     exists → no-op, returns nil. We do not re-fetch what is
-//     already on disk (cache hit at the SDK layer).
-//  3. manifestPath != "" AND the image dir is missing → load the
-//     manifest, compute imageID = "android-<api>-<formFactor>",
-//     call cache.Store.Get(...) to fetch + verify the bytes, and
-//     return the explicit "extraction: not implemented in v0.1"
-//     error per the v0.1 honesty mandate.
+//  2. manifestPath != "" → load the manifest, derive the per-AVD
+//     target dir (system-images/android-<api>/<tag>/<abi>/), compute
+//     imageID = "android-<api>-<formFactor>", parse <tag> + <abi>
+//     from the manifest entry's URL.
+//  3. Idempotence: if the per-AVD target dir already contains the
+//     canonical pair (system.img + build.prop), the helper is a no-op
+//     and returns nil without consulting the cache (avoids redundant
+//     SHA-256 verify work on subsequent matrix iterations). This is
+//     the SOLE on-disk short-circuit — there is intentionally no
+//     coarser API-level dir check, because such a check would mask
+//     bugs in this fine-grained idempotence path.
+//  4. Otherwise: call cache.Store.Get(...) to fetch + verify the
+//     bytes, then unzip into the target dir stripping any single-
+//     leading-component prefix (the upstream ZIP stores files under
+//     <abi>/...). Post-extraction, validate that system.img +
+//     build.prop exist; otherwise return an error wrapping
+//     ErrSystemImageMalformed and leave NO partial files under the
+//     target dir (cleanup-on-failure for retry idempotence).
 //
-// HONESTY: full extraction of the fetched bytes into the SDK's
-// system-images layout (qcow2 → raw → repackage as
-// system-images/android-<api>/<tag>/<abi>/) is non-trivial and out of
-// scope for the Phase B fix-up. The v0.1 behaviour is to fetch + verify
-// the bytes via the cache (so the routing decision is observable + the
-// SHA-256 verify-on-fetch property holds), then surface an explicit
-// "extraction: not implemented in v0.1" error so the operator knows the
-// next manual step. The unit test verifies the routing decision (does
-// the cache Get call happen?), NOT the full end-to-end installation
-// path.
+// Anti-bluff posture (Phase 3, clauses 6.J/6.L): the validation in
+// step 4 is the load-bearing safety property. A silently-empty ZIP
+// would otherwise extract zero files and the next emulator boot
+// would fail with a confusing "system.img not found" error far from
+// the root cause. The ErrSystemImageMalformed sentinel keeps the
+// failure attributable; the on-disk cleanup keeps the failure mode
+// idempotent (the next retry sees a clean target dir, not a
+// half-extracted one).
 func (a *AndroidEmulator) ensureSystemImageViaCache(
 	ctx context.Context,
 	avd AVD,
@@ -218,25 +232,355 @@ func (a *AndroidEmulator) ensureSystemImageViaCache(
 	if manifestPath == "" {
 		return nil
 	}
-	// Branch 2: image already present under ANDROID_SDK_ROOT.
-	if _, err := os.Stat(a.systemImageDir(avd.APILevel)); err == nil {
-		return nil
-	}
-	// Branch 3: image missing → consult the cache.
+
+	// Branch 2 + 3 + 4: image MAY be missing → consult manifest first,
+	// then fine-grained idempotence, then cache + extract.
 	manifest, err := loadManifestHook(manifestPath)
 	if err != nil {
 		return fmt.Errorf("ensureSystemImageViaCache: load manifest %s: %w", manifestPath, err)
 	}
 	imageID := fmt.Sprintf("android-%d-%s", avd.APILevel, avd.FormFactor)
+	entry, err := manifest.FindByID(imageID)
+	if err != nil {
+		return fmt.Errorf("ensureSystemImageViaCache: %w", err)
+	}
+	tag, abi, err := parseSystemImageURL(entry.URL)
+	if err != nil {
+		return fmt.Errorf("ensureSystemImageViaCache: %w", err)
+	}
+	targetDir := filepath.Join(
+		a.androidSdkRoot,
+		"system-images",
+		fmt.Sprintf("android-%d", avd.APILevel),
+		tag,
+		abi,
+	)
+
+	// Branch 4: fine-grained idempotence — target dir already has the
+	// canonical pair. Skip the cache fetch entirely; no SHA work needed.
+	if hasExtractedSystemImage(targetDir) {
+		return nil
+	}
+
 	store := cacheStoreFactory(defaultCacheRoot())
-	if _, err := store.Get(ctx, manifest, imageID); err != nil {
+	zipPath, err := store.Get(ctx, manifest, imageID)
+	if err != nil {
 		return fmt.Errorf("ensureSystemImageViaCache: fetch %s: %w", imageID, err)
 	}
-	// v0.1 honesty: routing + fetch + verify is implemented, but
-	// extraction into ANDROID_SDK_ROOT/system-images/... is not. Wrap
-	// the typed sentinel so callers can errors.Is(err,
-	// ErrExtractionNotImplemented) to identify the v0.1 gap precisely.
-	return fmt.Errorf("ensureSystemImageViaCache: %w (imageID=%s)", ErrExtractionNotImplemented, imageID)
+
+	if err := extractSystemImageZip(zipPath, targetDir); err != nil {
+		return fmt.Errorf(
+			"ensureSystemImageViaCache: extract %s into %s: %w",
+			imageID, targetDir, err,
+		)
+	}
+	return nil
+}
+
+// parseSystemImageURL extracts <tag> + <abi> from an Android system-image
+// repository URL. Canonical pattern:
+//
+//	https://dl.google.com/android/repository/sys-img/<tag>/<abi>-<api>_r<rev>.zip
+//
+// Examples:
+//
+//	.../sys-img/google_apis/x86_64-28_r12.zip          → tag=google_apis, abi=x86_64
+//	.../sys-img/google_apis_playstore/arm64-v8a-34_r3.zip → tag=google_apis_playstore, abi=arm64-v8a
+//	.../sys-img/android-tv/x86-30_r4.zip               → tag=android-tv, abi=x86
+//
+// The function is strict: it requires the URL path to contain a
+// "/sys-img/<tag>/<filename>" segment, and the filename to be
+// "<abi>-<api>_r<rev>.zip". Anything else returns an error so the
+// caller surfaces a typed failure rather than mis-extracting into the
+// wrong directory.
+func parseSystemImageURL(rawURL string) (tag, abi string, err error) {
+	u, perr := url.Parse(rawURL)
+	if perr != nil {
+		return "", "", fmt.Errorf("parse url %q: %w", rawURL, perr)
+	}
+	// Use path.Clean to strip ".."/"."/double-slashes; the URL path
+	// is "/" separated regardless of host OS.
+	cleaned := path.Clean(u.Path)
+	parts := strings.Split(strings.TrimPrefix(cleaned, "/"), "/")
+	// Locate the "sys-img" segment; tag is the next part, filename
+	// is the part after that. Expecting at least: <prefix>/sys-img/<tag>/<file>.
+	idx := -1
+	for i, p := range parts {
+		if p == "sys-img" {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 || idx+2 >= len(parts) {
+		return "", "", fmt.Errorf(
+			"system-image URL %q does not match .../sys-img/<tag>/<abi>-<api>_r<rev>.zip",
+			rawURL,
+		)
+	}
+	tag = parts[idx+1]
+	filename := parts[idx+2]
+	if !strings.HasSuffix(filename, ".zip") {
+		return "", "", fmt.Errorf(
+			"system-image URL %q filename %q does not end in .zip",
+			rawURL, filename,
+		)
+	}
+	stem := strings.TrimSuffix(filename, ".zip")
+	// stem looks like "x86_64-28_r12" or "arm64-v8a-34_r3". The api
+	// + revision suffix is "<api>_r<rev>"; the abi is everything to
+	// the LEFT of the "<digits>_r<digits>" suffix. We split on
+	// "-<digits>_r" pattern.
+	dashIdx := -1
+	for i := len(stem) - 1; i > 0; i-- {
+		if stem[i] != '-' {
+			continue
+		}
+		// Candidate split point. Validate the suffix is "<api>_r<rev>".
+		suffix := stem[i+1:]
+		ur := strings.Index(suffix, "_r")
+		if ur <= 0 || ur == len(suffix)-2 {
+			continue
+		}
+		left := suffix[:ur]
+		right := suffix[ur+2:]
+		if !isAllDigits(left) || !isAllDigits(right) {
+			continue
+		}
+		dashIdx = i
+		break
+	}
+	if dashIdx < 0 {
+		return "", "", fmt.Errorf(
+			"system-image URL %q filename %q does not match <abi>-<api>_r<rev>.zip",
+			rawURL, filename,
+		)
+	}
+	abi = stem[:dashIdx]
+	if tag == "" || abi == "" {
+		return "", "", fmt.Errorf("system-image URL %q yielded empty tag/abi", rawURL)
+	}
+	return tag, abi, nil
+}
+
+func isAllDigits(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// hasExtractedSystemImage returns true iff targetDir already contains
+// the canonical pair of files an Android system-image MUST carry
+// (system.img + build.prop). Used by ensureSystemImageViaCache for the
+// fine-grained idempotence check (Branch 4).
+func hasExtractedSystemImage(targetDir string) bool {
+	if _, err := os.Stat(filepath.Join(targetDir, "system.img")); err != nil {
+		return false
+	}
+	if _, err := os.Stat(filepath.Join(targetDir, "build.prop")); err != nil {
+		return false
+	}
+	return true
+}
+
+// extractSystemImageZip unzips the file at zipPath into targetDir,
+// stripping a single leading directory component if every entry shares
+// the same first segment (the upstream Android ZIP stores files under
+// "<abi>/..." so we want to flatten that into targetDir).
+//
+// Post-extraction validation: targetDir MUST contain system.img AND
+// build.prop. If the validation fails, ALL extracted files are removed
+// (the target dir is left in the same not-yet-installed state it was
+// before the call) and an error wrapping ErrSystemImageMalformed is
+// returned.
+//
+// Anti-bluff posture: the validation is the difference between a
+// silent-success-on-empty-zip (clause 6.J bluff vector) and an honest
+// error that names the missing files. The cleanup-on-failure is the
+// difference between an idempotent retry (next call sees a clean dir)
+// and a poisoned-state retry (next call sees a half-extracted dir
+// whose missing files would now be misattributed to the cache layer).
+func extractSystemImageZip(zipPath, targetDir string) error {
+	r, err := zip.OpenReader(zipPath)
+	if err != nil {
+		return fmt.Errorf("open zip %s: %w", zipPath, err)
+	}
+	defer r.Close()
+
+	// Detect a single shared leading directory prefix. If every entry
+	// is under "<prefix>/" with the same <prefix>, strip it; otherwise
+	// extract entries verbatim.
+	prefix := commonZipPrefix(r.File)
+
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		return fmt.Errorf("mkdir target %s: %w", targetDir, err)
+	}
+
+	// Track the files we wrote so we can clean up on validation failure.
+	written := make([]string, 0, len(r.File))
+	cleanup := func() {
+		// Remove files first, then prune empty directories. Best
+		// effort — we don't fail extraction over cleanup errors.
+		for _, p := range written {
+			_ = os.Remove(p)
+		}
+		// Walk the tree pruning empty dirs (post-order). targetDir is
+		// removed only if it ends up empty.
+		_ = filepath.Walk(targetDir, func(_ string, _ os.FileInfo, _ error) error { return nil })
+		// Two passes are sufficient for typical depths.
+		for i := 0; i < 4; i++ {
+			_ = pruneEmptyDirs(targetDir)
+		}
+	}
+
+	for _, f := range r.File {
+		name := f.Name
+		// Strip the common prefix (with trailing slash) if any.
+		if prefix != "" {
+			if !strings.HasPrefix(name, prefix) {
+				continue
+			}
+			name = strings.TrimPrefix(name, prefix)
+			if name == "" {
+				continue
+			}
+		}
+		// Defence-in-depth against zip-slip: refuse any entry whose
+		// cleaned path escapes targetDir.
+		dest := filepath.Join(targetDir, filepath.FromSlash(name))
+		relCheck, err := filepath.Rel(targetDir, dest)
+		if err != nil || strings.HasPrefix(relCheck, "..") {
+			cleanup()
+			return fmt.Errorf("zip entry %q escapes target dir", f.Name)
+		}
+
+		if f.FileInfo().IsDir() {
+			if err := os.MkdirAll(dest, f.Mode().Perm()|0o700); err != nil {
+				cleanup()
+				return fmt.Errorf("mkdir %s: %w", dest, err)
+			}
+			continue
+		}
+
+		// Regular file: ensure parent + open + copy.
+		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
+			cleanup()
+			return fmt.Errorf("mkdir parent of %s: %w", dest, err)
+		}
+		if err := copyZipEntry(f, dest); err != nil {
+			cleanup()
+			return err
+		}
+		written = append(written, dest)
+	}
+
+	// Post-extraction validation. The system-image is unusable to the
+	// emulator without these two files; missing either is an honest
+	// extraction failure, not a "warning".
+	if !hasExtractedSystemImage(targetDir) {
+		cleanup()
+		return fmt.Errorf(
+			"%w (target=%s; require system.img + build.prop)",
+			ErrSystemImageMalformed, targetDir,
+		)
+	}
+	return nil
+}
+
+// commonZipPrefix returns the single shared leading directory of all
+// entries (with trailing slash), or "" if there is no shared prefix.
+// E.g. ["x86_64/system.img", "x86_64/build.prop"] → "x86_64/".
+func commonZipPrefix(entries []*zip.File) string {
+	if len(entries) == 0 {
+		return ""
+	}
+	var first string
+	for _, e := range entries {
+		// Skip explicit directory entries to avoid spurious prefixes.
+		if e.FileInfo().IsDir() {
+			continue
+		}
+		first = e.Name
+		break
+	}
+	if first == "" {
+		return ""
+	}
+	slash := strings.IndexByte(first, '/')
+	if slash <= 0 {
+		return ""
+	}
+	candidate := first[:slash+1]
+	for _, e := range entries {
+		if e.FileInfo().IsDir() {
+			// Directory entries can be the prefix itself ("x86_64/")
+			// or sub-directories under it; both are fine. If a dir
+			// entry doesn't start with candidate, there's no common
+			// prefix.
+			if !strings.HasPrefix(e.Name, candidate) && e.Name != strings.TrimSuffix(candidate, "/") {
+				return ""
+			}
+			continue
+		}
+		if !strings.HasPrefix(e.Name, candidate) {
+			return ""
+		}
+	}
+	return candidate
+}
+
+// copyZipEntry writes the bytes of f to dest with f's mode bits.
+func copyZipEntry(f *zip.File, dest string) error {
+	src, err := f.Open()
+	if err != nil {
+		return fmt.Errorf("open zip entry %s: %w", f.Name, err)
+	}
+	defer src.Close()
+	mode := f.Mode().Perm()
+	if mode == 0 {
+		mode = 0o644
+	}
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, mode)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", dest, err)
+	}
+	if _, err := io.Copy(out, src); err != nil {
+		_ = out.Close()
+		return fmt.Errorf("write %s: %w", dest, err)
+	}
+	if err := out.Close(); err != nil {
+		return fmt.Errorf("close %s: %w", dest, err)
+	}
+	return nil
+}
+
+// pruneEmptyDirs removes empty directories under root (best-effort,
+// post-order). Used by extractSystemImageZip's cleanup path so a
+// failed extraction leaves no stale skeleton behind.
+func pruneEmptyDirs(root string) error {
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		sub := filepath.Join(root, e.Name())
+		_ = pruneEmptyDirs(sub)
+		if subEntries, err := os.ReadDir(sub); err == nil && len(subEntries) == 0 {
+			_ = os.Remove(sub)
+		}
+	}
+	if rootEntries, err := os.ReadDir(root); err == nil && len(rootEntries) == 0 {
+		_ = os.Remove(root)
+	}
+	return nil
 }
 
 func (a *AndroidEmulator) emulatorBinary() string {

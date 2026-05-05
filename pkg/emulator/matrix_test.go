@@ -752,8 +752,11 @@ func TestRunMatrix_RoutesMissingSystemImageThroughCache_WhenImageManifestPathIsS
 		return &cache.Manifest{
 			Version: 1,
 			Images: []cache.ImageEntry{{
-				ID:     "android-28-phone",
-				URL:    "https://example.invalid/sysimage.zip",
+				ID: "android-28-phone",
+				// Canonical .../sys-img/<tag>/<abi>-<api>_r<rev>.zip URL
+				// so parseSystemImageURL succeeds and the test reaches
+				// the cache.Get call (the routing-decision under test).
+				URL:    "https://dl.google.com/android/repository/sys-img/google_apis/x86_64-28_r12.zip",
 				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
 				Size:   1,
 				Format: "android-system-image",
