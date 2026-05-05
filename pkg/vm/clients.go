@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -338,6 +339,51 @@ func (r *realQMPClient) SystemPowerdown(ctx context.Context) error {
 		return fmt.Errorf("realQMPClient.SystemPowerdown: send: %w", err)
 	}
 	return nil
+}
+
+// Screendump asks QEMU to write a PPM-format screenshot of the guest
+// framebuffer to hostPath (interpreted on the host — qemu-system is a
+// host process). Returns when QEMU's response arrives (success or
+// error JSON).
+//
+// Anti-bluff posture (clauses 6.J/6.L): the function reads the QMP
+// response and treats `{"error":...}` as an honest failure rather
+// than fire-and-forget. A silent screendump that "succeeded" without
+// producing a file would be a clause-6.J bluff vector — an operator
+// looking at a "passing" matrix run with no screenshot evidence
+// would have no way to know the screendump silently failed.
+func (r *realQMPClient) Screendump(ctx context.Context, hostPath string) error {
+	if r.conn == nil {
+		return fmt.Errorf("realQMPClient.Screendump: not dialed; call Dial first")
+	}
+	cmd := fmt.Sprintf(`{"execute":"screendump","arguments":{"filename":"%s"}}`, escapeJSONString(hostPath))
+	if _, err := fmt.Fprintln(r.conn, cmd); err != nil {
+		return fmt.Errorf("realQMPClient.Screendump: send: %w", err)
+	}
+	resp, err := r.reader.ReadString('\n')
+	if err != nil {
+		return fmt.Errorf("realQMPClient.Screendump: read response: %w", err)
+	}
+	if strings.Contains(resp, `"error"`) {
+		return fmt.Errorf("realQMPClient.Screendump: qemu rejected: %s", strings.TrimSpace(resp))
+	}
+	return nil
+}
+
+// escapeJSONString escapes a string for safe inclusion inside a
+// JSON string literal. Only the canonical 4 chars need escaping for
+// the QMP screendump filename; we keep this minimal rather than
+// pulling in encoding/json for one field.
+func escapeJSONString(s string) string {
+	repl := map[string]string{
+		`\`: `\\`,
+		`"`: `\"`,
+	}
+	out := s
+	for k, v := range repl {
+		out = strings.ReplaceAll(out, k, v)
+	}
+	return out
 }
 
 func (r *realQMPClient) Close() error {

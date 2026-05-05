@@ -23,6 +23,31 @@ type AndroidMatrixRunner struct {
 	emulator Emulator
 }
 
+// adbAccessor is the seam runOne uses to issue side-effects against the
+// running emulator that don't fit the Emulator-interface contract:
+// network-shaping (`adb emu network speed/delay`) and screenshot capture
+// (`adb exec-out screencap -p`). Production: AndroidEmulator implements
+// this implicitly via its CommandExecutor + adbBinary. Tests substitute
+// a fakeAdbAccessor that records the same calls.
+//
+// Anti-bluff posture (clauses 6.J/6.L): without this seam, the only
+// way to drive the network/screenshot branches in runOne is to use a
+// real *AndroidEmulator — but RunInstrumentation in that type shells
+// out to ./gradlew, which is not present in the unit-test environment.
+// The seam keeps the test path honest (it asserts on the same observable
+// adb calls the production path issues) without fabricating gradle.
+type adbAccessor interface {
+	executorAndAdb() (CommandExecutor, string)
+}
+
+// executorAndAdb implements adbAccessor on the production type. The
+// matrix runner type-asserts to adbAccessor (NOT to *AndroidEmulator)
+// so a test fake can satisfy the interface without inheriting all the
+// Emulator surface methods.
+func (a *AndroidEmulator) executorAndAdb() (CommandExecutor, string) {
+	return a.executor, a.adbBinary()
+}
+
 // NewAndroidMatrixRunner constructs a runner backed by the supplied
 // [Emulator]. Callers typically pass [NewAndroidEmulator] for
 // production runs and [NewAndroidEmulatorWithExecutor] for tests.
@@ -132,6 +157,42 @@ func (r *AndroidMatrixRunner) runOne(
 		}
 	}
 
+	// Phase 6 (Group C remaining): apply network conditions if either a
+	// profile name OR a non-zero override is configured. Failures are
+	// logged to stderr and DO NOT flip the row — network shaping is a
+	// best-effort enrichment; the row's Passed signal stays bound to
+	// the test outcome itself (Sixth Law clause 3 — gating signal stays
+	// on user-visible behaviour, not on instrumentation plumbing).
+	if config.NetworkProfile != "" || config.NetworkOverride != (NetworkConditions{}) {
+		profile, perr := LookupNetworkProfile(config.NetworkProfile)
+		if perr != nil {
+			// Unknown profile name is a configuration error — surface
+			// it as a row failure rather than a silent skip. The row
+			// still carries the AVD identity so the operator can map
+			// the typo to its source.
+			_ = r.emulator.Teardown(ctx, boot.ADBPort)
+			return boot, TestResult{
+				AVD:        avd,
+				TestClass:  config.TestClass,
+				Started:    time.Now(),
+				Passed:     false,
+				Error:      fmt.Errorf("network profile lookup: %w", perr),
+				Concurrent: maxInt(config.Concurrent, 1),
+			}
+		}
+		conditions := MergeNetworkConditions(profile, config.NetworkOverride)
+		if accessor, ok := r.emulator.(adbAccessor); ok {
+			executor, adbPath := accessor.executorAndAdb()
+			serial := fmt.Sprintf("emulator-%d", boot.ConsolePort)
+			if applyErr := applyNetworkConditions(ctx, executor, adbPath, serial, conditions); applyErr != nil {
+				fmt.Fprintf(os.Stderr,
+					"[matrix] warning: applyNetworkConditions failed for %s (profile=%q): %v\n",
+					avd.Name, config.NetworkProfile, applyErr,
+				)
+			}
+		}
+	}
+
 	// Diagnostic capture happens here, between Install and the test —
 	// after Android is up and the APK is installed (so the emulator is
 	// stable) and before the test runs (so the diag reflects the
@@ -143,15 +204,40 @@ func (r *AndroidMatrixRunner) runOne(
 		ctx, boot.ADBPort, config.TestClass, testTimeout,
 	)
 	test := TestResult{
-		AVD:        avd,
-		TestClass:  config.TestClass,
-		Started:    startedTest,
-		Duration:   time.Since(startedTest),
-		Passed:     passed,
-		Output:     out,
-		Error:      runErr,
-		Diag:       diag,
-		Concurrent: maxInt(config.Concurrent, 1),
+		AVD:            avd,
+		TestClass:      config.TestClass,
+		Started:        startedTest,
+		Duration:       time.Since(startedTest),
+		Passed:         passed,
+		Output:         out,
+		Error:          runErr,
+		Diag:           diag,
+		Concurrent:     maxInt(config.Concurrent, 1),
+		NetworkProfile: config.NetworkProfile,
+	}
+
+	// Phase 6 (Group C remaining): forensic screenshot capture on
+	// failure. Default true; operator opts OUT explicitly via
+	// CaptureScreenshotOnFailure=false. Capture failures are logged
+	// to stderr only — they do NOT flip the row (Sixth Law clause 3:
+	// the gating signal stays on the test outcome).
+	if !test.Passed && config.CaptureScreenshotOnFailure {
+		if accessor, ok := r.emulator.(adbAccessor); ok {
+			executor, adbPath := accessor.executorAndAdb()
+			serial := fmt.Sprintf("emulator-%d", boot.ConsolePort)
+			screenshotPath := filepath.Join(config.EvidenceDir, avd.Name, "screenshot-on-failure.png")
+			if scErr := CaptureScreenshot(ctx, executor, adbPath, serial, screenshotPath); scErr == nil {
+				// Stored relative to EvidenceDir so a packaged
+				// attestation directory is portable across operator
+				// machines (no absolute host paths leak into the JSON).
+				test.ScreenshotPath = filepath.Join(avd.Name, "screenshot-on-failure.png")
+			} else {
+				fmt.Fprintf(os.Stderr,
+					"[matrix] warning: screenshot capture failed for %s: %v\n",
+					avd.Name, scErr,
+				)
+			}
+		}
 	}
 
 	// Persist per-AVD evidence (gradle.log + JUnit XML test-report).
@@ -379,6 +465,12 @@ func writeAttestation(path string, r MatrixResult) error {
 		Diag             DiagnosticInfo   `json:"diag"`
 		FailureSummaries []FailureSummary `json:"failure_summaries"`
 		Concurrent       int              `json:"concurrent"`
+		// Phase 6 (Group C remaining) — per-row network conditions and
+		// forensic screenshot path so post-hoc reviewers can attribute
+		// network-sensitive failures and read the on-screen state at
+		// the moment of failure.
+		NetworkProfile string `json:"network_profile,omitempty"`
+		ScreenshotPath string `json:"screenshot_path,omitempty"`
 	}
 	rows := make([]rowJSON, 0, len(r.Tests))
 	for i, t := range r.Tests {
@@ -416,6 +508,8 @@ func writeAttestation(path string, r MatrixResult) error {
 			Diag:             t.Diag,
 			FailureSummaries: summaries,
 			Concurrent:       concurrent,
+			NetworkProfile:   t.NetworkProfile,
+			ScreenshotPath:   t.ScreenshotPath,
 		})
 	}
 	doc := map[string]any{

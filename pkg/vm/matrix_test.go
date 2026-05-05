@@ -16,13 +16,37 @@ import (
 // pkg/emulator's matrix_test.go. Thread-safe (port allocation uses
 // atomic) so the I3 concurrent-matrix test can exercise the
 // concurrent>1 worker-pool branch.
+//
+// Phase 6 (Group C remaining): stubVM now also satisfies the
+// vmNetworkAccessor and vmScreenshotAccessor seams so the matrix
+// runner's network-shaping and screenshot-capture branches are
+// observable via the embedded fakeSSHClient + fakeQMPClient.
 type stubVM struct {
-	port         int32
-	bootError    error
-	scriptExit   int
-	scriptOut    string
-	scriptErr    string
-	teardownErr  error // optional: I2 teardown-error stamping test
+	port        int32
+	bootError   error
+	scriptExit  int
+	scriptOut   string
+	scriptErr   string
+	teardownErr error // optional: I2 teardown-error stamping test
+	// Phase 6: seam fakes injected by tests that exercise the network
+	// or screenshot branches. Nil for the legacy tests (they don't
+	// configure NetworkProfile / CaptureScreenshotOnFailure, so the
+	// runOne branches are not entered and nil is safe).
+	ssh *fakeSSHClient
+	qmp *fakeQMPClient
+}
+
+func (s *stubVM) sshClientForNetwork() sshClient {
+	if s.ssh == nil {
+		return nil
+	}
+	return s.ssh
+}
+func (s *stubVM) qmpClientForScreenshot() qmpClient {
+	if s.qmp == nil {
+		return nil
+	}
+	return s.qmp
 }
 
 func (s *stubVM) Boot(_ context.Context, cfg VMConfig) (BootResult, error) {
@@ -228,6 +252,223 @@ func TestRunMatrix_TeardownError_FlipsRowToFailed(t *testing.T) {
 	}
 	if !foundTeardown {
 		t.Fatalf("expected at least one FailureSummary with Type=teardown-failed; got %+v", row.FailureSummaries)
+	}
+}
+
+// ---------------------------------------------------------------------
+// Phase 6 (Group C remaining) — VM-side matrix integration tests for
+// per-row network simulation + screenshot-on-failure capture.
+// ---------------------------------------------------------------------
+
+// runMatrixWithNetworkAndScreenshot drives the matrix runner with the
+// supplied stubVM (which carries the fakeSSHClient + fakeQMPClient
+// seams) and config overrides. Returns the result.
+func runMatrixWithNetworkAndScreenshot(t *testing.T, stub *stubVM, cfg VMMatrixConfig) VMMatrixResult {
+	t.Helper()
+	manifest := writeManifest(t)
+	dir := t.TempDir()
+	if cfg.Targets == nil {
+		cfg.Targets = []VMTarget{{ID: "alpine-x86_64", Arch: "x86_64", Distro: "alpine"}}
+	}
+	if cfg.Script == "" {
+		cfg.Script = "/tmp/x.sh"
+	}
+	if cfg.EvidenceDir == "" {
+		cfg.EvidenceDir = dir
+	}
+	cfg.ImageManifest = manifest
+	if cfg.Concurrent == 0 {
+		cfg.Concurrent = 1
+	}
+	r := NewQEMUMatrixRunner(stub, nil)
+	res, err := r.RunMatrix(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("RunMatrix: %v", err)
+	}
+	return res
+}
+
+// TestVMRunOne_NetworkConditionsApplied asserts the matrix runner
+// invokes ssh.Run with a tc-qdisc script when --network-profile is set.
+//
+// Falsifiability rehearsal:
+//
+//	Mutation: in pkg/vm/matrix.go runOne, comment out the entire
+//	          `if config.NetworkProfile != "" || ...` block.
+//	Run:      go test ./pkg/vm/... -run TestVMRunOne_NetworkConditionsApplied
+//	Observed-Failure: assertion fires — "expected at least one tc-qdisc
+//	          invocation in ssh.runScripts; got 0".
+//	Reverted: yes.
+func TestVMRunOne_NetworkConditionsApplied(t *testing.T) {
+	ssh := &fakeSSHClient{runExitCode: 0}
+	stub := &stubVM{scriptExit: 0, ssh: ssh}
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		NetworkProfile: "4g",
+	})
+	if !res.AllPassed() {
+		t.Fatalf("expected all rows to pass; got %+v", res)
+	}
+	// Assert at least one Run() carried a tc-qdisc command.
+	sawTc := false
+	for _, s := range ssh.runScripts {
+		if strings.Contains(s, "tc qdisc") && strings.Contains(s, "rate 6000kbit") {
+			sawTc = true
+			break
+		}
+	}
+	if !sawTc {
+		t.Fatalf("expected at least one tc-qdisc invocation in ssh.runScripts; got %d scripts: %v", len(ssh.runScripts), ssh.runScripts)
+	}
+	if res.Rows[0].NetworkProfile != "4g" {
+		t.Fatalf("attestation row MUST carry NetworkProfile=4g; got %q", res.Rows[0].NetworkProfile)
+	}
+}
+
+// TestVMRunOne_NetworkProfileLookupError_FailsRow asserts an unknown
+// profile name produces a row with Passed=false and a clear error.
+func TestVMRunOne_NetworkProfileLookupError_FailsRow(t *testing.T) {
+	ssh := &fakeSSHClient{}
+	stub := &stubVM{scriptExit: 0, ssh: ssh}
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		NetworkProfile: "unicorn-net",
+	})
+	if len(res.Rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(res.Rows))
+	}
+	if res.Rows[0].Passed {
+		t.Fatalf("row should be failed on unknown profile, got Passed=true")
+	}
+	foundProfileError := false
+	for _, fs := range res.Rows[0].FailureSummaries {
+		if fs.Type == "network-profile-error" && strings.Contains(fs.Message, "unicorn-net") {
+			foundProfileError = true
+			break
+		}
+	}
+	if !foundProfileError {
+		t.Fatalf("expected a network-profile-error FailureSummary citing the bad name; got %+v", res.Rows[0].FailureSummaries)
+	}
+}
+
+// TestVMRunOne_ScreenshotOnFailure asserts that a failed row triggers
+// QMP screendump and the row's ScreenshotPath is set to the
+// EvidenceDir-relative location.
+//
+// Falsifiability rehearsal:
+//
+//	Mutation: in pkg/vm/matrix.go runOne, comment out the entire
+//	          `if !row.Passed && config.CaptureScreenshotOnFailure { ... }`
+//	          block.
+//	Run:      go test ./pkg/vm/... -run TestVMRunOne_ScreenshotOnFailure
+//	Observed-Failure: assertion fires — "expected ScreenshotPath set;
+//	          got ''".
+//	Reverted: yes.
+func TestVMRunOne_ScreenshotOnFailure(t *testing.T) {
+	ppmBytes := []byte("P6\n2 2\n255\nfake-ppm-bytes")
+	qmp := &fakeQMPClient{screendumpFile: ppmBytes}
+	stub := &stubVM{scriptExit: 7, qmp: qmp} // exit=7 → row fails
+	dir := t.TempDir()
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		EvidenceDir:                dir,
+		CaptureScreenshotOnFailure: true,
+	})
+	if len(res.Rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(res.Rows))
+	}
+	row := res.Rows[0]
+	if row.Passed {
+		t.Fatalf("expected row to fail to drive screenshot path")
+	}
+	expected := filepath.Join("alpine-x86_64", "screenshot-on-failure.ppm")
+	if row.ScreenshotPath != expected {
+		t.Fatalf("ScreenshotPath: want %q got %q", expected, row.ScreenshotPath)
+	}
+	abs := filepath.Join(dir, row.ScreenshotPath)
+	got, err := os.ReadFile(abs)
+	if err != nil {
+		t.Fatalf("expected screenshot file at %s: %v", abs, err)
+	}
+	if string(got) != string(ppmBytes) {
+		t.Fatalf("screenshot bytes diverge from canned QMP output")
+	}
+}
+
+// TestVMRunOne_NoScreenshotOnSuccess asserts that a passing row does
+// NOT trigger screendump.
+func TestVMRunOne_NoScreenshotOnSuccess(t *testing.T) {
+	qmp := &fakeQMPClient{}
+	stub := &stubVM{scriptExit: 0, qmp: qmp}
+	dir := t.TempDir()
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		EvidenceDir:                dir,
+		CaptureScreenshotOnFailure: true,
+	})
+	if !res.Rows[0].Passed {
+		t.Fatalf("test pre-condition: row should pass")
+	}
+	if res.Rows[0].ScreenshotPath != "" {
+		t.Fatalf("expected ScreenshotPath empty on success; got %q", res.Rows[0].ScreenshotPath)
+	}
+	if len(qmp.screendumpPaths) != 0 {
+		t.Fatalf("expected no screendump invocation on success; got %v", qmp.screendumpPaths)
+	}
+}
+
+// TestVMRunOne_NoScreenshotWhenFlagFalse asserts the operator's opt-out
+// honours: even on failure, CaptureScreenshotOnFailure=false suppresses
+// the capture.
+//
+// Falsifiability rehearsal:
+//
+//	Mutation: in pkg/vm/matrix.go runOne, change the screenshot guard
+//	          from `if !row.Passed && config.CaptureScreenshotOnFailure`
+//	          to `if !row.Passed` (ignore the operator's opt-out).
+//	Run:      go test ./pkg/vm/... -run TestVMRunOne_NoScreenshotWhenFlagFalse
+//	Observed-Failure: assertion fires — "expected no screendump when
+//	          flag is false; got 1 invocation".
+//	Reverted: yes.
+func TestVMRunOne_NoScreenshotWhenFlagFalse(t *testing.T) {
+	qmp := &fakeQMPClient{}
+	stub := &stubVM{scriptExit: 7, qmp: qmp} // row fails
+	dir := t.TempDir()
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		EvidenceDir:                dir,
+		CaptureScreenshotOnFailure: false,
+	})
+	if res.Rows[0].Passed {
+		t.Fatalf("test pre-condition: row should fail")
+	}
+	if res.Rows[0].ScreenshotPath != "" {
+		t.Fatalf("expected ScreenshotPath empty when flag is false; got %q", res.Rows[0].ScreenshotPath)
+	}
+	if len(qmp.screendumpPaths) != 0 {
+		t.Fatalf("expected no screendump invocation when flag is false; got %v", qmp.screendumpPaths)
+	}
+}
+
+// TestVMRunOne_AttestationCarriesNetworkProfileAndScreenshotPath pins
+// the on-disk attestation schema for the new fields.
+func TestVMRunOne_AttestationCarriesNetworkProfileAndScreenshotPath(t *testing.T) {
+	ppmBytes := []byte("P6 ppm")
+	ssh := &fakeSSHClient{runExitCode: 0}
+	qmp := &fakeQMPClient{screendumpFile: ppmBytes}
+	stub := &stubVM{scriptExit: 7, ssh: ssh, qmp: qmp}
+	dir := t.TempDir()
+	res := runMatrixWithNetworkAndScreenshot(t, stub, VMMatrixConfig{
+		EvidenceDir:                dir,
+		NetworkProfile:             "4g",
+		CaptureScreenshotOnFailure: true,
+	})
+	data, err := os.ReadFile(res.AttestationFile)
+	if err != nil {
+		t.Fatalf("read attestation: %v", err)
+	}
+	body := string(data)
+	if !strings.Contains(body, `"network_profile": "4g"`) {
+		t.Fatalf("attestation MUST carry network_profile=4g; full body:\n%s", body)
+	}
+	if !strings.Contains(body, "screenshot-on-failure.ppm") {
+		t.Fatalf("attestation MUST carry screenshot_path; full body:\n%s", body)
 	}
 }
 

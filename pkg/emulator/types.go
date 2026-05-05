@@ -117,6 +117,17 @@ type TestResult struct {
 	// Concurrent is the matrix runner's --concurrent setting at the
 	// time this test ran. 1 = serial (gating-eligible). Group B.
 	Concurrent int
+	// NetworkProfile is the active --network-profile name at the time
+	// this row ran ("edge", "4g", etc., or "" for no shaping).
+	// Phase 6 (Group C remaining); recorded into the attestation row
+	// so post-hoc reviewers can attribute network-sensitive failures.
+	NetworkProfile string `json:"network_profile,omitempty"`
+	// ScreenshotPath is the path (relative to EvidenceDir) of the
+	// forensic screenshot captured when Passed=false AND
+	// CaptureScreenshotOnFailure=true. Empty when Passed=true OR the
+	// capture flag is false OR the screencap command failed (the
+	// failure is logged to stderr and does NOT flip the row).
+	ScreenshotPath string `json:"screenshot_path,omitempty"`
 }
 
 // MatrixConfig describes a single matrix-run invocation: which AVDs to
@@ -194,6 +205,45 @@ type MatrixConfig struct {
 	// developer-iteration runs with --concurrent should treat the
 	// FailureSummaries field as best-effort, not authoritative.
 	TestReportGlob string
+
+	// NetworkProfile names a predefined network conditions profile.
+	// Valid values: "edge", "2g", "3g", "4g", "lte", "wifi", "ethernet",
+	// "none", or "" (no shaping). See pkg/emulator/network.go for the
+	// profile→conditions mapping. Phase 6 (Group C remaining): per-row
+	// network simulation lets a matrix run exercise a UI flow under
+	// realistic mobile-network conditions; without this, every row
+	// runs over the host's wired link, missing slow-network bugs.
+	NetworkProfile string
+
+	// NetworkOverride supplies custom network conditions; any non-zero
+	// field overrides the profile's value for that field. Allows the
+	// operator to use "4g" as a baseline AND override loss to 0.5%.
+	NetworkOverride NetworkConditions
+
+	// CaptureScreenshotOnFailure enables forensic screenshot capture
+	// when a per-AVD test row fails (Passed=false). Default: true (the
+	// operator opts OUT, not in, because forensic gold is high-value).
+	// Phase 6 (Group C remaining): a screenshot at the moment of failure
+	// is the load-bearing forensic artifact for diagnosing a Compose-UI
+	// regression after the fact.
+	CaptureScreenshotOnFailure bool
+}
+
+// NetworkConditions parameterises a network-shaping profile.
+// All fields are optional; a zero value means "no shaping for this
+// dimension". Phase 6 (Group C remaining).
+type NetworkConditions struct {
+	// DownKbps is the downlink bandwidth in kilobits/sec.
+	DownKbps int `json:"down_kbps,omitempty"`
+	// UpKbps is the uplink bandwidth in kilobits/sec.
+	UpKbps int `json:"up_kbps,omitempty"`
+	// LatencyMS is the one-way packet latency in milliseconds.
+	LatencyMS int `json:"latency_ms,omitempty"`
+	// LossPercent is the simulated packet-loss percentage [0, 100].
+	// Note: the Android emulator console does NOT support loss; loss
+	// is applied for VM (in-guest tc) targets only. The field is
+	// recorded in the attestation row regardless.
+	LossPercent float64 `json:"loss_percent,omitempty"`
 }
 
 // MatrixResult holds the per-AVD outcomes from a single RunMatrix call.

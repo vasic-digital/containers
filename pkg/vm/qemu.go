@@ -47,10 +47,16 @@ type sshClient interface {
 	Close() error
 }
 
-// qmpClient abstracts QEMU's monitor (qmp) socket for graceful shutdown.
+// qmpClient abstracts QEMU's monitor (qmp) socket for graceful shutdown
+// AND forensic screenshot capture (Phase 6 Group C remaining).
+//
+// Screendump writes a PPM file at the supplied HOST path — qemu-system
+// is a host process, so the path is interpreted on the host directly
+// (no guest→host transfer step).
 type qmpClient interface {
 	Dial(ctx context.Context, port int, timeout time.Duration) error
 	SystemPowerdown(ctx context.Context) error
+	Screendump(ctx context.Context, hostPath string) error
 	Close() error
 }
 

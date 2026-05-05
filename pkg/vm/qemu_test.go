@@ -3,6 +3,7 @@ package vm
 import (
 	"context"
 	"errors"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -27,6 +28,10 @@ type fakeSSHClient struct {
 	uploaded       []UploadSpec
 	uploadError    error
 	runRequest     string
+	// runScripts records every script Run() received, in order. The
+	// matrix-runner integration tests assert against this so a tc-qdisc
+	// invocation is observable end-to-end.
+	runScripts     []string
 	runStdout      string
 	runStderr      string
 	runExitCode    int
@@ -48,6 +53,7 @@ func (f *fakeSSHClient) Upload(_ context.Context, hostPath, vmPath string) error
 }
 func (f *fakeSSHClient) Run(_ context.Context, script string, _ map[string]string, _ time.Duration) (string, string, int, error) {
 	f.runRequest = script
+	f.runScripts = append(f.runScripts, script)
 	return f.runStdout, f.runStderr, f.runExitCode, f.runError
 }
 func (f *fakeSSHClient) Download(_ context.Context, vmPath, hostPath string) error {
@@ -56,16 +62,35 @@ func (f *fakeSSHClient) Download(_ context.Context, vmPath, hostPath string) err
 }
 func (f *fakeSSHClient) Close() error { f.closedSessions++; return nil }
 
-// fakeQMPClient is the seam for the QEMU monitor (graceful shutdown).
+// fakeQMPClient is the seam for the QEMU monitor (graceful shutdown
+// + Phase 6 forensic screendump).
 type fakeQMPClient struct {
-	dialError    error
-	powerdownErr error
-	closed       bool
+	dialError       error
+	powerdownErr    error
+	closed          bool
+	screendumpErr   error
+	screendumpPaths []string
+	// screendumpFile, when non-nil, writes these bytes to the host
+	// path the caller passes (so unit tests asserting "the file
+	// exists with these bytes" don't need a real qemu).
+	screendumpFile []byte
 }
 
 func (f *fakeQMPClient) Dial(_ context.Context, _ int, _ time.Duration) error { return f.dialError }
 func (f *fakeQMPClient) SystemPowerdown(_ context.Context) error              { return f.powerdownErr }
-func (f *fakeQMPClient) Close() error                                         { f.closed = true; return nil }
+func (f *fakeQMPClient) Screendump(_ context.Context, hostPath string) error {
+	f.screendumpPaths = append(f.screendumpPaths, hostPath)
+	if f.screendumpErr != nil {
+		return f.screendumpErr
+	}
+	if f.screendumpFile != nil {
+		// Mimic real qemu writing the PPM to the host path.
+		// Caller has ensured the dir exists via os.MkdirAll.
+		_ = os.WriteFile(hostPath, f.screendumpFile, 0o644)
+	}
+	return nil
+}
+func (f *fakeQMPClient) Close() error { f.closed = true; return nil }
 
 func TestQEMUVM_Boot_AssemblesCorrectArgsForX86_64KVM(t *testing.T) {
 	r := &fakeProcessRunner{}

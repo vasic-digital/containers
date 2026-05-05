@@ -101,6 +101,35 @@ type VMMatrixConfig struct {
 	Dev           bool   // permits snapshot reload; sets Gating=false
 	ColdBoot      bool   // default true
 	ImageManifest string // path to vm-images.json
+
+	// NetworkProfile names a predefined network conditions profile.
+	// Valid values: "edge", "2g", "3g", "4g", "lte", "wifi", "ethernet",
+	// "none", or "" (no shaping). Phase 6 (Group C remaining): mirrors
+	// the pkg/emulator profile set so a single matrix invocation can
+	// shape both Android and VM rows under the same profile.
+	NetworkProfile string
+
+	// NetworkOverride supplies custom network conditions; any non-zero
+	// field overrides the profile's value for that field.
+	NetworkOverride NetworkConditions
+
+	// CaptureScreenshotOnFailure enables forensic screenshot capture
+	// when a per-VM row fails (Passed=false). Default: true. The VM
+	// path uses QMP's `screendump` to a guest-side temp file, then
+	// SCPs it down to the host.
+	CaptureScreenshotOnFailure bool
+}
+
+// NetworkConditions parameterises a network-shaping profile for VMs.
+// Mirror of pkg/emulator.NetworkConditions; declared independently here
+// per the Decoupled Reusable Architecture rule (no cross-package coupling
+// for a 4-field struct). Operators using both pkg/emulator and pkg/vm
+// matrices should think of these as the same set of dimensions.
+type NetworkConditions struct {
+	DownKbps    int     `json:"down_kbps,omitempty"`
+	UpKbps      int     `json:"up_kbps,omitempty"`
+	LatencyMS   int     `json:"latency_ms,omitempty"`
+	LossPercent float64 `json:"loss_percent,omitempty"`
 }
 
 // VMTestResult is the per-target row written to attestation.
@@ -117,6 +146,14 @@ type VMTestResult struct {
 	FailureSummaries []FailureSummary `json:"failure_summaries"`
 	Concurrent       int              `json:"concurrent"`
 	CapturedFiles    []string         `json:"captured_files,omitempty"`
+	// NetworkProfile is the active --network-profile name at the time
+	// this row ran, or "" for no shaping. Phase 6 (Group C remaining).
+	NetworkProfile string `json:"network_profile,omitempty"`
+	// ScreenshotPath is the path (relative to EvidenceDir) of the
+	// forensic guest-screen capture written when Passed=false AND the
+	// matrix's CaptureScreenshotOnFailure flag is true. Empty when
+	// either condition is false OR the QMP screendump failed.
+	ScreenshotPath string `json:"screenshot_path,omitempty"`
 }
 
 // VMMatrixResult is the matrix-level aggregate.

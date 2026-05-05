@@ -99,6 +99,20 @@ func main() {
 		"Host-glob pattern (CWD-relative) for JUnit XML test reports; empty disables JUnit parsing")
 	flagImageManifest := flag.String("image-manifest", "",
 		"Optional path to a vm-images.json manifest. When set AND the AVD's required system-image is absent under ANDROID_SDK_ROOT, fetch via pkg/cache. Empty preserves the pre-Phase-B behavior.")
+	// Phase 6 (Group C remaining) — per-row network simulation +
+	// screenshot-on-failure capture.
+	flagNetworkProfile := flag.String("network-profile", "",
+		"Network conditions profile: edge|2g|3g|4g|lte|wifi|ethernet|none. Empty disables shaping.")
+	flagNetworkBandwidthDown := flag.Int("network-bandwidth-down", 0,
+		"Override down-link bandwidth (kbps) on top of --network-profile. 0 = use profile default.")
+	flagNetworkBandwidthUp := flag.Int("network-bandwidth-up", 0,
+		"Override up-link bandwidth (kbps) on top of --network-profile. 0 = use profile default.")
+	flagNetworkLatency := flag.Int("network-latency", 0,
+		"Override latency (ms) on top of --network-profile. 0 = use profile default.")
+	flagNetworkLoss := flag.Float64("network-loss", 0,
+		"Override packet-loss (%) on top of --network-profile. 0 = use profile default. Range: [0, 100].")
+	flagCaptureScreenshot := flag.Bool("capture-screenshot-on-failure", true,
+		"Capture a forensic screenshot when a row fails. Default true; set false to opt out.")
 	flag.Parse()
 
 	if *flagAPK == "" {
@@ -123,6 +137,19 @@ func main() {
 		os.Exit(2)
 	}
 
+	// Phase 6: validate network override knobs before invoking the
+	// matrix. Negative bandwidths and out-of-range loss are
+	// configuration errors — fail fast (exit 2) rather than silently
+	// applying nonsense to the emulator console.
+	if *flagNetworkBandwidthDown < 0 || *flagNetworkBandwidthUp < 0 || *flagNetworkLatency < 0 {
+		fmt.Fprintln(os.Stderr, "ERROR: --network-bandwidth-down/--network-bandwidth-up/--network-latency MUST be >= 0")
+		os.Exit(2)
+	}
+	if *flagNetworkLoss < 0 || *flagNetworkLoss > 100 {
+		fmt.Fprintln(os.Stderr, "ERROR: --network-loss MUST be in [0, 100]")
+		os.Exit(2)
+	}
+
 	ctx := context.Background()
 	emu := emulator.NewAndroidEmulator(*flagSdkRoot)
 	runner := emulator.NewAndroidMatrixRunner(emu)
@@ -139,6 +166,14 @@ func main() {
 		Dev:               *flagDev,
 		TestReportGlob:    *flagTestReportGlob,
 		ImageManifestPath: *flagImageManifest,
+		NetworkProfile:    *flagNetworkProfile,
+		NetworkOverride: emulator.NetworkConditions{
+			DownKbps:    *flagNetworkBandwidthDown,
+			UpKbps:      *flagNetworkBandwidthUp,
+			LatencyMS:   *flagNetworkLatency,
+			LossPercent: *flagNetworkLoss,
+		},
+		CaptureScreenshotOnFailure: *flagCaptureScreenshot,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: matrix runner failed: %v\n", err)

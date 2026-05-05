@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -819,6 +820,357 @@ func TestRunMatrix_RoutesMissingSystemImageThroughCache_WhenImageManifestPathIsS
 		"every AVD MUST have a Boot row (clause 6.I clause 4)")
 	require.NotNil(t, result.Boots[0].Error,
 		"the Boot row MUST also carry the cache error so writeAttestation surfaces it")
+}
+
+// ---------------------------------------------------------------------
+// Phase 6 (Group C remaining) — matrix-integration tests for the
+// per-row network simulation + screenshot-on-failure capture branches.
+//
+// The runOne function applies network shaping AFTER Install/before
+// RunInstrumentation, and captures a screenshot AFTER a failed
+// RunInstrumentation. Both branches are gated on a type-assertion to
+// the [adbAccessor] interface. The fakes below satisfy both Emulator
+// and adbAccessor, so the matrix runOne path can be driven hermetically
+// without spawning a real Android emulator.
+// ---------------------------------------------------------------------
+
+// adbStubEmulator is a stubEmulator-like fake that ALSO satisfies the
+// matrix-runner's adbAccessor seam. The injected fakeExecutor records
+// the `adb emu network` and `adb exec-out screencap -p` invocations the
+// matrix runner issues; the test asserts on those records.
+type adbStubEmulator struct {
+	exec    *fakeExecutor
+	adbBin  string
+	port    int
+	passed  bool
+	runOut  string
+	runErr  error
+}
+
+func (s *adbStubEmulator) Boot(_ context.Context, avd AVD, _ bool) (BootResult, error) {
+	if s.port == 0 {
+		s.port = 5554
+	} else {
+		s.port += 2
+	}
+	return BootResult{
+		AVD:         avd,
+		Started:     true,
+		ConsolePort: s.port,
+		ADBPort:     s.port + 1,
+	}, nil
+}
+func (s *adbStubEmulator) WaitForBoot(_ context.Context, _ int, _ time.Duration) (time.Duration, error) {
+	return 0, nil
+}
+func (s *adbStubEmulator) Install(_ context.Context, _ int, _ string) error { return nil }
+func (s *adbStubEmulator) RunInstrumentation(_ context.Context, _ int, _ string, _ time.Duration) (string, bool, error) {
+	out := s.runOut
+	if out == "" {
+		out = "BUILD SUCCESSFUL"
+	}
+	return out, s.passed, s.runErr
+}
+func (s *adbStubEmulator) Teardown(_ context.Context, _ int) error { return nil }
+
+// executorAndAdb is the adbAccessor seam — the matrix runOne uses this
+// to issue network/screenshot commands.
+func (s *adbStubEmulator) executorAndAdb() (CommandExecutor, string) {
+	return s.exec, s.adbBin
+}
+
+// runMatrixWithAdbStub builds an apk fixture, drives RunMatrix once
+// with the supplied stub, and returns the result. The stub MUST set
+// .passed = true|false BEFORE this call so the runOne flow takes the
+// expected branch.
+func runMatrixWithAdbStub(t *testing.T, stub *adbStubEmulator, cfg MatrixConfig) MatrixResult {
+	t.Helper()
+	if cfg.AVDs == nil {
+		cfg.AVDs = []AVD{{Name: "Pixel_API34", APILevel: 34, FormFactor: "phone"}}
+	}
+	if cfg.APKPath == "" {
+		cfg.APKPath = writeFakeAPK(t)
+	}
+	if cfg.TestClass == "" {
+		cfg.TestClass = "lava.app.X"
+	}
+	if cfg.EvidenceDir == "" {
+		cfg.EvidenceDir = t.TempDir()
+	}
+	r := NewAndroidMatrixRunner(stub)
+	res, err := r.RunMatrix(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("RunMatrix: %v", err)
+	}
+	return res
+}
+
+// TestRunOne_NetworkConditionsApplied asserts that when the matrix
+// caller passes --network-profile 4g, runOne issues `adb emu network
+// speed/delay` invocations against the booted emulator's serial AFTER
+// Install but BEFORE RunInstrumentation.
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in matrix.go runOne, comment out the entire `if
+//	          config.NetworkProfile != "" || ...` block (drop the
+//	          network-shaping side-effect entirely).
+//	Run:      go test ./pkg/emulator/... -run TestRunOne_NetworkConditionsApplied
+//	Observed-Failure: assertion fires — "expected at least one `adb
+//	          emu network speed` invocation, got 0".
+//	Reverted: yes.
+func TestRunOne_NetworkConditionsApplied(t *testing.T) {
+	exec := &fakeExecutor{}
+	stub := &adbStubEmulator{
+		exec:   exec,
+		adbBin: "/sdk/platform-tools/adb",
+		passed: true,
+		runOut: "BUILD SUCCESSFUL",
+	}
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		NetworkProfile: "4g",
+	})
+	if !res.AllPassed() {
+		t.Fatalf("expected matrix to pass; got %+v", res)
+	}
+	// The 4g profile is DownKbps=6000, UpKbps=1500, LatencyMS=50.
+	var sawSpeed, sawDelay bool
+	for _, c := range exec.calls {
+		argString := strings.Join(c.Args, " ")
+		if strings.Contains(argString, "emu network speed") {
+			sawSpeed = true
+			if !strings.Contains(argString, "1500:6000") {
+				t.Fatalf("speed arg should be UpKbps:DownKbps form '1500:6000'; got %v", c.Args)
+			}
+		}
+		if strings.Contains(argString, "emu network delay") {
+			sawDelay = true
+			if !strings.Contains(argString, " 50") {
+				t.Fatalf("delay arg should be 50ms; got %v", c.Args)
+			}
+		}
+	}
+	if !sawSpeed {
+		t.Fatalf("expected at least one `adb emu network speed` invocation; got %d calls", len(exec.calls))
+	}
+	if !sawDelay {
+		t.Fatalf("expected at least one `adb emu network delay` invocation; got %d calls", len(exec.calls))
+	}
+	// PRIMARY assertion on user-visible state: the per-row attestation
+	// MUST record the active profile name.
+	if len(res.Tests) != 1 || res.Tests[0].NetworkProfile != "4g" {
+		t.Fatalf("attestation row MUST carry NetworkProfile=4g; got %+v", res.Tests)
+	}
+}
+
+// TestRunOne_NetworkProfileLookupError_FailsRow asserts that an unknown
+// profile name produces a row with Passed=false and a clear error,
+// rather than silently skipping shaping.
+func TestRunOne_NetworkProfileLookupError_FailsRow(t *testing.T) {
+	exec := &fakeExecutor{}
+	stub := &adbStubEmulator{exec: exec, adbBin: "/sdk/platform-tools/adb", passed: true}
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		NetworkProfile: "unicorn-net",
+	})
+	if len(res.Tests) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(res.Tests))
+	}
+	if res.Tests[0].Passed {
+		t.Fatalf("row should be failed on unknown profile, got Passed=true")
+	}
+	if res.Tests[0].Error == nil ||
+		!strings.Contains(res.Tests[0].Error.Error(), "unicorn-net") {
+		t.Fatalf("row error should cite the bad profile name; got %v", res.Tests[0].Error)
+	}
+}
+
+// TestRunOne_ScreenshotOnFailure asserts that a failed test result
+// triggers screenshot capture, and the row's ScreenshotPath is set
+// (relative to EvidenceDir).
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in matrix.go runOne, comment out the entire `if !test.Passed
+//	          && config.CaptureScreenshotOnFailure { ... }` block.
+//	Run:      go test ./pkg/emulator/... -run TestRunOne_ScreenshotOnFailure
+//	Observed-Failure: assertion fires — "expected screenshot file at
+//	          <evidenceDir>/Pixel_API34/screenshot-on-failure.png; not
+//	          found".
+//	Reverted: yes.
+func TestRunOne_ScreenshotOnFailure(t *testing.T) {
+	pngBytes := []byte{0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A}
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{
+			"/sdk/platform-tools/adb -s localhost:5554 exec-out screencap -p": {Out: pngBytes},
+		},
+	}
+	stub := &adbStubEmulator{
+		exec:   exec,
+		adbBin: "/sdk/platform-tools/adb",
+		passed: false,
+		runOut: "BUILD FAILED",
+		runErr: errors.New("test assertions failed"),
+	}
+	evidenceDir := t.TempDir()
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		EvidenceDir:                evidenceDir,
+		CaptureScreenshotOnFailure: true,
+	})
+	if len(res.Tests) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(res.Tests))
+	}
+	row := res.Tests[0]
+	if row.Passed {
+		t.Fatalf("expected row to be failed (driving the screenshot path)")
+	}
+	if row.ScreenshotPath == "" {
+		t.Fatalf("expected ScreenshotPath set after failed test")
+	}
+	expected := filepath.Join("Pixel_API34", "screenshot-on-failure.png")
+	if row.ScreenshotPath != expected {
+		t.Fatalf("ScreenshotPath: want %q got %q", expected, row.ScreenshotPath)
+	}
+	// PRIMARY assertion: the file MUST exist on disk with the captured
+	// PNG bytes.
+	abs := filepath.Join(evidenceDir, row.ScreenshotPath)
+	got, err := os.ReadFile(abs)
+	if err != nil {
+		t.Fatalf("expected screenshot file at %s: %v", abs, err)
+	}
+	if string(got) != string(pngBytes) {
+		t.Fatalf("screenshot bytes diverge from canned adb output")
+	}
+}
+
+// TestRunOne_NoScreenshotOnSuccess asserts that a passing test does NOT
+// trigger screenshot capture (no on-disk file, no row.ScreenshotPath).
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in matrix.go runOne, change the `if !test.Passed &&
+//	          config.CaptureScreenshotOnFailure` to use `||` instead
+//	          of `&&` (the screenshot fires regardless of pass/fail).
+//	Run:      go test ./pkg/emulator/... -run TestRunOne_NoScreenshotOnSuccess
+//	Observed-Failure: assertion fires — "expected ScreenshotPath empty
+//	          on success; got Pixel_API34/screenshot-on-failure.png".
+//	Reverted: yes.
+func TestRunOne_NoScreenshotOnSuccess(t *testing.T) {
+	exec := &fakeExecutor{}
+	stub := &adbStubEmulator{
+		exec:   exec,
+		adbBin: "/sdk/platform-tools/adb",
+		passed: true,
+		runOut: "BUILD SUCCESSFUL",
+	}
+	evidenceDir := t.TempDir()
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		EvidenceDir:                evidenceDir,
+		CaptureScreenshotOnFailure: true,
+	})
+	if !res.Tests[0].Passed {
+		t.Fatalf("expected row to pass")
+	}
+	if res.Tests[0].ScreenshotPath != "" {
+		t.Fatalf("expected ScreenshotPath empty on success; got %q", res.Tests[0].ScreenshotPath)
+	}
+	// File MUST NOT exist either.
+	abs := filepath.Join(evidenceDir, "Pixel_API34", "screenshot-on-failure.png")
+	if _, statErr := os.Stat(abs); statErr == nil {
+		t.Fatalf("screenshot file should NOT exist on success; found %s", abs)
+	}
+	// adb screencap MUST NOT have been invoked.
+	for _, c := range exec.calls {
+		argString := strings.Join(c.Args, " ")
+		if strings.Contains(argString, "exec-out screencap") {
+			t.Fatalf("adb screencap MUST NOT be invoked on a passing row; got call: %v", c.Args)
+		}
+	}
+}
+
+// TestRunOne_NoScreenshotWhenFlagFalse asserts that even on failure,
+// CaptureScreenshotOnFailure=false suppresses the capture.
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in matrix.go runOne, change `if !test.Passed &&
+//	          config.CaptureScreenshotOnFailure` to `if !test.Passed`
+//	          (ignore the operator's opt-out).
+//	Run:      go test ./pkg/emulator/... -run TestRunOne_NoScreenshotWhenFlagFalse
+//	Observed-Failure: assertion fires — "expected no screenshot file
+//	          when flag is false; found <path>".
+//	Reverted: yes.
+func TestRunOne_NoScreenshotWhenFlagFalse(t *testing.T) {
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{
+			"/sdk/platform-tools/adb -s localhost:5554 exec-out screencap -p": {
+				Out: []byte("png-bytes"),
+			},
+		},
+	}
+	stub := &adbStubEmulator{
+		exec:   exec,
+		adbBin: "/sdk/platform-tools/adb",
+		passed: false,
+		runErr: errors.New("test failed"),
+	}
+	evidenceDir := t.TempDir()
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		EvidenceDir:                evidenceDir,
+		CaptureScreenshotOnFailure: false,
+	})
+	if res.Tests[0].Passed {
+		t.Fatalf("test pre-condition: row should be failed for this assertion to be meaningful")
+	}
+	if res.Tests[0].ScreenshotPath != "" {
+		t.Fatalf("expected ScreenshotPath empty when flag is false; got %q", res.Tests[0].ScreenshotPath)
+	}
+	abs := filepath.Join(evidenceDir, "Pixel_API34", "screenshot-on-failure.png")
+	if _, statErr := os.Stat(abs); statErr == nil {
+		t.Fatalf("expected no screenshot file when flag is false; found %s", abs)
+	}
+}
+
+// TestRunOne_AttestationCarriesNetworkProfileAndScreenshotPath asserts
+// the on-disk attestation JSON carries both new fields. Without this
+// the structured-tooling consumers would silently miss the new metadata.
+func TestRunOne_AttestationCarriesNetworkProfileAndScreenshotPath(t *testing.T) {
+	pngBytes := []byte{0x89, 'P', 'N', 'G'}
+	exec := &fakeExecutor{
+		scripts: map[string]fakeScript{
+			"/sdk/platform-tools/adb -s localhost:5554 exec-out screencap -p": {Out: pngBytes},
+		},
+	}
+	stub := &adbStubEmulator{
+		exec:   exec,
+		adbBin: "/sdk/platform-tools/adb",
+		passed: false,
+		runErr: errors.New("instrumentation failed"),
+	}
+	evidenceDir := t.TempDir()
+	res := runMatrixWithAdbStub(t, stub, MatrixConfig{
+		EvidenceDir:                evidenceDir,
+		NetworkProfile:             "4g",
+		CaptureScreenshotOnFailure: true,
+	})
+	bytes, err := os.ReadFile(res.AttestationFile)
+	if err != nil {
+		t.Fatalf("read attestation: %v", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(bytes, &doc); err != nil {
+		t.Fatalf("decode attestation: %v", err)
+	}
+	rows := doc["rows"].([]any)
+	if len(rows) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(rows))
+	}
+	row := rows[0].(map[string]any)
+	if row["network_profile"] != "4g" {
+		t.Fatalf("attestation row MUST carry network_profile=4g; got %v", row["network_profile"])
+	}
+	if got, _ := row["screenshot_path"].(string); !strings.HasSuffix(got, "screenshot-on-failure.png") {
+		t.Fatalf("attestation row MUST carry screenshot_path ending in screenshot-on-failure.png; got %q", got)
+	}
 }
 
 // TestRunMatrix_DoesNotRouteCache_WhenImageManifestPathIsEmpty pins the

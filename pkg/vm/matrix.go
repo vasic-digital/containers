@@ -23,6 +23,36 @@ type QEMUMatrixRunner struct {
 	store cache.Store
 }
 
+// vmNetworkAccessor is the seam runOne uses to apply network shaping
+// in-guest. Production: QEMUVM exposes it via its sshClient. Tests
+// substitute a fake recorder.
+//
+// The seam exists for the same reason pkg/emulator's adbAccessor exists:
+// it lets the matrix-integration tests assert on observable side-effects
+// without running a real QEMU + Linux kernel (which would not be
+// hermetic on CI).
+type vmNetworkAccessor interface {
+	sshClientForNetwork() sshClient
+}
+
+// vmScreenshotAccessor is the analogous seam for QMP-driven forensic
+// screenshot capture. The screenshot path goes to a host file directly
+// (QMP runs in qemu-system on the host), so the test fake records the
+// (monitorPort, dstPath) pair without spawning real QEMU.
+type vmScreenshotAccessor interface {
+	qmpClientForScreenshot() qmpClient
+}
+
+// sshClientForNetwork is the production QEMUVM's exposure of its ssh
+// client for the matrix runner's in-guest tc-shaping path.
+func (v *QEMUVM) sshClientForNetwork() sshClient { return v.ssh }
+
+// qmpClientForScreenshot is the production QEMUVM's exposure of its
+// qmp client. NOTE — the matrix runner Dials a fresh QMP connection
+// for screenshot capture (the Teardown-time qmp gets closed after
+// powerdown), so this returns the same client the runner re-Dials.
+func (v *QEMUVM) qmpClientForScreenshot() qmpClient { return v.qmp }
+
 // NewQEMUMatrixRunner constructs a runner. Pass cache.Store for image
 // resolution; pass nil to skip image resolution (tests).
 func NewQEMUMatrixRunner(vm VM, store cache.Store) *QEMUMatrixRunner {
@@ -196,6 +226,39 @@ func (r *QEMUMatrixRunner) runOne(ctx context.Context, target VMTarget, qcowPath
 		stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
 		return row
 	}
+
+	// Phase 6 (Group C remaining): apply network conditions in-guest
+	// via tc qdisc. Failures are logged via the row's FailureSummaries
+	// but DO NOT flip Passed (Sixth Law clause 3 — gating signal stays
+	// on the script outcome).
+	if config.NetworkProfile != "" || config.NetworkOverride != (NetworkConditions{}) {
+		profile, perr := LookupNetworkProfile(config.NetworkProfile)
+		if perr != nil {
+			row.FailureSummaries = append(row.FailureSummaries, FailureSummary{
+				Type:    "network-profile-error",
+				Message: perr.Error(),
+			})
+			row.Passed = false
+			row.Duration = time.Since(row.Started)
+			stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
+			return row
+		}
+		conditions := MergeNetworkConditions(profile, config.NetworkOverride)
+		if accessor, ok := r.vm.(vmNetworkAccessor); ok {
+			ssh := accessor.sshClientForNetwork()
+			if ssh != nil {
+				if applyErr := applyNetworkConditionsVM(ctx, ssh, conditions); applyErr != nil {
+					// Best-effort enrichment; log as a non-fatal failure
+					// summary, do NOT flip Passed.
+					row.FailureSummaries = append(row.FailureSummaries, FailureSummary{
+						Type:    "network-shaping-warning",
+						Message: applyErr.Error(),
+					})
+				}
+			}
+		}
+		row.NetworkProfile = config.NetworkProfile
+	}
 	row.Diag = r.captureDiagnostic(ctx, boot.SSHPort, target)
 	for _, up := range config.Uploads {
 		if err := r.vm.Upload(ctx, boot.SSHPort, up.HostPath, up.VMPath); err != nil {
@@ -231,6 +294,30 @@ func (r *QEMUMatrixRunner) runOne(ctx context.Context, target VMTarget, qcowPath
 			row.CapturedFiles = append(row.CapturedFiles, dst)
 		}
 	}
+
+	// Phase 6 (Group C remaining): forensic screenshot capture on
+	// failure. Default OFF unless the operator opts in via
+	// CaptureScreenshotOnFailure=true. Failures here log to
+	// FailureSummaries but DO NOT flip Passed (it is already false to
+	// reach this branch). The QMP screendump writes to a HOST path
+	// directly — qemu-system runs on the host, so no SCP step.
+	if !row.Passed && config.CaptureScreenshotOnFailure {
+		if accessor, ok := r.vm.(vmScreenshotAccessor); ok {
+			qmp := accessor.qmpClientForScreenshot()
+			if qmp != nil {
+				screenshotPath := filepath.Join(config.EvidenceDir, target.ID, "screenshot-on-failure.ppm")
+				if scErr := CaptureScreenshotVM(ctx, qmp, boot.MonitorPort, screenshotPath); scErr == nil {
+					row.ScreenshotPath = filepath.Join(target.ID, "screenshot-on-failure.ppm")
+				} else {
+					row.FailureSummaries = append(row.FailureSummaries, FailureSummary{
+						Type:    "screenshot-capture-warning",
+						Message: scErr.Error(),
+					})
+				}
+			}
+		}
+	}
+
 	stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
 	row.Duration = time.Since(row.Started)
 	return row
@@ -306,6 +393,10 @@ func writeVMAttestation(path string, r VMMatrixResult) error {
 		// equivalent (we use 0 + diag-only matching since VMs aren't
 		// Android — operators inspect diag.target instead).
 		APILevel int `json:"api_level,omitempty"`
+		// Phase 6 (Group C remaining) — per-row network conditions
+		// and forensic screenshot path.
+		NetworkProfile string `json:"network_profile,omitempty"`
+		ScreenshotPath string `json:"screenshot_path,omitempty"`
 	}
 	rows := make([]rowJSON, 0, len(r.Rows))
 	for _, row := range r.Rows {
@@ -319,6 +410,8 @@ func writeVMAttestation(path string, r VMMatrixResult) error {
 			Diag:             row.Diag,
 			FailureSummaries: row.FailureSummaries,
 			Concurrent:       row.Concurrent,
+			NetworkProfile:   row.NetworkProfile,
+			ScreenshotPath:   row.ScreenshotPath,
 		})
 	}
 	doc := map[string]any{

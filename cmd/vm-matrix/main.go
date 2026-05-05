@@ -108,6 +108,20 @@ func main() {
 	flagBootTimeout := flag.Duration("boot-timeout", 0, "Per-target boot timeout (default arch-specific)")
 	flagScriptTimeout := flag.Duration("script-timeout", 10*time.Minute, "Per-target script timeout")
 	flagColdBoot := flag.Bool("cold-boot", true, "Disable snapshot reload (clause 6.I clause 6 — gating runs MUST cold-boot)")
+	// Phase 6 (Group C remaining) — per-row network simulation +
+	// screenshot-on-failure capture.
+	flagNetworkProfile := flag.String("network-profile", "",
+		"Network conditions profile: edge|2g|3g|4g|lte|wifi|ethernet|none. Empty disables shaping.")
+	flagNetworkBandwidthDown := flag.Int("network-bandwidth-down", 0,
+		"Override down-link bandwidth (kbps) on top of --network-profile. 0 = use profile default.")
+	flagNetworkBandwidthUp := flag.Int("network-bandwidth-up", 0,
+		"Override up-link bandwidth (kbps) on top of --network-profile. 0 = use profile default.")
+	flagNetworkLatency := flag.Int("network-latency", 0,
+		"Override latency (ms) on top of --network-profile. 0 = use profile default.")
+	flagNetworkLoss := flag.Float64("network-loss", 0,
+		"Override packet-loss (%) on top of --network-profile. 0 = use profile default. Range: [0, 100].")
+	flagCaptureScreenshot := flag.Bool("capture-screenshot-on-failure", true,
+		"Capture a forensic guest-screen snapshot via QMP screendump when a row fails. Default true.")
 	flag.Parse()
 
 	for _, fld := range [][2]string{
@@ -140,6 +154,16 @@ func main() {
 		os.Exit(2)
 	}
 
+	// Phase 6: validate network override knobs.
+	if *flagNetworkBandwidthDown < 0 || *flagNetworkBandwidthUp < 0 || *flagNetworkLatency < 0 {
+		fmt.Fprintln(os.Stderr, "ERROR: --network-bandwidth-down/--network-bandwidth-up/--network-latency MUST be >= 0")
+		os.Exit(2)
+	}
+	if *flagNetworkLoss < 0 || *flagNetworkLoss > 100 {
+		fmt.Fprintln(os.Stderr, "ERROR: --network-loss MUST be in [0, 100]")
+		os.Exit(2)
+	}
+
 	cacheRoot := os.Getenv("XDG_CACHE_HOME")
 	if cacheRoot == "" {
 		cacheRoot = os.Getenv("HOME") + "/.cache"
@@ -162,6 +186,14 @@ func main() {
 		Dev:           *flagDev,
 		ColdBoot:      *flagColdBoot,
 		ImageManifest: *flagManifest,
+		NetworkProfile: *flagNetworkProfile,
+		NetworkOverride: vm.NetworkConditions{
+			DownKbps:    *flagNetworkBandwidthDown,
+			UpKbps:      *flagNetworkBandwidthUp,
+			LatencyMS:   *flagNetworkLatency,
+			LossPercent: *flagNetworkLoss,
+		},
+		CaptureScreenshotOnFailure: *flagCaptureScreenshot,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: matrix runner failed: %v\n", err)
