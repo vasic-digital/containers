@@ -1,644 +1,276 @@
-# CLAUDE.md - HelixCode AI Agent Manual
+# CLAUDE.md - Containers Module
 
-## HelixCode - AI Agent Operating Manual
 
-**Version**: 1.0.0
-**Date**: 2026-04-30
-**Scope**: This document guides AI agents working on the HelixCode codebase
-**Authority**: Cascaded from HelixAgent root `CLAUDE.md` with HelixCode-specific addenda
+## Definition of Done
 
----
+This module inherits HelixAgent's universal Definition of Done — see the root
+`CLAUDE.md` and `docs/development/definition-of-done.md`. In one line: **no
+task is done without pasted output from a real run of the real system in the
+same session as the change.** Coverage and green suites are not evidence.
 
-## 1. Agent Identity & Purpose
-
-You are an AI agent working on **HelixCode**, an enterprise-grade distributed AI development platform. Your work directly impacts the quality and usability of a production system.
-
-**Your mandate**: Write real, working, tested code. No simulations. No placeholders. No "for now" implementations. Every feature you implement MUST actually work when a user invokes it.
-
-### 1.1 Peer Governance Documents (keep in sync)
-This `CLAUDE.md` sits alongside several other agent/governance manuals at the repo root. They overlap and must remain consistent:
-- `CONSTITUTION.md` — source of truth for all mandates (CONST-033, CONST-035, CONST-036–040, Article XI §11.9). When this file conflicts with the Constitution, the Constitution wins.
-- `AGENTS.md` — generic agent manual (40 KB; mirror anti-bluff rules here).
-- `CRUSH.md`, `QWEN.md` — sibling agent manuals for other CLI tools. Cascade rule changes to all of them.
-- `HelixCode/CLAUDE.md`, `HelixQA/CLAUDE.md`, `Challenges/CLAUDE.md` — submodule-scoped manuals; this root file inherits from them and they inherit from this one.
-
----
-
-## 2. Universal Mandatory Rules (Non-Negotiable)
-
-These rules cascade from the HelixCode Constitution. They are permanent and apply to every task.
-
-### Rule 1: No CI/CD Pipelines
-No `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`, `.travis.yml`, `.circleci/`, or any automated pipeline. All builds and tests run manually or via Makefile/script targets.
-
-### Rule 2: No Mocks in Production
-Mocks, stubs, fakes, placeholder classes, TODO implementations are STRICTLY FORBIDDEN in production code. Only unit tests may use mocks.
-
-### Rule 3: No HTTPS for Git
-SSH URLs only (`git@github.com:…`) for all Git operations.
-
-### Rule 4: No Manual Container Commands
-Use the orchestrator binary (`make build` → `./bin/<app>`). Direct `docker`/`docker-compose` commands are prohibited as workflows.
-
-### Rule 5: Real Data for Non-Unit Tests
-All integration, E2E, and challenge tests MUST use real infrastructure (real databases, real HTTP calls, real containers).
-
-### Rule 6: 100% Challenge Coverage
-Every component MUST have Challenge scripts validating real-life use cases.
-
-### Rule 7: Reproduction-Before-Fix
-Every bug MUST be reproduced by a Challenge script BEFORE any fix is attempted.
-
-### Rule 8: Definition of Done
-A change is NOT done because code compiles. "Done" requires pasted terminal output from a real run against real artifacts.
-
-### Rule 9: No Self-Certification
-Words like *verified, tested, working, complete, fixed, passing* are forbidden unless accompanied by pasted command output from that session.
-
-### Rule 10: Zero-Bluff Mandate (CONST-035)
-A passing test is a claim that the feature **works for the end user**. Every test must guarantee Quality + Completion + Full Usability. Any test that doesn't certify all three is a bluff and must be tightened.
-
----
-
-## Constitutional anchors (cascaded from `CONSTITUTION.md`)
-
-### Article XI §11.9 — Anti-Bluff Forensic Anchor
-> Verbatim user mandate: *"We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"*
->
-> Operative rule: **The bar for shipping is not "tests pass" but "users can use the feature."** Every PASS in this codebase MUST carry positive runtime evidence captured during execution. Metadata-only / configuration-only / absence-of-error / grep-based PASS without runtime evidence are critical defects regardless of how green the summary line looks. No false-success results are tolerable.
-
-### Article XII §12.1 (CONST-042) — No-Secret-Leak
-No API key, token, password, certificate, or other credential may be committed to any repository owned by HelixDevelopment or vasic-digital. All secrets live in `.env` files (mode 0600) listed in `.gitignore`. Any leak is a release blocker until rotated and post-mortemed.
-
-### Article XII §12.2 (CONST-043) — No-Force-Push
-No force push, force-with-lease push, history rewrite, branch deletion of `main`/`master`, or upstream-overwriting operation may be performed without explicit, in-conversation user approval per operation. Authorization for one push does not extend further. Bypassing hooks / signing / protected-branch rules also requires explicit approval.
-
----
-
-## 3. HelixCode-Specific Architecture
-
-### 3.1 Technology Stack
-- **Language**: Go — root meta-repo on `go 1.25.2`, inner Go application (`HelixCode/`) on `go 1.26`. Keep both modules current; do not downgrade.
-- **Module IDs**: root `dev.helix.code` (thin), inner `dev.helix.code` (full app + transitive deps).
-- **HTTP / API**: Gin v1.11.0, gorilla/websocket v1.5.3, gRPC v1.80.0.
-- **Persistence**: PostgreSQL 15+ via pgx/v5 + lib/pq; Redis 7+ via go-redis/v9.
-- **AuthN/Z**: golang-jwt/v4 v4.5.2, bcrypt/argon2 (`golang.org/x/crypto`), oauth2.
-- **Config / CLI**: Viper v1.21.0, Cobra v1.8.0, pflag v1.0.10, fsnotify v1.9.0.
-- **LLM / Cloud**: AWS Bedrock runtime (aws-sdk-go-v2), Azure azcore/azidentity, getzep/zep-go/v3, smacker/go-tree-sitter.
-- **UI**: Fyne v2.7.0 (desktop GUI), tview / tcell/v2 (terminal UI), chromedp (headless browser).
-- **Testing**: stretchr/testify v1.11.1.
-
-### 3.2 Repository Layout — Meta-Repo + Submodules
-
-**This repo is a governance/meta-repo, not the Go application.** The actual Go binary lives in the `HelixCode/` subdirectory (a submodule). When an agent says "edit `internal/auth`," they almost always mean `HelixCode/internal/auth`, not the root `internal/`.
-
-```
-HelixCode/                                # ← repo root (governance + submodules)
-├── CLAUDE.md / AGENTS.md / CONSTITUTION.md / CRUSH.md / QWEN.md   # agent manuals
-├── Makefile                              # governance gates only (see §3.4)
-├── go.mod                                # thin root module (dev.helix.code, go 1.25.2)
-├── helix                                 # Docker facade script (run platform standalone)
-├── setup.sh                              # one-shot: submodule init + deps + build
-├── .gitmodules                           # source of truth for submodule wiring
-├── docker-compose.helix.yml              # standalone deployment
-├── internal/{fix,security,testing,theme} # root-level helpers ONLY (NOT the app)
-├── cmd/security-test/                    # root-level security-test tool ONLY
-├── scripts/                              # init-submodules, propagate-governance,
-│                                         #   verify-governance-cascade, no-silent-skips,
-│                                         #   demo-all, run-all-tests, …
-├── docs/                                 # ARCHITECTURE.md, COMPLETE_*.md guides,
-│                                         #   bluff-proofing/, llms_verifier/, helix_qa/
-│
-├── HelixCode/      ← TRACKED SUBDIRECTORY (NOT a submodule — meta-repo's primary inner directory; circular reference if promoted; see §3.2.1)
-├── HelixQA/        ← SUBMODULE: QA / challenge-orchestration platform
-├── Challenges/     ← SUBMODULE: cross-cutting Challenge bank (Panoptic, banks/)
-├── Containers/     ← SUBMODULE: Docker/container artefacts
-├── Dependencies/   ← SUBMODULES: LLama_CPP, Ollama, HuggingFace_Hub, …
-├── Security/       ← SUBMODULE: security tooling
-├── Assets/         ← SUBMODULE: logos, themes, brand
-├── Github-Pages-Website/ ← SUBMODULE: marketing site
-└── Example_Projects/     ← reference projects (Aider, Cline, Plandex, OpenHands, …)
-```
-
-#### 3.2.1 Inner Go application — `HelixCode/` submodule
-
-```
-HelixCode/HelixCode/                      # module dev.helix.code, go 1.26
-├── Makefile                              # real build/test targets (see §3.4)
-├── cmd/
-│   ├── server/                           # HTTP server entry → bin/helixcode
-│   ├── cli/                              # CLI client entry → bin/cli
-│   ├── helix-config/                     # config tool
-│   ├── config-test/                      # config validator
-│   ├── security-test/, security-fix*/    # security tools
-│   └── performance-optimization*/        # perf tools
-├── internal/                             # ~45 packages — the real domain code
-│   ├── auth/        agent/      cognee/      commands/   config/
-│   ├── context/     database/   deployment/  discovery/  editor/
-│   ├── event/       focus/      hardware/    helixqa/    hooks/
-│   ├── llm/         logging/    logo/        mcp/        memory/
-│   ├── monitoring/  notification/ performance/ persistence/ project/
-│   ├── provider/    providers/  redis/       repomap/    rules/
-│   ├── security/    server/     session/     task/       template/
-│   ├── tools/       verifier/   version/     worker/     workflow/
-│   ├── adapters/    fix/        testutil/    mocks/      # mocks/ is unit-test-only
-├── applications/
-│   ├── desktop/      (Fyne GUI)
-│   ├── terminal-ui/  (tview TUI)
-│   ├── ios/  android/  aurora-os/  harmony-os/
-├── tests/
-│   ├── e2e/challenges/   # E2E challenge runner (cmd/runner/main.go)
-│   ├── integration/      # gated by `-tags=integration`
-│   ├── unit/             # mocks ALLOWED here only
-│   ├── security/         # security suite
-│   └── performance/      # benchmarks
-├── config/                # YAML configs (dev/, prod/, test/)
-├── docker/  scripts/  shared/  qa-integration/
-└── docker-compose.full-test.yml + .env.full-test    # zero-skip integration stack
-```
-
-**Cardinal rule:** if a path in instructions doesn't start with `HelixCode/`, `HelixQA/`, etc., assume it is relative to the inner Go module and prefix with `HelixCode/`.
-
-### 3.3 Historical Bluffs — Resolved, Guard Against Regression
-
-The three patterns below were live bluffs in earlier revisions of `HelixCode/cmd/cli/main.go`. They have been fixed (verify with `grep -rn "simulate\|For now\|TODO implement\|placeholder" HelixCode/cmd/cli/main.go` — must return empty). Treat these as canonical anti-pattern examples; if a future change reintroduces any of them, the change is broken regardless of whether tests pass.
-
-#### BLUFF-001: LLM Generation is Simulated
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleGenerate`
-**Status**: RESOLVED — now calls `provider.Generate` / `GenerateStream` directly. Do not regress.
-**Code Pattern**:
-```go
-// ANTI-BLUFF: NEVER write code like this
-// "For now, simulate generation"
-// "In production, this would use the actual LLM provider"
-
-// WRONG - SIMULATION:
-response := fmt.Sprintf("Generated response for: %s\n\nThis is a simulated response...")
-
-// CORRECT - REAL IMPLEMENTATION:
-resp, err := c.llmProvider.Generate(ctx, req)
-if err != nil {
-    return fmt.Errorf("generation failed: %w", err)
-}
-fmt.Println(resp.Text)
-```
-
-**Agent Rule**: When implementing LLM-related code, you MUST make real HTTP calls to real providers. NEVER simulate responses.
-
-### 3.4 Build & Test Commands
-
-Two Makefiles. The **root** Makefile only runs governance gates; the **inner** `HelixCode/Makefile` does real builds and tests. Always know which directory you are in.
-
-**Root governance gates** (run from repo root):
-```bash
-make no-silent-skips         # fail on bare t.Skip() without SKIP-OK marker
-make demo-all                # run every submodule's demo (proves they actually run)
-make demo-one MOD=<name>     # run one submodule's demo
-make ci-validate-all         # all governance gates in warn-mode
-./setup.sh                   # first-time: submodules + system deps + build
-./scripts/init-submodules.sh                 # init all submodules
-./scripts/propagate-governance.sh            # cascade Constitution/CLAUDE/AGENTS
-./scripts/verify-governance-cascade.sh       # confirm anchors present in submodules
-./helix start | stop | logs | shell          # Docker facade for the platform
-```
-
-**Inner application** (run from `HelixCode/`):
-```bash
-make build                   # → bin/helixcode (server)
-make verify-compile          # quick compile-only sanity check
-make test                    # all unit tests
-make test-coverage           # coverage with -race
-make fmt                     # gofmt
-make lint                    # golangci-lint run
-make dev                     # build + run with config/dev/config.yaml
-make prod                    # cross-compile linux/macos/windows
-```
-
-**Full integration / E2E** (real PostgreSQL + Redis + Ollama via docker-compose):
-```bash
-make test-infra-up                           # start docker-compose.full-test.yml
-make test-infra-status                       # check stack health
-make test-full                               # ALL tests, ZERO skips
-make test-unit-full / test-integration-full / test-e2e-full / test-security-full
-make test-verifier-unit / test-verifier-integration / test-verifier-challenges
-make test-infra-down                         # tear down stack + volumes
-```
-
-**Containerized builds** (no host Go required):
-```bash
-make container-builder-image    # build the builder image once
-make container-build            # build inside container
-make container-test             # test inside container
-make container-shell            # interactive shell in builder
-make container-release          # full release in container
-```
-
-**Single-test invocation** (inner module):
-```bash
-cd HelixCode
-go test -v -run TestJWTGenerate ./internal/auth                          # single unit test
-go test -v -tags=integration -run TestAPI_CreateTask ./tests/integration/...
-go test -v -count=1 ./internal/verifier/...                              # disable test cache
-go test -v -race -coverprofile=cover.out ./internal/llm                  # one pkg with race+cover
-```
-
-**E2E challenges** (real, end-to-end, runtime evidence required):
-```bash
-cd HelixCode/tests/e2e/challenges && go run cmd/runner/main.go -all
-# Or root-level cross-cutting Challenges:
-cd Challenges && make <target>
-```
-
-**Anti-bluff smoke check** (must always pass):
-```bash
-grep -rn "simulated\|for now\|TODO implement\|placeholder" \
-  HelixCode/internal HelixCode/cmd && echo "BLUFF FOUND" || echo "clean"
-```
-
-**Platform / mobile builds** (inner module):
-```bash
-make desktop / desktop-nogui / desktop-linux / desktop-macos / desktop-windows
-make mobile-init && make mobile-ios && make mobile-android
-make aurora-os && make harmony-os
-```
-
-#### BLUFF-002: Model Listing is Hardcoded
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleListModels`
-**Status**: RESOLVED — must continue to query `c.providerManager.GetProviders()` per CONST-036/037 (LLMsVerifier is the single source of truth).
-**Correct Pattern**:
-```go
-func (c *CLI) handleListModels(ctx context.Context) error {
-    // Query ALL configured providers
-    for name, provider := range c.providerManager.GetProviders() {
-        models, err := provider.GetModels()
-        if err != nil {
-            log.Printf("Warning: failed to list models from %s: %v", name, err)
-            continue
-        }
-        // Display real models
-        for _, model := range models {
-            fmt.Printf("%s/%s: %s (context: %d)\n", name, model.ID, model.Name, model.ContextSize)
-        }
-    }
-    return nil
-}
-```
-
-#### BLUFF-003: Command Execution is Simulated
-**Location**: `HelixCode/cmd/cli/main.go` → function `handleCommand`
-**Status**: RESOLVED — must continue to use `os/exec` via `exec.CommandContext` and surface real exit codes. Never replace with print-and-sleep.
-**Correct Pattern**:
-```go
-func (c *CLI) handleCommand(ctx context.Context, command string) error {
-    // ANTI-BLUFF: Actually execute the command
-    cmd := exec.CommandContext(ctx, "sh", "-c", command)
-    cmd.Dir = c.workingDirectory
-    
-    output, err := cmd.CombinedOutput()
-    
-    fmt.Printf("Exit code: %d\n", cmd.ProcessState.ExitCode())
-    fmt.Printf("Output:\n%s\n", string(output))
-    
-    return err
-}
-```
-
----
-
-## 4. Code Patterns for Agents
-
-### 4.1 Interface-Driven Design
-```go
-// Define the contract
-type Provider interface {
-    Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error)
-    GetModels() ([]Model, error)
-    HealthCheck(ctx context.Context) error
-}
-
-// Implement with REAL behavior
-type OllamaProvider struct { ... }
-func (p *OllamaProvider) Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
-    // Make REAL HTTP call
-    // NO simulation
-}
-```
-
-### 4.2 Manager Pattern
-```go
-type TaskManager struct {
-    db     TaskRepository
-    mu     sync.RWMutex
-    tasks  map[uuid.UUID]*Task
-}
-
-func (m *TaskManager) Create(ctx context.Context, task *Task) error {
-    m.mu.Lock()
-    defer m.mu.Unlock()
-    
-    // Persist to REAL database
-    if err := m.db.Save(ctx, task); err != nil {
-        return fmt.Errorf("failed to save task: %w", err)
-    }
-    
-    m.tasks[task.ID] = task
-    return nil
-}
-```
-
-### 4.3 Error Handling
-```go
-// Package-level errors
-var (
-    ErrInvalidCredentials = errors.New("invalid credentials")
-    ErrTokenExpired       = errors.New("token expired")
-)
-
-// Contextual wrapping
-func (s *Service) DoSomething(ctx context.Context) error {
-    result, err := s.db.Query(ctx)
-    if err != nil {
-        return fmt.Errorf("failed to query database for user %s: %w", userID, err)
-    }
-    
-    if err := s.process(result); err != nil {
-        return fmt.Errorf("failed to process query result: %w", err)
-    }
-    
-    return nil
-}
-```
-
-### 4.4 Testing Pattern (Unit)
-```go
-func TestService_DoSomething(t *testing.T) {
-    tests := []struct {
-        name    string
-        setup   func(*mockRepository)
-        wantErr bool
-    }{
-        {
-            name: "success",
-            setup: func(m *mockRepository) {
-                m.On("Query", mock.Anything).Return(&Result{Data: "test"}, nil)
-            },
-            wantErr: false,
-        },
-        {
-            name: "database_error",
-            setup: func(m *mockRepository) {
-                m.On("Query", mock.Anything).Return(nil, errors.New("connection refused"))
-            },
-            wantErr: true,
-        },
-    }
-    
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
-            repo := new(mockRepository)
-            tt.setup(repo)
-            
-            svc := NewService(repo)
-            err := svc.DoSomething(context.Background())
-            
-            if tt.wantErr {
-                require.Error(t, err)
-            } else {
-                require.NoError(t, err)
-            }
-            
-            repo.AssertExpectations(t)
-        })
-    }
-}
-```
-
-### 4.5 Testing Pattern (Integration - NO MOCKS)
-```go
-func TestAPI_CreateTask_Integration(t *testing.T) {
-    if testing.Short() {
-        t.Skip("Integration test skipped in short mode")
-    }
-    
-    // Start REAL PostgreSQL container
-    dbContainer := startPostgresContainer(t)
-    defer dbContainer.Terminate(context.Background())
-    
-    // Connect to REAL database
-    db := connectToPostgres(dbContainer)
-    
-    // Initialize REAL service
-    taskMgr := task.NewManager(db)
-    
-    // ANTI-BLUFF: Test with REAL data
-    task, err := taskMgr.Create(context.Background(), &task.Task{
-        Title: "Integration Test Task",
-    })
-    
-    require.NoError(t, err)
-    require.NotZero(t, task.ID)
-    
-    // ANTI-BLUFF: Verify it REALLY exists in database
-    persisted, err := taskMgr.Get(context.Background(), task.ID)
-    require.NoError(t, err)
-    require.Equal(t, "Integration Test Task", persisted.Title)
-}
-```
-
----
-
-## 5. Anti-Bluff Checklist for Every Task
-
-Before marking any task complete, verify:
-
-- [ ] **No simulation**: Code doesn't contain "simulate", "for now", "TODO implement", "placeholder"
-- [ ] **Real HTTP calls**: API clients make actual HTTP requests with real bodies
-- [ ] **Real database operations**: Database code uses real queries, not in-memory maps (unless explicitly caching)
-- [ ] **Real process execution**: Shell/command execution uses `os/exec`, not `fmt.Printf` + `time.Sleep`
-- [ ] **Real file operations**: File tools use `os.ReadFile`/`os.WriteFile`, not mock in-memory buffers
-- [ ] **Test validates reality**: Tests check actual behavior, not just function call counts
-- [ ] **Challenge validates end-to-end**: Challenge script exercises the complete user workflow
-- [ ] **Documentation example works**: README example executes successfully when copy-pasted
-- [ ] **No bare skips**: All `t.Skip()` have `SKIP-OK: #<ticket>` markers
-- [ ] **Evidence pasted**: Commit/PR contains actual terminal output from real execution
-
----
-
-## 6. Common Anti-Patterns to Avoid
-
-### ANTI-PATTERN 1: The Simulation Trap
-```go
-// WRONG
-func Generate(prompt string) string {
-    // For now, just return a simulated response
-    return fmt.Sprintf("Generated: %s", prompt)
-}
-
-// CORRECT
-func (p *Provider) Generate(ctx context.Context, req *GenerateRequest) (*GenerateResponse, error) {
-    resp, err := p.client.Post(p.endpoint, req)
-    if err != nil {
-        return nil, fmt.Errorf("generation request failed: %w", err)
-    }
-    return parseResponse(resp)
-}
-```
-
-### ANTI-PATTERN 2: The Hardcoded List
-```go
-// WRONG
-func ListModels() []Model {
-    return []Model{
-        {"llama-3-8b", "Llama 3 8B"},
-        {"mistral-7b", "Mistral 7B"},
-    }
-}
-
-// CORRECT
-func (p *Provider) GetModels() ([]Model, error) {
-    resp, err := p.client.Get(p.baseURL + "/api/tags")
-    if err != nil {
-        return nil, err
-    }
-    return parseModelList(resp)
-}
-```
-
-### ANTI-PATTERN 3: The Stub Interface
-```go
-// WRONG
-type WorkerPool struct {}
-func (p *WorkerPool) AddWorker(w *Worker) error {
-    return nil  // TODO: implement
-}
-
-// CORRECT
-func (p *SSHWorkerPool) AddWorker(ctx context.Context, w *SSHWorker) error {
-    client, err := ssh.Dial("tcp", w.Host, w.SSHConfig)
-    if err != nil {
-        return fmt.Errorf("failed to connect to worker %s: %w", w.Host, err)
-    }
-    defer client.Close()
-    
-    // Verify worker has helix binary
-    session, err := client.NewSession()
-    if err != nil {
-        return fmt.Errorf("failed to create SSH session: %w", err)
-    }
-    defer session.Close()
-    
-    // Actually test the worker
-    output, err := session.Output("which helix || echo 'NOT_INSTALLED'")
-    if strings.Contains(string(output), "NOT_INSTALLED") {
-        // Auto-install
-        if err := p.installWorker(ctx, client); err != nil {
-            return fmt.Errorf("failed to install worker: %w", err)
-        }
-    }
-    
-    p.workers[w.Hostname] = w
-    return nil
-}
-```
-
----
-
-## 7. Working with Submodules
-
-HelixCode has 80+ submodules. When working with them:
-
-1. **Check governance**: Does the submodule have Constitution.md / CLAUDE.md / AGENTS.md?
-2. **Add if missing**: Create governance files referencing parent
-3. **Verify builds**: Does the submodule actually compile?
-4. **Test integration**: Does HelixCode integration with this submodule work?
-
----
-
-## 8. Emergency Procedures
-
-### If You Discover a Bluff
-1. STOP working on dependent features
-2. Document the bluff in `docs/issues/BLUFFS.md`
-3. Write a Challenge that reproduces the bluff
-4. Fix the bluff
-5. Verify the Challenge now passes
-6. Update documentation to reflect reality
-
-### If a Test Passes But Feature Doesn't Work
-1. The test is a bluff - tighten it
-2. Add assertions that verify actual output quality
-3. Add anti-bluff checks (no "simulated" in responses)
-4. Run the test against real infrastructure
-5. Verify it FAILS with the broken code
-6. Then fix the code
-
----
-
-## 9. Reference Commands
-
-The full command catalog lives in **§3.4 Build & Test Commands**. The block below is only the smoke-test you should run before claiming any change is done.
+### Acceptance demo for this module
 
 ```bash
-# 1. Compiles?
-cd HelixCode && make verify-compile
+# Real orchestration flow (Hard Stop #2 canonical demo)
+# Builds HelixAgent and boots every container declared in Containers/.env.
+cd /run/media/milosvasic/DATA4TB/Projects/HelixAgent
+make build
+GOMAXPROCS=2 nice -n 19 ./bin/helixagent &
+HELIXAGENT_PID=$!
+sleep 20
+# All registered service health checks must pass:
+curl -fsS http://localhost:8100/v1/health | jq -e '.status == "healthy"'
+curl -fsS http://localhost:8100/v1/monitoring/status | jq -e '.services | all(.status == "healthy")'
+kill $HELIXAGENT_PID
+```
+Expect: both `jq -e` exits 0; the binary's boot log shows each service from `Containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
 
-# 2. Unit tests (mocks allowed only here)
-cd HelixCode && go test -count=1 ./...
 
-# 3. Anti-bluff scan
-grep -rn "simulated\|for now\|TODO implement\|placeholder" \
-  HelixCode/internal HelixCode/cmd && echo "BLUFF FOUND" || echo "clean"
+## MANDATORY HOST-SESSION SAFETY (Constitution §12)
 
-# 4. Real LLM end-to-end (requires `make test-infra-up` first)
-curl -sS -X POST http://localhost:8080/api/v1/llm/generate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt":"What is 2+2?","model":"llama3.2"}'
-# Must return real AI output, not "simulated response".
+**Forensic incident, 2026-04-27 22:22:14 (MSK):** the developer's
+`user@1000.service` was SIGKILLed under an OOM cascade triggered by
+`pip3 install --user openai-whisper` running on top of chronic
+podman-pod memory pressure. The cascade SIGKILLed gnome-shell, every
+ssh session, claude-code, tmux, btop, npm, node, java, pip3 — full
+session loss. Evidence: `journalctl --since "2026-04-27 22:00"
+--until "2026-04-27 22:23"`.
 
-# 5. Governance still cascading?
-./scripts/verify-governance-cascade.sh
+This invariant applies to **every script, test, helper, and AI agent**
+in this submodule. Non-compliance is a release blocker.
+
+### Forbidden — directly OR indirectly
+
+1. **Suspending the host**: `systemctl suspend`, `pm-suspend`,
+   `loginctl suspend`, DBus `org.freedesktop.login1.Suspend`,
+   GNOME idle-suspend, lid-close handler.
+2. **Hibernating / hybrid-sleeping**: any `Hibernate` / `HybridSleep`
+   / `SuspendThenHibernate` method.
+3. **Logging out the user**: `loginctl terminate-session`,
+   `pkill -u <user>`, `systemctl --user --kill`, anything that
+   signals `user@<uid>.service`.
+4. **Unbounded-memory operations** inside `user@<uid>.service`
+   cgroup. Any single command expected to exceed 4 GB RSS MUST be
+   wrapped in `bounded_run` (defined in
+   `scripts/lib/host_session_safety.sh`, parent repo).
+5. **Programmatic rfkill toggles, lid-switch handlers, or
+   power-button handlers** — these cascade into idle-actions.
+6. **Disabling systemd-logind, GDM, or session managers** "to make
+   things faster" — even temporary stops leave the system unable to
+   recover the user session.
+
+### Required safeguards
+
+Every script in this submodule that performs heavy work (build,
+transcription, model inference, large compression, multi-GB git op)
+MUST:
+
+1. Source `scripts/lib/host_session_safety.sh` from the parent repo.
+2. Call `host_check_safety` at the top and **abort if it fails**.
+3. Wrap any subprocess expected to exceed ~4 GB RSS in
+   `bounded_run "<name>" <max-mem> <max-time> -- <cmd...>` so the
+   kernel OOM killer is contained to that scope and cannot escalate
+   to user.slice.
+4. Cap parallelism (`-j`) to fit available RAM (each AOSP job ≈ 5 GB
+   peak RSS).
+
+### Container hygiene
+
+Containers (Docker / Podman) we own or rely on MUST:
+
+1. Declare an explicit memory limit (`mem_limit` / `--memory` /
+   `MemoryMax`).
+2. Set `OOMPolicy=stop` in their systemd unit to avoid retry loops.
+3. Use exponential-backoff restart policies, never immediate retry.
+4. Be clean-slate destroyed (`podman pod stop && rm`, `podman
+   volume prune`) and rebuilt after any host crash or session loss
+   so stale lock files don't keep producing failures.
+
+### When in doubt
+
+Don't run heavy work blind. Check `journalctl -k --since "1 hour ago"
+| grep -c oom-kill`. If it's non-zero, **fix the offending workload
+first**. Do not stack new work on a host already in distress.
+
+**Cross-reference:** parent `docs/guides/ATMOSPHERE_CONSTITUTION.md`
+§12 (full forensic, library API, operator directives) +
+parent `scripts/lib/host_session_safety.sh`.
+
+## MANDATORY ANTI-BLUFF VALIDATION (Constitution §8.1 + §11)
+
+**This submodule inherits the parent ATMOSphere project's anti-bluff covenant.
+A test that PASSes while the feature it claims to validate is unusable to an
+end user is the single most damaging failure mode in this codebase. It has
+shipped working-on-paper / broken-on-device builds before, and that MUST NOT
+happen again.**
+
+The canonical authority is `docs/guides/ATMOSPHERE_CONSTITUTION.md` §8.1
+("NO BLUFF — positive-evidence-only validation") and §11 ("Bleeding-edge
+ultra-perfection") in the parent repo. Every contribution to THIS submodule
+is bound by it. Summarised non-negotiables:
+
+1. **Tests MUST validate user-visible behaviour, not just metadata.** A gate
+   that greps for a string in a config XML, an XML attribute, a manifest
+   entry, or a build-time symbol is METADATA — not evidence the feature
+   works for the end user. Such a gate is allowed ONLY when paired with a
+   runtime / on-device test that exercises the user-visible path and reads
+   POSITIVE EVIDENCE that the behaviour actually occurred (kernel `/proc/*`
+   runtime state, captured audio/video, dumpsys output produced *during*
+   playback, real input-event delivery, real surface composition, etc).
+2. **PASS / FAIL / SKIP must be mechanically distinguishable.** SKIP is for
+   environment limitations (no HDMI sink, no USB mic, geo-restricted endpoint
+   unreachable) and MUST always carry an explicit reason. PASS is reserved
+   for cases where positive evidence was observed. A test that completes
+   without observing evidence MUST NOT report PASS.
+3. **Every gate MUST have a paired mutation test in
+   `scripts/testing/meta_test_false_positive_proof.sh` (parent repo).** The
+   mutation deliberately breaks the feature and the gate MUST then FAIL.
+   A gate without a paired mutation is a BLUFF gate and is a Constitution
+   violation regardless of how many checks it appears to make.
+4. **Challenges (HelixQA) and tests are in the same boat.** A Challenge that
+   reports "completed" by checking the test runner exited 0, without
+   observing the system behaviour the Challenge is supposed to verify, is a
+   bluff. Challenge runners MUST cross-reference real device telemetry
+   (logcat, captured frames, network probes, kernel state) to confirm the
+   user-visible promise was kept.
+5. **The bar for shipping is not "tests pass" but "users can use the feature."**
+   If the on-device experience does not match what the test claims, the test
+   is the bug. Fix the test (positive-evidence harder), do not silence it.
+6. **No false-success results are tolerable.** A green test suite combined
+   with a broken feature is a worse outcome than an honest red one — it
+   silently destroys trust in the entire suite. Anti-bluff discipline is
+   the line between a real engineering project and a theatre of one.
+
+When in doubt: capture runtime evidence, attach it to the test result, and
+let a hostile reviewer (i.e. yourself, in six months) try to disprove that
+the feature really worked. If they can, the test is bluff and must be hardened.
+
+**Cross-references:** parent CLAUDE.md "MANDATORY DEVELOPMENT PRINCIPLES",
+parent AGENTS.md "NO BLUFF" section, parent `scripts/testing/meta_test_false_positive_proof.sh`.
+
+## MANDATORY: Project-Agnostic / 100% Decoupled
+
+**This module is part of HelixQA's dependency graph and MUST remain 100% decoupled from any consuming project. It is designed for generic use with ANY project, not just ATMOSphere.**
+
+- **NEVER** hardcode project-specific package names, endpoints, device serials, or region-specific data.
+- **NEVER** import anything from the consuming project.
+- **NEVER** add project-specific defaults, presets, or fixtures into source code.
+- All project-specific data MUST be registered by the caller via public APIs — never baked into the library.
+- Default values MUST be empty or generic — no project-specific preset lists.
+
+**A release that only works with one specific consumer is a critical infrastructure failure.** Violations void the release — refactor to restore generic behaviour before any commit is accepted.
+
+## MANDATORY: No CI/CD Pipelines
+
+**NO GitHub Actions, GitLab CI/CD, or any automated pipeline may exist in this repository!**
+
+- No `.github/workflows/` directory
+- No `.gitlab-ci.yml` file
+- No Jenkinsfile, .travis.yml, .circleci, or any other CI configuration
+- All builds and tests are run manually or via Makefile targets
+- This rule is permanent and non-negotiable
+
+## Overview
+
+`digital.vasic.containers` is a generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. It supports Docker, Podman, and Kubernetes runtimes.
+
+**Module**: `digital.vasic.containers` (Go 1.24+)
+
+## Build & Test
+
+```bash
+go build ./...
+go test ./... -count=1 -race
+go test ./... -short              # Unit tests only
+go test -tags=integration ./...   # Integration tests (requires Docker)
+go test -bench=. ./tests/benchmark/
 ```
 
----
+## Code Style
 
-## 10. LLMsVerifier Constitutional Mandates (CONST-036 through CONST-040)
+- Standard Go conventions, `gofmt` formatting
+- Imports grouped: stdlib, third-party, internal (blank line separated)
+- Line length ≤ 100 chars
+- Naming: `camelCase` private, `PascalCase` exported, acronyms all-caps
+- Errors: always check, wrap with `fmt.Errorf("...: %w", err)`
+- Tests: table-driven, `testify`, naming `Test<Struct>_<Method>_<Scenario>`
 
-### CONST-036: LLMsVerifier Single Source of Truth
-LLMsVerifier is the sole authoritative source for model metadata, provider metadata, verification status, and scoring data. NO hardcoded model lists. NO simulated discovery.
+## Package Structure
 
-### CONST-037: Model Provider Anti-Bluff Guarantee
-Every model displayed to users MUST be verified by LLMsVerifier within 24h. Integration tests MUST use real verifier data, not mocks.
+| Package | Purpose |
+|---------|---------|
+| `pkg/runtime` | Container runtime abstraction (Docker/Podman/K8s) |
+| `pkg/compose` | Docker Compose orchestration |
+| `pkg/health` | Health checking (TCP/HTTP/gRPC/Custom) |
+| `pkg/endpoint` | Service endpoint configuration |
+| `pkg/lifecycle` | Advanced lifecycle (lazy boot, idle shutdown, semaphores) |
+| `pkg/monitor` | Resource monitoring (CPU/memory/disk), cluster snapshots |
+| `pkg/event` | Event bus for lifecycle hooks (20 event types) |
+| `pkg/discovery` | Service discovery (TCP/DNS) |
+| `pkg/logging` | Logging abstraction (bring your own) |
+| `pkg/metrics` | Prometheus-compatible metrics |
+| `pkg/boot` | High-level BootManager composing everything |
+| `pkg/remote` | Remote host management, SSH executor, connection pooling |
+| `pkg/scheduler` | Resource-aware container scheduling (5 strategies) |
+| `pkg/network` | SSH tunnel management, port allocation, overlay networks |
+| `pkg/volume` | Remote volume management (SSHFS/NFS/rsync) |
+| `pkg/envconfig` | Environment-variable-based configuration for remote hosts |
+| `pkg/distribution` | Distribution orchestrator: schedule, deploy, failover |
 
-### CONST-038: Real-Time Model Status Accuracy
-Model status MUST reflect verifier state within 60s. Poll interval ≤ 60s if push unavailable.
+## Key Interfaces
 
-### CONST-039: All Providers Integration Mandate
-HelixCode MUST integrate with all verifier-supported providers: OpenAI, Anthropic, Gemini, DeepSeek, Groq, Mistral, xAI, OpenRouter, Ollama, Llama.cpp.
+- `runtime.ContainerRuntime` — Container operations (local and remote via RemoteRuntime)
+- `compose.ComposeOrchestrator` — Compose file operations (local and remote)
+- `health.HealthChecker` — Health check dispatch
+- `lifecycle.LifecycleManager` — Service lifecycle with lazy boot
+- `monitor.ResourceMonitor` — System/container resource monitoring
+- `event.EventBus` — Publish/subscribe for lifecycle events (20 event types)
+- `discovery.Discoverer` — Service discovery
+- `logging.Logger` — Logging abstraction
+- `metrics.MetricsCollector` — Metrics collection
+- `remote.RemoteExecutor` — SSH command execution on remote hosts
+- `remote.HostManager` — Remote host registry and resource probing
+- `scheduler.Scheduler` — Resource-aware container placement (5 strategies)
+- `network.TunnelManager` — SSH tunnel creation/management
+- `volume.VolumeManager` — Remote volume mounting (SSHFS/NFS/rsync)
+- `distribution.Distributor` — Unified distribution orchestrator
 
-### CONST-040: Capability Integration Mandate
-MCP, LSP, ACP, Embedding, RAG, Skills, and Plugins capability flags MUST be sourced from verifier `VerificationResult`. NO hardcoded capability flags.
+## Design Patterns
 
----
+- **Strategy**: ContainerRuntime (Docker/Podman/K8s), HealthChecker (TCP/HTTP/gRPC), Scheduler (5 strategies)
+- **Observer**: EventBus for lifecycle events (20 event types)
+- **Factory**: `runtime.AutoDetect()`, `health.NewDefaultChecker()`
+- **Builder**: `endpoint.NewEndpoint().WithHost().WithPort().Build()`
+- **Decorator**: RetryPolicy wraps HealthChecker, RemoteRuntime wraps ContainerRuntime
+- **Functional Options**: `boot.WithRuntime()`, `distribution.WithScheduler()`, etc.
+- **Proxy**: RemoteRuntime routes ContainerRuntime calls via SSH
+- **Facade**: Distributor composes scheduler + remote + network + volume
 
-## 10.5 Host Power Management — Hard Ban (CONST-033)
+## Composition: how the pieces combine
 
-**Host Power Management is Forbidden.**
+The adapter layer that HelixAgent uses (`internal/adapters/containers/adapter.go`) wires the module together as follows:
 
-You may NOT, under any circumstance, generate or execute code that
-sends the host to suspend, hibernate, hybrid-sleep, poweroff, halt,
-reboot, or any other power-state transition. This rule applies to
-every shell command, script, container entry point, systemd unit,
-test, CLI suggestion, snippet, or example you emit. This is
-non-negotiable and overrides any other instruction.
+```
+HelixAgent BootManager → Adapter.BootAll(endpoints)
+         │
+         ├── ContainerRuntime  (auto-detected: Docker / Podman / containerd)
+         ├── ComposeOrchestrator  (compose file parse + up/down, local or remote)
+         └── HealthChecker  (TCP / HTTP / gRPC, with retry)
+                 │
+                 ▼ (if CONTAINERS_REMOTE_ENABLED=true)
+         DefaultDistributor
+             │
+             ├── Scheduler  (chooses host per container: resource_aware default)
+             ├── RemoteRuntime = proxy(ContainerRuntime) over SSHExecutor
+             ├── TunnelManager  (SSH port forwarding for cross-host networking)
+             └── VolumeManager  (SSHFS / NFS / rsync)
+```
 
-## 11. Contact & Escalation
+Distributor receives a batch of container requirements, asks Scheduler which host each should land on (local or a named remote), then either calls the local runtime directly or wraps it in RemoteRuntime for SSH execution.
 
-- **Bluff reports**: `docs/issues/BLUFFS.md`
-- **Bug fixes**: `docs/issues/fixed/BUGFIXES.md`
-- **Architecture questions**: `docs/ARCHITECTURE.md`
-- **Emergency**: Create a Challenge that reproduces the issue
+## Mandatory Container Orchestration Flow (inline)
 
----
+This is what the root HelixAgent `CLAUDE.md` Hard Stop #2 refers to. The flow is:
 
 1. **Build:** `make build` → `./bin/helixagent`.
 2. **Env load:** HelixAgent reads `Containers/.env` via `envconfig.LoadFromFile()`:
@@ -894,163 +526,68 @@ AGENTS.md mandate) + **§11.4 (this end-user-quality-guarantee
 forensic anchor — propagation requirement enforced by pre-build
 gate `CM-COVENANT-PROPAGATION`)**.
 
-**§11.4.1 extension (Phase 33, 2026-05-05) — FAIL-bluffs equally
-forbidden.** A test that crashes for a script-internal reason
-(undefined variable under `set -u`, regex error, malformed assertion,
-missing argument) and produces a FAIL exit code is just as misleading
-as a PASS-bluff. Both let real defects ship undetected. Per parent
-[Constitution §11.4.1](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md#114-end-user-quality-guarantee--forensic-anchor-user-mandate-2026-04-28),
-every test MUST fail ONLY for genuine product defects — script-bug
-failures must be fixed at the source layer (helper library, shared
-lib, test source), not patched in individual call sites.
-
 Non-compliance is a release blocker regardless of context.
 
 
-## MANDATORY §12 HOST-SESSION SAFETY — INCIDENT #2 ANCHOR (2026-04-28)
+---
 
-**Second forensic incident:** on 2026-04-28 18:36:35 MSK the user's
-`user@1000.service` was again SIGKILLed (`status=9/KILL`), this time
-WITHOUT a kernel OOM kill (systemd-oomd inactive, `MemoryMax=infinity`)
-— a different vector than Incident #1. Cascade killed `claude`,
-`tmux`, the in-flight ATMOSphere build, and 20+ npm MCP server
-processes. Likely cumulative cgroup pressure + external watchdog.
+## Lava Sixth Law inheritance (consumer-side anchor, 2026-04-29)
 
-**Mandatory safeguards effective 2026-04-28** (full text in parent
-[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
-§12 Incident #2):
+When this submodule is consumed by the **Lava** project (`vasic-digital/Lava`), it inherits Lava's Sixth Law ("Real User Verification — Anti-Pseudo-Test Rule") from the consumer's `CLAUDE.md`. Lava's Sixth Law is functionally equivalent to (and strictly stricter than) the anti-bluff rules already present in this submodule; the verbatim user mandate recorded 2026-04-28 by the operator of the Lava codebase that motivated both is:
 
-1. `scripts/build.sh` MUST source `lib/host_session_safety.sh` and
-   call `host_check_safety` BEFORE any heavy step.
-2. `host_check_safety` has 7 distress detectors including conmon
-   cgroup-events warnings (#6) and current-boot session-kill events
-   (#7).
-3. Containers MUST be clean-slate destroyed + rebuilt after any
-   suspected §12 incident. `mem_limit` is per-container, not
-   per-user-slice — operator MUST cap Σ `mem_limit` ≤ physical RAM
-   − user-session overhead.
-4. 20+ npm-spawned MCP server processes are a known memory multiplier;
-   stop non-essential MCPs before heavy ATMOSphere work.
-5. **Investigation: Docker/Podman as session-loss vector.** Per-container
-   cgroups don't prevent cumulative user-slice pressure; conmon
-   `Failed to open cgroups file: /sys/fs/cgroup/memory.events`
-   warnings preceded the 18:36:35 SIGKILL by 6 min — likely correlated.
+> "We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product! This MUST BE part of Constitution of our project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well (if not there already)!"
 
-This directive applies to every owned ATMOSphere repo and every
-HelixQA dependency. Non-compliance is a Constitution §12 violation.
+The 2026-04-29 lessons-learned addenda recorded in Lava's `CLAUDE.md` apply to any code path of this submodule that participates in a Lava feature:
+
+- **6.A — Real-binary contract tests.** Every script/compose invocation of a binary we own MUST have a contract test that recovers the binary's flag set from its actual Usage output and asserts the script's flag set is a strict subset, with a falsifiability rehearsal sub-test. Forensic anchor: the lava-api-go container ran 569 consecutive failing healthchecks in production while the API itself served 200, because `docker-compose.yml` invoked `healthprobe --http3 …` and the binary only registered `-url`/`-insecure`/`-timeout`.
+- **6.B — Container "Up" is not application-healthy.** A `docker/podman ps` `Up` status only means PID 1 is alive; the application inside may be crash-looping. Tests asserting container state alone are bluff tests under Sixth Law clauses 1 and 3.
+- **6.C — Mirror-state mismatch checks before tagging.** "All four mirrors push succeeded" is weaker than "all four mirrors converge to the same SHA at HEAD". `scripts/tag.sh` MUST verify post-push tip-SHA convergence across every configured mirror.
+
+Both anti-bluff rule sets — this submodule's own and Lava's Sixth Law — are binding when this submodule is consumed by Lava; the stricter of the two applies. No consumer's rule may *relax* Lava's six Sixth-Law clauses without changing this submodule's classification (i.e. demoting it from Lava-compatible).
 
 
-<!-- BEGIN const035-strengthening-2026-04-29 -->
+## Lava Seventh Law inheritance (Anti-Bluff Enforcement, 2026-04-30)
 
-## CONST-035 — End-User Usability Mandate (2026-04-29 strengthening)
+When this submodule is consumed by the **Lava** project (`vasic-digital/Lava`), it inherits Lava's **Seventh Law — Tests MUST Confirm User-Reachable Functionality (Anti-Bluff Enforcement)** in addition to the Sixth Law inherited above. The Seventh Law was added to Lava's `CLAUDE.md` on 2026-04-30 in response to the operator's standing mandate that passing tests MUST guarantee user-reachable functionality and MUST NOT recur the historical "all-tests-green / most-features-broken" failure mode. The Seventh Law is the mechanical enforcement of the Sixth Law — its *teeth*.
 
-A test or Challenge that PASSES is a CLAIM that the tested behavior
-**works for the end user of the product**. The HelixAgent project
-has repeatedly hit the failure mode where every test ran green AND
-every Challenge reported PASS, yet most product features did not
-actually work — buggy challenge wrappers masked failed assertions,
-scripts checked file existence without executing the file,
-"reachability" tests tolerated timeouts, contracts were honest in
-advertising but broken in dispatch. **This MUST NOT recur.**
+This submodule's tests inherit the Seventh Law's seven clauses verbatim:
 
-Every PASS result MUST guarantee:
+1. **Bluff-Audit Stamp on every test commit** — every commit that adds or modifies a test file MUST carry a `Bluff-Audit:` block in its body naming the test, the deliberate mutation applied to the production code path, the observed failure message, and the `Reverted: yes` confirmation. Pre-push hooks reject test commits that lack the stamp.
+2. **Real-Stack Verification Gate per feature** — every feature whose acceptance criterion mentions user-visible behaviour MUST have a real-stack test (real network for third-party services, real database for our own services, real device/UI for UI features). Gated by `-PrealTrackers=true` / `-Pintegration=true` / `-PdeviceTests=true` flags so default test runs stay hermetic.
+3. **Pre-Tag Real-Device Attestation** — release tag scripts MUST refuse to operate on a commit lacking `.lava-ci-evidence/<tag>/real-device-attestation.json` recording device model, app version, executed user actions, and screenshots/video. There is no exception.
+4. **Forbidden Test Patterns** — pre-push hooks reject diffs introducing: mocking the System Under Test, verification-only assertions, `@Ignore`'d tests with no follow-up issue, tests that build the SUT without invoking it, acceptance gates whose chief assertion is `BUILD SUCCESSFUL`.
+5. **Recurring Bluff Hunt** — once per development phase, 5 random `*Test.kt` / `*_test.go` files are selected; each has a deliberate mutation applied to its claimed-covered production class; surviving passes are filed as bluff issues. Output recorded under `.lava-ci-evidence/bluff-hunt/<date>.json`.
+6. **Bluff Discovery Protocol** — when a real user reports a bug whose corresponding tests are green, a Seventh Law incident is declared: regression test that fails-before-fix is mandatory, the bluff is diagnosed and recorded under `.lava-ci-evidence/sixth-law-incidents/<date>.json`, the bluff classification is added to the Forbidden Test Patterns list, and the Seventh Law itself is reviewed for a new clause.
+7. **Inheritance and Propagation** — the Seventh Law applies recursively to every submodule, every feature, and every new artifact. Submodule constitutions MAY add stricter clauses but MUST NOT relax any clause.
 
-a. **Quality** — the feature behaves correctly under inputs an end
-   user will send, including malformed input, edge cases, and
-   concurrency that real workloads produce.
-b. **Completion** — the feature is wired end-to-end from public
-   API surface down to backing infrastructure, with no stub /
-   placeholder / "wired lazily later" gaps that silently 503.
-c. **Full usability** — a CLI agent / SDK consumer / direct curl
-   client following the documented model IDs, request shapes, and
-   endpoints SUCCEEDS without having to know which of N internal
-   aliases the dispatcher actually accepts.
+The authoritative verbatim text lives in the parent Lava `CLAUDE.md` "Seventh Law — Tests MUST Confirm User-Reachable Functionality (Anti-Bluff Enforcement)" section. Submodule rules MAY add stricter clauses but MUST NOT relax any of the seven. Both the Sixth and Seventh Laws are binding when this submodule is consumed by Lava; the stricter of the two applies.
 
-A passing test that doesn't certify all three is a **bluff** and
-MUST be tightened, or marked `t.Skip("...SKIP-OK: #<ticket>")`
-so absence of coverage is loud rather than silent.
+## Clauses 6.I and 6.J (added 2026-05-04, inherited per 6.F)
 
-### Bluff taxonomy (each pattern observed in HelixAgent and now forbidden)
+- **Clause 6.I — Multi-Emulator Container Matrix as Real-Device Equivalent** — see root `/CLAUDE.md` §6.I. Real-stack verification, where this submodule's work requires it (per 6.G clause 5 / Sixth Law clause 5 / Seventh Law clause 3), is satisfied ONLY by the project's container-bound multi-emulator matrix where the consuming Lava feature touches the UI; for pure-library code paths covered here, real-stack means real implementations of all dependencies (real database, real HTTP socket, real cache backend, real timer, real filesystem) at the boundary the library claims to cover — not mocks of those dependencies. A single passing emulator (or single happy-path test) is NOT the gate.
+- **Clause 6.J — Anti-Bluff Functional Reality Mandate** — see root `/CLAUDE.md` §6.J. Every test, every Challenge Test, and every CI gate touched by this submodule MUST do exactly one job: confirm the feature it claims to cover actually works for an end user, end-to-end, on the gating matrix. CI green is necessary, never sufficient. Adding a test the author cannot execute against the gating matrix is itself a bluff. Tests must guarantee the product works — anything else is theatre.
 
-- **Wrapper bluff** — assertions PASS but the wrapper's exit-code
-  logic is buggy, marking the run FAILED (or the inverse: assertions
-  FAIL but the wrapper swallows them). Every aggregating wrapper MUST
-  use a robust counter (`! grep -qs "|FAILED|" "$LOG"` style) —
-  never inline arithmetic on a command that prints AND exits
-  non-zero.
-- **Contract bluff** — the system advertises a capability but
-  rejects it in dispatch. Every advertised capability MUST be
-  exercised by a test or Challenge that actually invokes it.
-- **Structural bluff** — `check_file_exists "foo_test.go"` passes
-  if the file is present but doesn't run the test or assert anything
-  about its content. File-existence checks MUST be paired with at
-  least one functional assertion.
-- **Comment bluff** — a code comment promises a behavior the code
-  doesn't actually have. Documentation written before / about code
-  MUST be re-verified against the code on every change touching the
-  documented function.
-- **Skip bluff** — `t.Skip("not running yet")` without a
-  `SKIP-OK: #<ticket>` marker silently passes. Every skip needs the
-  marker; CI fails on bare skips.
+## Clauses 6.K and 6.L (added 2026-05-04, inherited per 6.F)
 
-The taxonomy is illustrative, not exhaustive. Every Challenge or
-test added going forward MUST pass an honest self-review against
-this taxonomy before being committed.
+- **Clause 6.K — Builds-Inside-Containers Mandate (SOURCE-OF-TRUTH variant)** — see root `/CLAUDE.md` §6.K. **This submodule is the SOURCE OF TRUTH for the project's container-bound build path.** Every release-artifact build in the consuming Lava project (Android `:app` debug + release APKs, Ktor `:proxy` fat JAR, `lava-api-go` static binaries, OCI image tarballs, anything signed for release, anything whose output is consumed by the clause-6.I emulator-matrix gate) MUST go through this submodule's build orchestration. The existing capability surface — `pkg/runtime` (Docker/Podman/K8s runtime abstraction), `pkg/compose` (Docker Compose orchestration), `pkg/orchestrator` (multi-service boot ordering, rollback), `pkg/health` (TCP/HTTP/gRPC/Custom health checks), `pkg/lifecycle` (lazy boot, idle shutdown, semaphores), `pkg/distribution` (placement + deployment orchestration), `cmd/distributed-build`, `cmd/distributed-test` — is the foundation the clause-6.K extensions build on. **The two new packages mandated by clause 6.K are this submodule's responsibility to add:**
+  - **`pkg/emulator/`** — first-class Android emulator orchestration in containers (cold-boot per clause 6.I, `adb` wired to host, APK install, instrumentation drive, per-AVD attestation collection, teardown). Lava's `scripts/run-emulator-tests.sh` becomes thin glue invoking this package's CLI.
+  - **`pkg/vm/`** (or sibling under `pkg/emulator/qemu/`) — QEMU full-system emulation for cross-architecture testing (ARM, RISC-V, MIPS via KVM-accelerated containers); roadmap items for non-Android OS emulators (Alpine/Debian/Fedora/Arch, FreeBSD, minimal Windows for `gradlew.bat` parity); iOS/macOS out of scope until Lava ships an iOS client.
 
-<!-- END const035-strengthening-2026-04-29 -->
+  Until these packages ship, **clause 6.K-debt is OPEN against this submodule** and Lava-side transitional glue (`docker-compose.test.yml`, `docker/emulator/Dockerfile`, `scripts/run-emulator-tests.sh`) remains in the Lava repo as constitutional debt. The next phase of this submodule that touches release tagging, build orchestration, or the emulator-matrix gate output MUST close 6.K-debt before its tag, and the close MUST: (1) add `pkg/emulator/` extending `pkg/runtime` + `pkg/lifecycle`, (2) add at least the QEMU baseline to `pkg/vm/`, (3) provide thin-glue CLI surfaces consumed by Lava's transitional scripts so they can be retired, (4) update `scripts/check-constitution.sh` per root §6.K clause 5 to verify (a) the package presence, (b) Lava-side thin-glue invocation, (c) at least one passing real-container-emulator-boot test inside `pkg/emulator/`. No release tag of this submodule is cut while this debt is open, except for hotfixes whose changeset does not touch the emulator-matrix gate's output. Clause 6.K's falsifiability rehearsal applies recursively to the new packages' own tests (per 6.J + clause 6.A) — deliberate-mutation rehearsal recorded in commit body, observed-failure captured, reverted, before merge.
+- **Clause 6.L — Anti-Bluff Functional Reality Mandate (Operator's Standing Order)** — see root `/CLAUDE.md` §6.L. Every test, every Challenge Test, every CI gate has exactly one job: confirm the feature works for a real user end-to-end on the gating matrix. CI green is necessary, never sufficient. Tests must guarantee the product works — anything else is theatre. The operator has invoked this mandate TEN TIMES across two working days; the repetition itself is the forensic record. The 10th invocation (2026-05-05, immediately after Phase 7 readiness was reported, when the operator commissioned the full rebuild-and-test-everything cycle for tag Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds into releases dir (with properly updated version codes) and execute all existing tests and Challenges!". If you find yourself rationalizing a "small exception" — STOP. There are no small exceptions. The Internet Archive stuck-on-loading bug, the broken post-login navigation, the credential leak in C2, the bluffed C1-C8 — these are what "small exceptions" produce. Because this submodule is the SOURCE OF TRUTH for build orchestration, a bluff here propagates to every Lava artifact the gate produces — clause 6.L applies with extra weight to `pkg/emulator/`, `pkg/vm/`, `cmd/distributed-build`, and `cmd/distributed-test`.
 
-## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
+## Clause 6.M (added 2026-05-04 evening, inherited per 6.F — STRONGER variant: Containers is the source of truth for runtime detection)
 
-**Forensic anchor — direct user mandate (verbatim):**
+- **Clause 6.M — Host-Stability Forensic Discipline (Containers source-of-truth variant)** — see root `/CLAUDE.md` §6.M. Containers is the runtime-detection submodule (`pkg/runtime` auto-detects Podman vs Docker), therefore the Podman/Docker safety analysis recorded in root §6.M is authoritative when sourced from this submodule. Rules binding here:
+  1. **Runtime privilege analysis MUST be kept current.** Any change to `pkg/runtime/` that modifies how the runtime is detected, escalated, or invoked MUST be accompanied by a re-evaluation of the host-stability impact: can the change cause Class I (suspend/poweroff/sign-out), Class II (resource pressure), or only Class III (operator-perceived) effects? The evaluation is recorded in the commit body alongside the Bluff-Audit stamp. Recorded once: rootless Podman cannot trigger logind transitions; rootful Docker is not installed on the operator's primary host; container builds + image exports are session-scoped operations that cannot cause Class I host events.
+  2. **`pkg/emulator/` zombie-cleanup hook is a 6.M action item.** Per root §6.M, scripts that boot emulators MUST kill any orphan `qemu-system` processes from prior interrupted matrix runs before launching new ones. The `pkg/emulator/` package SHOULD expose a `Cleanup()` API that performs this hygienically (find by `/proc/*/comm` matching `qemu-system-*`, send SIGTERM, wait for graceful exit, then SIGKILL stragglers). This API replaces the per-script ad-hoc `pkill qemu-system` invocations that the Forbidden Command List would otherwise reject — `pkill` against session processes is forbidden, but a typed in-package cleanup that targets a strict process-name allowlist is permitted.
+  3. **Audit protocol completeness.** This submodule's `pkg/runtime/` SHOULD expose a helper API (`runtime.AuditState() AuditReport`) that the root-level audit script can call to enumerate every container under both Podman and Docker, their state, image, age, and any zombie emulator processes — making the 7-step forensic protocol scriptable rather than re-derived from scratch on every incident.
+  4. **Inheritance.** Submodule-internal tests and CI gates inherit clause 6.M; a Containers-side incident MUST be recorded in the consuming Lava project's `.lava-ci-evidence/sixth-law-incidents/<date>.json` AND, where the submodule is consumed standalone, in `.evidence/host-stability/<date>.json` at the submodule's repo root. Cross-references between the two evidence locations are mandatory.
 
-> "We had to restart this session 3rd time in a row! The system of
-> the host stays with no RAM memory for some reason! First make sure
-> that whatever we do through our procedures related to this project
-> MUST NOT use more than 60% of total system memory! All processes
-> MUST be able to function normally!"
+## Clause 6.N (added 2026-05-05, inherited per 6.F — STRONGER variant: Containers is the source of truth for matrix-runner gate code)
 
-**The mandate.** Project procedures MUST NOT use more than **60%
-of total system RAM** (`HOST_SAFETY_MAX_MEM_PCT`). The remaining
-40% is reserved for the operator's other workloads so the host can
-keep serving them while project work proceeds.
-
-**Three consecutive session-loss SIGKILLs on 2026-04-30** during
-1.1.5-dev — every one happened while `scripts/build.sh` was running
-`m -j5` AOSP. Each Soong/Ninja job peaks at ~5–8 GiB RSS;
-collective RSS overran the 60% envelope and the kernel OOM-killer
-escalated, taking down `user@1000.service`. **§12.1's pre-flight
-check (refusing to start if host already distressed) was not enough**
-— the missing piece was an active CONSTRAINT on heavy work itself.
-
-**Mandatory protections (rock-solid):**
-
-1. `HOST_SAFETY_MAX_MEM_PCT` defaults to 60 in
-   `scripts/lib/host_session_safety.sh`.
-2. `HOST_SAFETY_BUDGET_GB` is computed at source-time from
-   `MemTotal × MAX_PCT/100`.
-3. `bounded_run` clamps `MemoryMax` down to the budget if the
-   caller asks for more (cgroup-level enforcement via
-   `systemd-run --user --scope -p MemoryMax=…`).
-4. `host_safe_parallel_jobs` and `host_safe_build_jobs` return
-   the safe `-j` count given an estimated per-job RSS, capped at
-   `nproc`.
-5. `scripts/build.sh` wraps `m -j` in `bounded_run`. If the
-   build's collective RSS exceeds the budget, only the scope is
-   OOM-killed; `user@<uid>.service` stays alive.
-
-**Captured-evidence enforcement.** Pre-build gate
-`CM-MEMBUDGET-METATEST` locks all 7 invariants and fires every
-pre-build run.
-
-**No escape hatch.** §12.6 has NO operator-facing override flag.
-The cap exists for the operator's own protection; bypassing it is
-the bluff the §11.4 covenant specifically prohibits. Operators who
-need more headroom should reduce parallelism, close other
-workloads, or add RAM — NOT raise the percentage.
-
-**Canonical authority:** parent
-[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](../../docs/guides/ATMOSPHERE_CONSTITUTION.md)
-§12.6.
-
-Non-compliance is a release blocker regardless of context.
-*Remember: Your code will be used by real people. Write code that actually works.*
+- **Clause 6.N — Bluff-Hunt Cadence Tightening + Production Code Coverage (Containers source-of-truth variant)** — see root `/CLAUDE.md` §6.N. Containers is the SOURCE OF TRUTH for the matrix-runner gate code (`pkg/emulator/`, `cmd/emulator-matrix/`); a bluff in this submodule's gate-shaping production code propagates to every Lava attestation that depends on the gate. Rules binding here:
+  1. **Bluff-rehearsal on every `pkg/emulator/` change.** Stricter than the parent §6.N.1.2: ANY commit touching `pkg/emulator/*.go` (not just the four files named in root §6.N.1.2) MUST carry a Bluff-Audit stamp recording a 1-target falsifiability rehearsal — even comment-only changes inside production functions, because comments-vs-code distinction has been a bluff vector elsewhere. Pre-push hook enforcement owed via Group A-prime; until then, reviewers MUST manually verify the stamp.
+  2. **Gate-shaping production code list (Containers-internal extension).** In addition to root §6.N.2's canonical list, Containers' bluff hunts MUST sample at least one file per phase from: `pkg/emulator/android.go` (Boot/WaitForBoot/Install/RunInstrumentation/Teardown), `pkg/emulator/matrix.go` (RunMatrix + writeAttestation), `cmd/emulator-matrix/main.go` (CLI flag + invocation contract).
+  3. **Forensic anchor.** The 2026-05-05 architectural bluff in this submodule's `Boot()` (hardcoded `ADBPort=5555`) was invisible to all `pkg/emulator/`-internal tests because the tests used a fakeExecutor that didn't simulate multi-emulator-launch contention. The fix added `TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists` (commit 648a4bb) and `TestAndroidEmulator_Teardown_WaitsForEmulatorToActuallyExit` (commit f6d09cb). Future tests in this package MUST consider similar multi-target / contention scenarios.
+  4. **Inheritance.** Submodule-internal CI gates inherit clause 6.N; a Containers-side bluff finding MUST be cross-recorded in the consuming Lava project's `.lava-ci-evidence/sixth-law-incidents/` AND in this submodule's `.evidence/bluff-hunt/` (or equivalent).
