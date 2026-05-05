@@ -1,0 +1,171 @@
+package vm
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"sync/atomic"
+	"time"
+)
+
+// processRunner is the seam through which QEMUVM launches qemu-system-*.
+// Production uses os/exec; tests inject a fake.
+type processRunner interface {
+	StartDetached(name string, args ...string) error
+}
+
+type osProcessRunner struct{}
+
+func (osProcessRunner) StartDetached(name string, args ...string) error {
+	cmd := exec.Command(name, args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	cmd.Stdin = nil
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+	go func() { _ = cmd.Wait() }()
+	return nil
+}
+
+// sshClient abstracts SSH session + SCP operations.
+type sshClient interface {
+	Dial(ctx context.Context, port int, timeout time.Duration) error
+	Upload(ctx context.Context, hostPath, vmPath string) error
+	Run(ctx context.Context, script string, env map[string]string, timeout time.Duration) (stdout, stderr string, exitCode int, err error)
+	Download(ctx context.Context, vmPath, hostPath string) error
+	Close() error
+}
+
+// qmpClient abstracts QEMU's monitor (qmp) socket for graceful shutdown.
+type qmpClient interface {
+	Dial(ctx context.Context, port int, timeout time.Duration) error
+	SystemPowerdown(ctx context.Context) error
+	Close() error
+}
+
+// QEMUVM is the production VM impl.
+type QEMUVM struct {
+	procs        processRunner
+	ssh          sshClient
+	qmp          qmpClient
+	kvmAvailable bool
+	nextSSHPort  atomic.Int32 // starts at 10022
+	nextMonPort  atomic.Int32 // starts at 14444
+}
+
+// NewQEMUVM constructs a production QEMUVM.
+func NewQEMUVM() *QEMUVM {
+	return newQEMUVMWithDeps(osProcessRunner{}, defaultSSHClient(), defaultQMPClient(), kvmAvailable())
+}
+
+func newQEMUVMWithDeps(p processRunner, s sshClient, q qmpClient, kvm bool) *QEMUVM {
+	v := &QEMUVM{procs: p, ssh: s, qmp: q, kvmAvailable: kvm}
+	v.nextSSHPort.Store(10022)
+	v.nextMonPort.Store(14444)
+	return v
+}
+
+func kvmAvailable() bool {
+	_, err := os.Stat("/dev/kvm")
+	return err == nil
+}
+
+func qemuBinary(arch string) string {
+	return "qemu-system-" + arch
+}
+
+// Boot assembles the QEMU command line and launches detached.
+// Returns BootResult with allocated SSH + monitor ports.
+//
+// SAFETY: every call gets unique ports via the atomic counters.
+// Concurrent Boot calls do NOT collide. This is the load-bearing
+// safety property the falsifiability rehearsal targets — see
+// TestQEMUVM_Boot_DistinctPortsAcrossInvocations.
+//
+// Per-arch policy:
+//   - x86_64 + KVM available  → -enable-kvm + -cpu host
+//   - x86_64 without KVM      → -cpu max (TCG)
+//   - aarch64                 → -machine virt + -cpu max + AAVMF UEFI
+//   - riscv64                 → -machine virt + -cpu max
+func (v *QEMUVM) Boot(ctx context.Context, config VMConfig) (BootResult, error) {
+	startedAt := time.Now()
+	sshPort := int(v.nextSSHPort.Add(1) - 1)
+	monPort := int(v.nextMonPort.Add(1) - 1)
+
+	args := []string{
+		"-name", config.Target.ID,
+		"-m", "2048",
+		"-smp", "2",
+		"-nographic",
+		"-no-reboot",
+		"-drive", "file=" + config.QCowPath + ",if=virtio",
+		"-netdev", fmt.Sprintf("user,id=net0,hostfwd=tcp:127.0.0.1:%d-:22", sshPort),
+		"-device", "virtio-net-pci,netdev=net0",
+		"-monitor", fmt.Sprintf("tcp:127.0.0.1:%d,server,nowait", monPort),
+		"-serial", "null",
+	}
+
+	switch config.Target.Arch {
+	case "x86_64":
+		if v.kvmAvailable {
+			args = append(args, "-enable-kvm", "-cpu", "host")
+		} else {
+			args = append(args, "-cpu", "max")
+		}
+	case "aarch64":
+		args = append(args, "-machine", "virt", "-cpu", "max", "-bios", "/usr/share/AAVMF/AAVMF_CODE.fd")
+	case "riscv64":
+		args = append(args, "-machine", "virt", "-cpu", "max")
+	}
+
+	if config.ColdBoot {
+		args = append(args, "-snapshot")
+	}
+
+	binary := qemuBinary(config.Target.Arch)
+	if err := v.procs.StartDetached(binary, args...); err != nil {
+		return BootResult{
+			Target:       config.Target,
+			Started:      false,
+			BootDuration: time.Since(startedAt),
+			Error:        fmt.Errorf("qemu launch failed: %w", err),
+		}, err
+	}
+	return BootResult{
+		Target:       config.Target,
+		Started:      true,
+		SSHPort:      sshPort,
+		MonitorPort:  monPort,
+		BootDuration: time.Since(startedAt),
+	}, nil
+}
+
+// WaitForReady polls SSH dial until the listener accepts. Bounded by timeout.
+func (v *QEMUVM) WaitForReady(ctx context.Context, sshPort int, timeout time.Duration) error {
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		if err := v.ssh.Dial(ctx, sshPort, 5*time.Second); err == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+	return fmt.Errorf("vm on ssh port %d did not become ready within %s", sshPort, timeout)
+}
+
+func (v *QEMUVM) Upload(ctx context.Context, sshPort int, hostPath, vmPath string) error {
+	return v.ssh.Upload(ctx, hostPath, vmPath)
+}
+
+func (v *QEMUVM) Run(ctx context.Context, sshPort int, script string, env map[string]string, timeout time.Duration) (string, string, int, error) {
+	return v.ssh.Run(ctx, script, env, timeout)
+}
+
+func (v *QEMUVM) Download(ctx context.Context, sshPort int, vmPath, hostPath string) error {
+	return v.ssh.Download(ctx, vmPath, hostPath)
+}
