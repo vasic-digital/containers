@@ -2,6 +2,7 @@ package emulator
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -12,11 +13,19 @@ import (
 	"digital.vasic.containers/pkg/cache"
 )
 
-// NOTE: tests that override killByPortHook or teardownGracePeriod
-// MUST NOT call t.Parallel() — the swap-and-restore pattern
+// NOTE: tests that override any of the package-level seams below MUST
+// NOT call t.Parallel() — the swap-and-restore pattern
 // (`prev := X; X = ...; defer func() { X = prev }()`) is not safe
 // against concurrent test functions racing on the package-level var.
 // All current callers respect this; future test authors must too.
+//
+// Current package-level mutable seams (every entry MUST be listed here
+// so the discoverable surface stays exhaustive — adding a new seam
+// without extending this list is itself a clause-6.J bluff vector):
+//   - killByPortHook         (Teardown's KillByPort fast-path injection)
+//   - teardownGracePeriod    (Teardown's wall-clock wait for emulator exit)
+//   - loadManifestHook       (ensureSystemImageViaCache's cache.Manifest loader)
+//   - cacheStoreFactory      (ensureSystemImageViaCache's cache.Store factory)
 
 // killByPortHook is the package-level seam tests use to substitute a
 // fake KillByPort implementation. Production Teardown uses the real
@@ -140,6 +149,19 @@ func NewAndroidEmulatorWithExecutor(
 	return &AndroidEmulator{executor: executor, androidSdkRoot: androidSdkRoot}
 }
 
+// ErrExtractionNotImplemented signals that the v0.1 cache-routing
+// flow successfully fetched + verified the system-image artifact
+// but does not yet repackage it into ANDROID_SDK_ROOT/system-images/.
+// Future v0.2 implements the extraction; until then, callers of
+// ensureSystemImageViaCache see this sentinel via errors.Is.
+//
+// Anti-bluff posture: this is an honest signal — the caller knows
+// fetch+verify succeeded; only extraction is the v0.1 gap. The matrix
+// runner's runOne wraps this with `cache-routed system-image: %w`,
+// which chains through; a tag-time gate that wants to identify the
+// v0.1 gap precisely uses errors.Is(err, ErrExtractionNotImplemented).
+var ErrExtractionNotImplemented = errors.New("cache-routed system-image extraction: not implemented in v0.1; operator end-to-end run only")
+
 // systemImageDir is the conventional ANDROID_SDK_ROOT layout location
 // for an AVD's system-image. The Android SDK installs system-images at
 //
@@ -211,11 +233,10 @@ func (a *AndroidEmulator) ensureSystemImageViaCache(
 		return fmt.Errorf("ensureSystemImageViaCache: fetch %s: %w", imageID, err)
 	}
 	// v0.1 honesty: routing + fetch + verify is implemented, but
-	// extraction into ANDROID_SDK_ROOT/system-images/... is not.
-	return fmt.Errorf(
-		"cache-routed system-image extraction: not implemented in v0.1; operator end-to-end run only (image %q fetched + verified, manual install required)",
-		imageID,
-	)
+	// extraction into ANDROID_SDK_ROOT/system-images/... is not. Wrap
+	// the typed sentinel so callers can errors.Is(err,
+	// ErrExtractionNotImplemented) to identify the v0.1 gap precisely.
+	return fmt.Errorf("ensureSystemImageViaCache: %w (imageID=%s)", ErrExtractionNotImplemented, imageID)
 }
 
 func (a *AndroidEmulator) emulatorBinary() string {

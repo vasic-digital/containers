@@ -601,56 +601,35 @@ func (c *countingStore) Refresh(_ context.Context, _ *cache.Manifest, _ string) 
 	return nil
 }
 
-// TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache_AndDoesNotChangeAttestationSchema
-// is the Phase B routing-decision test. It verifies three properties:
+// TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache is the
+// Phase B routing-decision test for the helper itself. It verifies the
+// helper's branches in isolation:
 //
-//   - (a) When ImageManifestPath == "" (the default), ensureSystemImageViaCache
-//     is a no-op and the cache Store is NEVER consulted. Existing
-//     41 emulator tests prove pre-Phase-B behaviour is byte-equivalent
-//     under that branch; this test pins the explicit no-op assertion.
-//   - (b) When ImageManifestPath is set AND the system-image is missing
-//     under ANDROID_SDK_ROOT, the helper consults the cache via
-//     Store.Get with imageID == "android-<api>-<formFactor>". A counting
-//     fake records the call; the test asserts it happened exactly once.
-//   - (c) BootResult's field-set is unchanged from pre-Phase-B. This is
-//     the schema-equivalence assertion: a future commit that
-//     accidentally adds a new field to BootResult would break
-//     downstream attestation consumers (the matrix runner's writeAttestation,
-//     scripts/tag.sh's gating logic). Reflection enumerates the field
-//     names and compares against the known set.
+//   - (a) Empty ImageManifestPath → no-op (pre-Phase-B byte-equivalent),
+//     cache Store is NEVER consulted.
+//   - (b) Set ImageManifestPath + missing image dir → cache consulted via
+//     Store.Get with imageID == "android-<api>-<formFactor>". The
+//     counting fake records the call; the test asserts it happened
+//     exactly once and the imageID composition is correct.
+//   - (b') Set ImageManifestPath + present image dir → no-op, cache MUST
+//     NOT be consulted.
+//
+// NOTE: this test exercises the helper directly, NOT through the matrix
+// runner. The end-to-end test that drives the production code path
+// (RunMatrix → runOne → helper) is
+// TestRunMatrix_RoutesMissingSystemImageThroughCache_WhenImageManifestPathIsSet
+// — that one is the load-bearing C1 fix proof.
 //
 // Falsifiability rehearsal (Sixth Law clause 2):
 //
-//	Mutation: add a new field `CacheUsed bool` to BootResult struct in
-//	          types.go.
-//	Run:      go test ./pkg/emulator/... -run TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache
-//	Observed-Failure: the schema-equivalence assertion (c) fails because
-//	          reflection sees an unexpected new field "CacheUsed".
+//	Mutation: in android.go ensureSystemImageViaCache, drop the
+//	          `store := cacheStoreFactory(defaultCacheRoot())` +
+//	          `store.Get(...)` call (replace with `var store cache.Store`).
+//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache
+//	Observed-Failure: the (b) branch's `require.Len(t, store.getCalls, 1)`
+//	          assertion fails because Get was never invoked.
 //	Reverted: yes — post-revert this test passes again.
-func TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache_AndDoesNotChangeAttestationSchema(t *testing.T) {
-	// --- (c) Schema-equivalence: BootResult fields unchanged. ---
-	expectedFields := []string{
-		"AVD", "ADBPort", "BootCompleted", "BootDuration",
-		"ConsolePort", "Error", "Started",
-	}
-	bootResultType := reflect.TypeOf(BootResult{})
-	require.Equal(t, len(expectedFields), bootResultType.NumField(),
-		"BootResult field count drifted from pre-Phase-B; expected %d, got %d. "+
-			"Adding fields breaks downstream attestation schema consumers "+
-			"(matrix.go writeAttestation + scripts/tag.sh).",
-		len(expectedFields), bootResultType.NumField())
-	got := make([]string, 0, bootResultType.NumField())
-	for i := 0; i < bootResultType.NumField(); i++ {
-		got = append(got, bootResultType.Field(i).Name)
-	}
-	sort.Strings(got)
-	wantSorted := append([]string{}, expectedFields...)
-	sort.Strings(wantSorted)
-	assert.Equal(t, wantSorted, got,
-		"BootResult field-set drifted from pre-Phase-B. The Phase B refactor "+
-			"is API-preserving by spec; any new field is a constitutional "+
-			"violation that breaks the attestation schema downstream consumers depend on.")
-
+func TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache(t *testing.T) {
 	// --- (a) Empty ImageManifestPath: cache MUST NOT be consulted. ---
 	store := &countingStore{}
 	prevFactory := cacheStoreFactory
@@ -723,4 +702,114 @@ func TestAndroidEmulator_Boot_FetchesMissingSystemImageViaCache_AndDoesNotChange
 		"helper MUST be a no-op when image dir already exists under SDK root")
 	assert.Empty(t, store.getCalls,
 		"cache.Store.Get MUST NOT be invoked when image is already on disk")
+}
+
+// TestBootResult_AttestationSchemaUnchanged pins BootResult's field-set
+// against pre-Phase-B drift. The Phase B refactor is API-preserving by
+// spec; any new field is a constitutional violation that breaks the
+// attestation schema downstream consumers depend on (matrix.go's
+// writeAttestation, scripts/tag.sh's gating logic).
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: add a new field `CacheUsed bool` to BootResult struct in
+//	          types.go.
+//	Run:      go test ./pkg/emulator/... -run TestBootResult_AttestationSchemaUnchanged
+//	Observed-Failure: reflection sees the unexpected new field; both the
+//	          field-count and field-set assertions fire.
+//	Reverted: yes — post-revert this test passes again.
+func TestBootResult_AttestationSchemaUnchanged(t *testing.T) {
+	expectedFields := []string{
+		"AVD", "ADBPort", "BootCompleted", "BootDuration",
+		"ConsolePort", "Error", "Started",
+	}
+	bootResultType := reflect.TypeOf(BootResult{})
+	require.Equal(t, len(expectedFields), bootResultType.NumField(),
+		"BootResult field count drifted from pre-Phase-B; expected %d, got %d. "+
+			"Adding fields breaks downstream attestation schema consumers "+
+			"(matrix.go writeAttestation + scripts/tag.sh).",
+		len(expectedFields), bootResultType.NumField())
+	got := make([]string, 0, bootResultType.NumField())
+	for i := 0; i < bootResultType.NumField(); i++ {
+		got = append(got, bootResultType.Field(i).Name)
+	}
+	sort.Strings(got)
+	wantSorted := append([]string{}, expectedFields...)
+	sort.Strings(wantSorted)
+	assert.Equal(t, wantSorted, got,
+		"BootResult field-set drifted from pre-Phase-B. The Phase B refactor "+
+			"is API-preserving by spec; any new field is a constitutional "+
+			"violation that breaks the attestation schema downstream consumers depend on.")
+}
+
+// TestEnsureSystemImageViaCache_StubReturnsTypedSentinel verifies the
+// v0.1-honesty contract for the cache-routed extraction stub: when the
+// helper successfully reaches the cache, fetches+verifies, and then
+// stops at the not-yet-implemented extraction step, it returns an error
+// chain that wraps ErrExtractionNotImplemented. Callers (matrix runner,
+// future v0.2 extractor) can use errors.Is to detect the v0.1 gap
+// precisely without relying on string-matching the error message.
+//
+// We use a fake cache.Store whose Get returns nil error (mimicking
+// successful fetch+verify) so the helper proceeds past the cache call
+// and reaches the sentinel return. Substituting an error-returning Get
+// would short-circuit before the sentinel — that branch is covered by
+// TestEnsureSystemImageViaCache_RoutesMissingImageThroughCache.
+//
+// Falsifiability rehearsal (Sixth Law clause 2):
+//
+//	Mutation: in android.go ensureSystemImageViaCache, change the wrap
+//	          to fmt.Errorf("...not implemented...") (drop the %w + sentinel).
+//	Run:      go test ./pkg/emulator/... -run TestEnsureSystemImageViaCache_StubReturnsTypedSentinel
+//	Observed-Failure: errors.Is(err, ErrExtractionNotImplemented) returns
+//	          false; the test fails with the t.Fatalf assertion message.
+//	Reverted: yes — post-revert this test passes again.
+func TestEnsureSystemImageViaCache_StubReturnsTypedSentinel(t *testing.T) {
+	prevFactory := cacheStoreFactory
+	cacheStoreFactory = func(_ string) cache.Store { return &nilStore{} }
+	defer func() { cacheStoreFactory = prevFactory }()
+
+	prevLoader := loadManifestHook
+	loadManifestHook = func(_ string) (*cache.Manifest, error) {
+		return &cache.Manifest{
+			Version: 1,
+			Images: []cache.ImageEntry{{
+				ID:     "android-30-phone",
+				URL:    "https://example.invalid/sysimage.zip",
+				SHA256: "0000000000000000000000000000000000000000000000000000000000000000",
+				Size:   1,
+				Format: "android-system-image",
+			}},
+		}, nil
+	}
+	defer func() { loadManifestHook = prevLoader }()
+
+	tmpSdk := t.TempDir()
+	emu := NewAndroidEmulator(tmpSdk)
+	avd := AVD{Name: "Pixel_API30", APILevel: 30, FormFactor: "phone"}
+	manifestPath := filepath.Join(t.TempDir(), "vm-images.json")
+
+	err := emu.ensureSystemImageViaCache(context.Background(), avd, manifestPath)
+	require.Error(t, err,
+		"helper MUST return an error in v0.1 (extraction not implemented)")
+	if !errors.Is(err, ErrExtractionNotImplemented) {
+		t.Fatalf("expected error to wrap ErrExtractionNotImplemented, got: %v", err)
+	}
+}
+
+// nilStore is a cache.Store whose Get reports success without doing any
+// work. Used by TestEnsureSystemImageViaCache_StubReturnsTypedSentinel
+// to drive the helper past the cache.Get call into the sentinel return.
+type nilStore struct{}
+
+func (nilStore) Get(_ context.Context, _ *cache.Manifest, _ string) (string, error) {
+	return "", nil
+}
+
+func (nilStore) Verify(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
+}
+
+func (nilStore) Refresh(_ context.Context, _ *cache.Manifest, _ string) error {
+	return nil
 }

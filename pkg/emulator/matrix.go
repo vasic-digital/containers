@@ -64,6 +64,35 @@ func (r *AndroidMatrixRunner) runOne(
 	bootTimeout time.Duration,
 	testTimeout time.Duration,
 ) (BootResult, TestResult) {
+	// Phase B fix-up (C1): when the matrix caller declared an
+	// ImageManifestPath, route any missing system-image through
+	// pkg/cache BEFORE we try to boot. The type-assertion is the same
+	// pattern captureDiagnostic uses below; it preserves the Emulator
+	// interface shape (Boot's signature unchanged) while allowing the
+	// matrix runner to invoke the cache-routing helper that lives on
+	// the concrete AndroidEmulator type.
+	//
+	// Empty ImageManifestPath preserves the pre-Phase-B path
+	// byte-for-byte (the helper returns nil immediately when
+	// manifestPath is empty). This is the production wiring that the
+	// schema-stub TestRunMatrix_RoutesMissingSystemImageThroughCache_*
+	// test exercises end-to-end via runOne.
+	if ae, ok := r.emulator.(*AndroidEmulator); ok && config.ImageManifestPath != "" {
+		if cacheErr := ae.ensureSystemImageViaCache(ctx, avd, config.ImageManifestPath); cacheErr != nil {
+			return BootResult{
+					AVD:   avd,
+					Error: fmt.Errorf("cache-routed system-image: %w", cacheErr),
+				}, TestResult{
+					AVD:        avd,
+					TestClass:  config.TestClass,
+					Started:    time.Now(),
+					Passed:     false,
+					Error:      fmt.Errorf("cache-routed system-image: %w", cacheErr),
+					Concurrent: maxInt(config.Concurrent, 1),
+				}
+		}
+	}
+
 	boot, err := r.emulator.Boot(ctx, avd, config.ColdBoot)
 	if err != nil {
 		return boot, TestResult{
