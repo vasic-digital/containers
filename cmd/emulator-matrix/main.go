@@ -94,6 +94,8 @@ func main() {
 		"Max concurrent emulators (default 1; values >1 set MatrixResult.Gating=false)")
 	flagDev := flag.Bool("dev", false,
 		"Developer-iteration mode; permits snapshot reload, sets MatrixResult.Gating=false")
+	flagTestReportGlob := flag.String("test-report-glob", "",
+		"Host-glob pattern (CWD-relative) for JUnit XML test reports; empty disables JUnit parsing")
 	flag.Parse()
 
 	if *flagAPK == "" {
@@ -132,6 +134,7 @@ func main() {
 		ColdBoot:       *flagColdBoot,
 		Concurrent:     *flagConcurrent,
 		Dev:            *flagDev,
+		TestReportGlob: *flagTestReportGlob,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: matrix runner failed: %v\n", err)

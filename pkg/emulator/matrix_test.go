@@ -656,3 +656,36 @@ func TestRunMatrix_Gating_FalseOnDev(t *testing.T) {
 		t.Fatalf("expected Gating=false when Dev=true, got true")
 	}
 }
+
+func TestRunMatrix_EmptyTestReportGlob_SkipsJUnitParsing(t *testing.T) {
+	// With TestReportGlob="" (the default), runOne MUST NOT attempt
+	// to read any JUnit XML files. FailureSummaries on every row
+	// should be the empty slice (NOT nil — empty slice for JSON
+	// schema stability per types.go FailureSummary KDoc).
+	dir := t.TempDir()
+	apkPath := filepath.Join(dir, "app-debug.apk")
+	if err := os.WriteFile(apkPath, []byte("fake apk bytes"), 0o644); err != nil {
+		t.Fatalf("write fixture apk: %v", err)
+	}
+	r := NewAndroidMatrixRunner(&stubEmulator{})
+	res, err := r.RunMatrix(context.Background(), MatrixConfig{
+		AVDs:        []AVD{{Name: "A1", APILevel: 28}},
+		APKPath:     apkPath,
+		TestClass:   "lava.app.X",
+		EvidenceDir: dir,
+		// TestReportGlob deliberately omitted (zero value: "")
+	})
+	if err != nil {
+		t.Fatalf("RunMatrix returned error: %v", err)
+	}
+	if len(res.Tests) != 1 {
+		t.Fatalf("expected 1 row, got %d", len(res.Tests))
+	}
+	if res.Tests[0].FailureSummaries == nil {
+		t.Fatalf("expected non-nil FailureSummaries (empty slice), got nil")
+	}
+	if len(res.Tests[0].FailureSummaries) != 0 {
+		t.Fatalf("expected empty FailureSummaries when glob empty, got %d entries: %+v",
+			len(res.Tests[0].FailureSummaries), res.Tests[0].FailureSummaries)
+	}
+}

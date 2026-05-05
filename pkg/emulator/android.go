@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// NOTE: tests that override killByPortHook or teardownGracePeriod
+// MUST NOT call t.Parallel() — the swap-and-restore pattern
+// (`prev := X; X = ...; defer func() { X = prev }()`) is not safe
+// against concurrent test functions racing on the package-level var.
+// All current callers respect this; future test authors must too.
+
 // killByPortHook is the package-level seam tests use to substitute a
 // fake KillByPort implementation. Production Teardown uses the real
 // KillByPort; tests override this so they don't have to spawn real

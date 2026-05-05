@@ -37,6 +37,16 @@ func defaultIfZero(d, fallback time.Duration) time.Duration {
 	return d
 }
 
+// filepathGlob returns the glob matches for pattern, or nil when
+// pattern is empty. Empty pattern is the constitutional "no JUnit
+// parsing" case (per MatrixConfig.TestReportGlob KDoc).
+func filepathGlob(pattern string) ([]string, error) {
+	if pattern == "" {
+		return nil, nil
+	}
+	return filepath.Glob(pattern)
+}
+
 // runOne executes one (boot → install → test → teardown) cycle for a
 // single AVD. Returns the BootResult and TestResult ready to append to
 // MatrixResult.Boots / .Tests. Captures diag pre-test and parses JUnit
@@ -125,7 +135,7 @@ func (r *AndroidMatrixRunner) runOne(
 				avd.Name, werr,
 			)
 		}
-		matches, _ := filepath.Glob("app/build/outputs/androidTest-results/connected/debug/TEST-*.xml")
+		matches, _ := filepathGlob(config.TestReportGlob)
 		if len(matches) > 0 {
 			reportDir := filepath.Join(avdDir, "test-report")
 			_ = os.MkdirAll(reportDir, 0o755)
@@ -264,6 +274,11 @@ func (r *AndroidMatrixRunner) RunMatrix(
 	concurrent := config.Concurrent
 	if concurrent < 1 {
 		concurrent = 1
+	}
+
+	if config.TestReportGlob != "" && concurrent > 1 {
+		fmt.Fprintln(os.Stderr,
+			"[matrix] warning: TestReportGlob is set AND Concurrent>1 — JUnit FailureSummaries may be misattributed across rows because the test-report directory is shared across workers. Consider --concurrent=1 for any run whose FailureSummaries are load-bearing.")
 	}
 
 	result := MatrixResult{

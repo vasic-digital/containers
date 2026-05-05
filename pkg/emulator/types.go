@@ -165,6 +165,29 @@ type MatrixConfig struct {
 	// reload (caller's choice) and sets MatrixResult.Gating to false.
 	// Group B.
 	Dev bool
+
+	// TestReportGlob is the host-glob pattern (relative to CWD) the
+	// matrix runner uses to discover JUnit XML test-report files
+	// produced by RunInstrumentation. Empty means "skip JUnit parsing"
+	// — TestResult.FailureSummaries will be the empty slice.
+	//
+	// The convention's leakage point: Lava's connectedDebugAndroidTest
+	// writes to "app/build/outputs/androidTest-results/connected/debug/
+	// TEST-*.xml" — that path is Lava-domain, not Containers-domain,
+	// per the Decoupled Reusable Architecture rule. The Lava-side
+	// thin-glue script (scripts/run-emulator-tests.sh) is the right
+	// place for the Lava-specific value; the Containers package
+	// stays project-agnostic.
+	//
+	// SAFETY under Concurrent>1: when this glob is non-empty AND
+	// Concurrent>1, the matrix runner emits a one-time stderr warning
+	// because Gradle's per-build test-report directory is shared
+	// across concurrent workers and FailureSummaries can be silently
+	// misattributed across rows. Concurrent mode + JUnit-summary
+	// capture against a shared output dir is undefined behavior;
+	// developer-iteration runs with --concurrent should treat the
+	// FailureSummaries field as best-effort, not authoritative.
+	TestReportGlob string
 }
 
 // MatrixResult holds the per-AVD outcomes from a single RunMatrix call.
