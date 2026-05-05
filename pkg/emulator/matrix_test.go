@@ -392,3 +392,73 @@ func TestAndroidMatrixRunner_BootDuration_IncludesWaitForBootElapsed(t *testing.
 	assert.InDelta(t, 7.05, bootSec, 0.01,
 		"on-disk boot_seconds MUST reflect the user-visible cold-boot wall-clock; got %v", bootSec)
 }
+
+// TestAndroidMatrixRunner_GradleLogWriteFailure_DoesNotFailRun confirms
+// the gradle.log persistence is best-effort: if the write to
+// EvidenceDir/<avd>/gradle.log fails (read-only filesystem, permission
+// denied, disk full, etc.), the matrix run MUST still report
+// all_passed=true based on the actual test outcomes.
+//
+// Per the Group A-prime spec Section I — the gradle.log persistence is
+// observability, not a gate. The matrix runner's pass/fail signal comes
+// from the test outcomes themselves, not from whether we could also
+// persist the stdout for post-mortem.
+//
+// Falsifiability: the best-effort guard is structural non-falsifiable in
+// the current implementation — the inner write code only logs to stderr
+// on failure and never returns an error or fails the matrix. Removing the
+// OUTER `if mkErr := os.MkdirAll(avdDir, 0o755); mkErr == nil` guard
+// would mean the inner code runs even when MkdirAll failed; the inner
+// code's self-handling absorbs the cascade. A future regression that DID
+// propagate write errors up to RunMatrix's return value WOULD be caught
+// by this test's `require.NoError(t, err)`. A future regression that
+// changed best-effort semantics to fail-loud (i.e., returning an error
+// from RunMatrix on write failure) would also be caught by this test.
+// Both classes of regression are guarded. The structural limit is
+// documented — not a bluff — because the test asserts the positive
+// contract callers depend on.
+func TestAndroidMatrixRunner_GradleLogWriteFailure_DoesNotFailRun(t *testing.T) {
+	fake := &fakeEmulator{
+		runPassed:  []bool{true},
+		runOutputs: []string{"BUILD SUCCESSFUL"},
+	}
+	runner := NewAndroidMatrixRunner(fake)
+
+	// Pre-create EvidenceDir as a read-only directory. RunMatrix's
+	// top-level os.MkdirAll(config.EvidenceDir, ...) is a no-op on an
+	// existing directory (regardless of its permissions), so the matrix
+	// continues. The per-AVD os.MkdirAll inside the gradle.log block
+	// tries to create a subdirectory under the read-only parent and
+	// fails with EACCES — exercising the best-effort failure path
+	// without requiring filesystem-level chmod gymnastics on the actual
+	// gradle.log file.
+	//
+	// Note: the attestation write (writeAttestation) also fails under a
+	// read-only EvidenceDir, but that path is guarded by
+	// `if err == nil { result.AttestationFile = ... }` — the error is
+	// silently dropped and RunMatrix returns nil. So we assert neither
+	// the attestation file path nor its contents — only AllPassed().
+	tmpDir := t.TempDir()
+	evidenceDir := filepath.Join(tmpDir, "ro-evidence")
+	require.NoError(t, os.Mkdir(evidenceDir, 0o755))
+	require.NoError(t, os.Chmod(evidenceDir, 0o555))
+	t.Cleanup(func() { _ = os.Chmod(evidenceDir, 0o755) }) // restore so t.TempDir() cleanup can delete it
+
+	result, err := runner.RunMatrix(context.Background(), MatrixConfig{
+		AVDs:        []AVD{{Name: "API34", APILevel: 34, FormFactor: "phone"}},
+		APKPath:     writeFakeAPK(t),
+		TestClass:   "T",
+		EvidenceDir: evidenceDir,
+	})
+
+	// PRIMARY assertion: RunMatrix MUST NOT return an error just because
+	// gradle.log persistence failed. Write errors are best-effort.
+	require.NoError(t, err,
+		"matrix MUST NOT fail just because gradle.log persistence failed")
+
+	// PRIMARY assertion: the pass/fail signal comes from the actual test
+	// outcomes, not from whether the on-disk log could be written.
+	assert.True(t, result.AllPassed(),
+		"matrix MUST report all_passed=true based on actual test outcomes, "+
+			"NOT on gradle.log write success")
+}
