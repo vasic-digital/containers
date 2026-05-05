@@ -55,6 +55,44 @@ type BootResult struct {
 	Error        error
 }
 
+// DiagnosticInfo is the per-AVD forensic snapshot captured immediately
+// before instrumentation invocation. Reviewer-facing — answers the
+// question "is the AVD the matrix claims it ran the AVD that actually
+// ran?". A divergence between Diag.SDK and AVD.APILevel is the
+// canonical "AVD shadow" bluff that scripts/tag.sh's Gate 3 catches.
+//
+// Per clause 6.I clause 4: the AVD-row attestation MUST carry enough
+// detail to verify the AVD identity post-hoc. Diag is that detail.
+type DiagnosticInfo struct {
+	// Target is the system-images package id the AVD was created
+	// against, e.g. "system-images;android-34;google_apis;x86_64".
+	// Empty when avdmanager is unavailable.
+	Target string `json:"target,omitempty"`
+	// SDK is ro.build.version.sdk reported by the booted emulator
+	// (NOT the API level the AVD was created with — those usually
+	// match but a misconfigured AVD can have a divergent runtime sdk).
+	SDK int `json:"sdk,omitempty"`
+	// Device is ro.product.model (preferred) or ro.product.device.
+	Device string `json:"device,omitempty"`
+	// ADBDevicesState is the line from `adb devices -l` for this
+	// emulator's serial — the full record including "transport_id",
+	// "product:", "model:", "device:" annotations.
+	ADBDevicesState string `json:"adb_devices_state,omitempty"`
+}
+
+// FailureSummary is one parsed JUnit <failure> or <error> entry.
+// Empty slice on TestResult.Passed=true. A synthetic entry with
+// Type="<unparseable>" appears when the JUnit XML is missing or
+// malformed — that is evidence corruption, NOT a row failure (the
+// gating signal stays on TestResult.Passed per Sixth Law clause 3).
+type FailureSummary struct {
+	Class   string `json:"class,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Type    string `json:"type"` // "failure" | "error" | "<unparseable>"
+	Message string `json:"message,omitempty"`
+	Body    string `json:"body,omitempty"`
+}
+
 // TestResult captures the outcome of a single instrumentation-test
 // execution against a booted emulator. Failed indicates whether the
 // gradle task reported a non-zero exit AND/OR the JUnit XML reported
@@ -70,6 +108,15 @@ type TestResult struct {
 	// the per-AVD log directory under EvidenceDir.
 	Output string
 	Error  error
+	// Diag is the per-AVD forensic snapshot captured immediately
+	// before instrumentation invocation. Group B clause 6.I extension.
+	Diag DiagnosticInfo
+	// FailureSummaries is the parsed JUnit XML <failure>/<error>
+	// list for this AVD's run. Empty slice on Passed=true. Group B.
+	FailureSummaries []FailureSummary
+	// Concurrent is the matrix runner's --concurrent setting at the
+	// time this test ran. 1 = serial (gating-eligible). Group B.
+	Concurrent int
 }
 
 // MatrixConfig describes a single matrix-run invocation: which AVDs to
@@ -107,6 +154,17 @@ type MatrixConfig struct {
 	// ColdBoot enforces no-snapshot-reload (clause 6.I clause 6) when
 	// true. The gating-run convention is true.
 	ColdBoot bool
+
+	// Concurrent is the maximum number of emulators booted in parallel
+	// by RunMatrix. 1 = serial (gating-eligible; preserves all
+	// existing behaviour). >1 = worker pool; sets MatrixResult.Gating
+	// to false. Group B.
+	Concurrent int
+
+	// Dev marks the run as developer-iteration mode. Permits snapshot
+	// reload (caller's choice) and sets MatrixResult.Gating to false.
+	// Group B.
+	Dev bool
 }
 
 // MatrixResult holds the per-AVD outcomes from a single RunMatrix call.
@@ -121,6 +179,11 @@ type MatrixResult struct {
 	// EvidenceDir/real-device-verification.json). Empty if the run
 	// errored before the file could be written.
 	AttestationFile string
+	// Gating is true iff this matrix run is eligible to gate a
+	// release tag. False when --concurrent != 1 OR --dev was set.
+	// Group B clause 6.I extension; scripts/tag.sh refuses to
+	// operate on attestations whose run-level Gating is false.
+	Gating bool
 }
 
 // AllPassed returns true iff every BootResult succeeded AND every

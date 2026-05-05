@@ -90,6 +90,10 @@ func main() {
 		"Per-AVD cold-boot timeout")
 	flagTestTimeout := flag.Duration("test-timeout", 10*time.Minute,
 		"Per-test execution timeout")
+	flagConcurrent := flag.Int("concurrent", 1,
+		"Max concurrent emulators (default 1; values >1 set MatrixResult.Gating=false)")
+	flagDev := flag.Bool("dev", false,
+		"Developer-iteration mode; permits snapshot reload, sets MatrixResult.Gating=false")
 	flag.Parse()
 
 	if *flagAPK == "" {
@@ -126,6 +130,8 @@ func main() {
 		BootTimeout:    *flagBootTimeout,
 		TestTimeout:    *flagTestTimeout,
 		ColdBoot:       *flagColdBoot,
+		Concurrent:     *flagConcurrent,
+		Dev:            *flagDev,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR: matrix runner failed: %v\n", err)
@@ -142,6 +148,11 @@ func main() {
 		if t.Error != nil {
 			fmt.Printf("       error: %v\n", t.Error)
 		}
+	}
+	if result.Gating {
+		fmt.Println("Gating: TRUE  (serial run, --dev=false — clause-6.I-clause-7-eligible)")
+	} else {
+		fmt.Println("Gating: FALSE (--concurrent>1 OR --dev — tag.sh will refuse this attestation)")
 	}
 	if !result.AllPassed() {
 		fmt.Fprintln(os.Stderr,

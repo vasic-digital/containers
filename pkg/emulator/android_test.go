@@ -426,6 +426,114 @@ func TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists(t *te
 // Note: this test passes a custom-shortened context to keep test time
 // reasonable. The production timeout is 60s; we simulate it as
 // "discovery exhausted" via a deadline-bounded context.
+// ---------------------------------------------------------------------
+// Teardown fast-path tests — Group B
+//
+// After the existing 30s `adb emu kill` grace expires, Teardown invokes
+// emulator.KillByPort(consolePort) to attempt a port-strict force-kill.
+// On match, Teardown returns nil (the emulator was stuck but is now
+// gone). On mismatch (Matched=0), Teardown returns the original
+// "emulator did not exit" error — concurrent emulators on other ports
+// are untouched.
+//
+// SAFETY: these tests verify the skip-on-mismatch invariant. The
+// production code MUST NOT broaden the kill criterion to any process
+// that "looks like" a stuck emulator.
+// ---------------------------------------------------------------------
+
+// fakeAdbExecutorAlwaysAlive is a CommandExecutor whose Execute() returns
+// `adb devices` output that always includes the target localhost:<port>
+// in "device" state — simulating a stuck emulator that ignores `adb emu
+// kill`.
+type fakeAdbExecutorAlwaysAlive struct {
+	port int
+}
+
+func (f fakeAdbExecutorAlwaysAlive) Execute(_ context.Context, _ string, args ...string) ([]byte, error) {
+	// adb -s localhost:<port> emu kill — pretend it succeeds
+	if len(args) >= 4 && args[2] == "emu" && args[3] == "kill" {
+		return []byte("OK: killing emulator, bye bye\n"), nil
+	}
+	// adb devices — always report localhost:<port> as alive
+	if len(args) == 1 && args[0] == "devices" {
+		return []byte(fmt.Sprintf("List of devices attached\nlocalhost:%d\tdevice\n", f.port)), nil
+	}
+	return nil, nil
+}
+
+func (f fakeAdbExecutorAlwaysAlive) Start(_ context.Context, _ string, _ ...string) error {
+	return nil
+}
+
+func TestTeardown_FastPath_SkipsOnMismatch(t *testing.T) {
+	// Save and replace package-level KillByPort hook so the test is
+	// hermetic. The production implementation walks /proc.
+	prev := killByPortHook
+	killByPortHook = func(_ context.Context, _ int) (KillReport, error) {
+		// Mismatch: no /proc entry has -port <port> adjacent.
+		return KillReport{Matched: 0}, nil
+	}
+	defer func() { killByPortHook = prev }()
+
+	// Use a short test-only Teardown timeout so the 30s grace is
+	// compressed for the test.
+	prevGrace := teardownGracePeriod
+	teardownGracePeriod = 200 * time.Millisecond
+	defer func() { teardownGracePeriod = prevGrace }()
+
+	a := NewAndroidEmulatorWithExecutor("/opt/android-sdk", fakeAdbExecutorAlwaysAlive{port: 5554})
+	err := a.Teardown(context.Background(), 5554)
+	if err == nil {
+		t.Fatalf("expected Teardown to return an error when KillByPort.Matched==0 and emulator persists, got nil")
+	}
+	if !strings.Contains(err.Error(), "did not exit") {
+		t.Fatalf("expected error to mention 'did not exit', got: %v", err)
+	}
+}
+
+// fakeAdbExecutorStuckThenGone reports the target as alive on the first
+// `adb devices` call and gone on subsequent calls — simulating a stuck
+// emulator that the KillByPort fast-path successfully clears.
+type fakeAdbExecutorStuckThenGone struct {
+	port  int
+	calls int
+}
+
+func (f *fakeAdbExecutorStuckThenGone) Execute(_ context.Context, _ string, args ...string) ([]byte, error) {
+	if len(args) >= 4 && args[2] == "emu" && args[3] == "kill" {
+		return []byte("OK: killing emulator, bye bye\n"), nil
+	}
+	if len(args) == 1 && args[0] == "devices" {
+		f.calls++
+		if f.calls <= 2 {
+			return []byte(fmt.Sprintf("List of devices attached\nlocalhost:%d\tdevice\n", f.port)), nil
+		}
+		return []byte("List of devices attached\n"), nil
+	}
+	return nil, nil
+}
+
+func (f *fakeAdbExecutorStuckThenGone) Start(_ context.Context, _ string, _ ...string) error {
+	return nil
+}
+
+func TestTeardown_FastPath_SucceedsAfterKillByPort(t *testing.T) {
+	prev := killByPortHook
+	killByPortHook = func(_ context.Context, _ int) (KillReport, error) {
+		return KillReport{Matched: 1, Sigtermed: []int{12345}}, nil
+	}
+	defer func() { killByPortHook = prev }()
+	prevGrace := teardownGracePeriod
+	teardownGracePeriod = 200 * time.Millisecond
+	defer func() { teardownGracePeriod = prevGrace }()
+
+	a := NewAndroidEmulatorWithExecutor("/opt/android-sdk", &fakeAdbExecutorStuckThenGone{port: 5554})
+	err := a.Teardown(context.Background(), 5554)
+	if err != nil {
+		t.Fatalf("expected Teardown to succeed after KillByPort cleared the stuck emulator, got: %v", err)
+	}
+}
+
 func TestAndroidEmulator_Boot_FailsWhenNoNewSerialAppears(t *testing.T) {
 	exec := &fakeExecutor{
 		scripts: map[string]fakeScript{},

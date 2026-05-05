@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -461,4 +462,197 @@ func TestAndroidMatrixRunner_GradleLogWriteFailure_DoesNotFailRun(t *testing.T) 
 	assert.True(t, result.AllPassed(),
 		"matrix MUST report all_passed=true based on actual test outcomes, "+
 			"NOT on gradle.log write success")
+}
+
+// ---------------------------------------------------------------------
+// JUnit XML parser tests — Group B clause 6.I extension
+//
+// parseJUnitFailures MUST tolerate Gradle's per-class XML output (one
+// <testsuite> per file, sometimes wrapped in <testsuites>), recover
+// every <failure> AND <error> entry, and degrade gracefully on
+// missing/malformed input by emitting a single synthetic <unparseable>
+// entry that does NOT mark the row as failed (the gating signal stays
+// on TestResult.Passed per Sixth Law clause 3).
+// ---------------------------------------------------------------------
+
+func TestParseJUnitFailures_AllPass_EmptySlice(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "TEST-pass.xml")
+	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="lava.app.SomeTest" tests="2" failures="0" errors="0">
+  <testcase classname="lava.app.SomeTest" name="testA"/>
+  <testcase classname="lava.app.SomeTest" name="testB"/>
+</testsuite>`
+	if err := os.WriteFile(path, []byte(xmlBody), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	got := parseJUnitFailures(path)
+	if len(got) != 0 {
+		t.Fatalf("expected empty slice on all-pass, got %d entries: %+v", len(got), got)
+	}
+}
+
+func TestParseJUnitFailures_FailureAndError_BothCaptured(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "TEST-mixed.xml")
+	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="lava.app.SomeTest" tests="2" failures="1" errors="1">
+  <testcase classname="lava.app.SomeTest" name="testFail">
+    <failure message="expected 1 got 2" type="java.lang.AssertionError">stack trace lines here</failure>
+  </testcase>
+  <testcase classname="lava.app.SomeTest" name="testError">
+    <error message="NPE" type="java.lang.NullPointerException">at lava.app.Foo.bar(Foo.kt:42)</error>
+  </testcase>
+</testsuite>`
+	if err := os.WriteFile(path, []byte(xmlBody), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	got := parseJUnitFailures(path)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 entries (1 failure + 1 error), got %d: %+v", len(got), got)
+	}
+	var seenFailure, seenError bool
+	for _, fs := range got {
+		if fs.Type == "failure" && fs.Name == "testFail" && fs.Message == "expected 1 got 2" {
+			seenFailure = true
+		}
+		if fs.Type == "error" && fs.Name == "testError" && fs.Message == "NPE" {
+			seenError = true
+		}
+	}
+	if !seenFailure || !seenError {
+		t.Fatalf("missing failure/error entries: seenFailure=%v seenError=%v all=%+v",
+			seenFailure, seenError, got)
+	}
+}
+
+func TestParseJUnitFailures_MultiTestsuites_Wrapper(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "TEST-wrapped.xml")
+	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="lava.app.A" tests="1" failures="1">
+    <testcase classname="lava.app.A" name="t1">
+      <failure message="A failed">trace A</failure>
+    </testcase>
+  </testsuite>
+  <testsuite name="lava.app.B" tests="1" failures="1">
+    <testcase classname="lava.app.B" name="t2">
+      <failure message="B failed">trace B</failure>
+    </testcase>
+  </testsuite>
+</testsuites>`
+	if err := os.WriteFile(path, []byte(xmlBody), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	got := parseJUnitFailures(path)
+	if len(got) != 2 {
+		t.Fatalf("expected 2 entries from 2 testsuites, got %d: %+v", len(got), got)
+	}
+}
+
+func TestParseJUnitFailures_MalformedXML_SyntheticEntry(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "TEST-broken.xml")
+	if err := os.WriteFile(path, []byte("<testsuite><tes"), 0o644); err != nil {
+		t.Fatalf("write fixture: %v", err)
+	}
+	got := parseJUnitFailures(path)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 synthetic entry on malformed XML, got %d: %+v", len(got), got)
+	}
+	if got[0].Type != "<unparseable>" {
+		t.Fatalf("expected Type=<unparseable>, got %q", got[0].Type)
+	}
+}
+
+func TestParseJUnitFailures_MissingFile_SyntheticEntry(t *testing.T) {
+	got := parseJUnitFailures("/no/such/file.xml")
+	if len(got) != 1 {
+		t.Fatalf("expected 1 synthetic entry on missing file, got %d", len(got))
+	}
+	if got[0].Type != "<unparseable>" {
+		t.Fatalf("expected Type=<unparseable>, got %q", got[0].Type)
+	}
+}
+
+// ---------------------------------------------------------------------
+// Gating-flag tests — Group B
+//
+// MatrixResult.Gating is true ONLY when --concurrent == 1 AND --dev is
+// false. Either flag flips it false; tag.sh refuses non-gating
+// attestations. Defaults preserve existing behaviour (gating=true).
+// ---------------------------------------------------------------------
+
+// stubEmulator is a minimal Emulator that always succeeds and returns
+// canned ports. Used to drive RunMatrix without hitting the real adb.
+// Concurrency-safe via a mutex around the monotonic port counter so
+// the worker-pool path doesn't trip the race detector.
+type stubEmulator struct {
+	mu   sync.Mutex
+	port int // monotonically incremented per Boot
+}
+
+func (s *stubEmulator) Boot(_ context.Context, avd AVD, _ bool) (BootResult, error) {
+	s.mu.Lock()
+	s.port += 2
+	p := s.port
+	s.mu.Unlock()
+	return BootResult{
+		AVD:         avd,
+		Started:     true,
+		ConsolePort: p,
+		ADBPort:     p + 1,
+	}, nil
+}
+func (s *stubEmulator) WaitForBoot(_ context.Context, _ int, _ time.Duration) (time.Duration, error) {
+	return 0, nil
+}
+func (s *stubEmulator) Install(_ context.Context, _ int, _ string) error { return nil }
+func (s *stubEmulator) RunInstrumentation(_ context.Context, _ int, _ string, _ time.Duration) (string, bool, error) {
+	return "BUILD SUCCESSFUL", true, nil
+}
+func (s *stubEmulator) Teardown(_ context.Context, _ int) error { return nil }
+
+func runMatrixWithStub(t *testing.T, concurrent int, dev bool) MatrixResult {
+	t.Helper()
+	dir := t.TempDir()
+	apkPath := filepath.Join(dir, "app-debug.apk")
+	if err := os.WriteFile(apkPath, []byte("fake apk bytes"), 0o644); err != nil {
+		t.Fatalf("write fixture apk: %v", err)
+	}
+	r := NewAndroidMatrixRunner(&stubEmulator{})
+	res, err := r.RunMatrix(context.Background(), MatrixConfig{
+		AVDs:        []AVD{{Name: "A1", APILevel: 28}, {Name: "A2", APILevel: 30}},
+		APKPath:     apkPath,
+		TestClass:   "lava.app.X",
+		EvidenceDir: dir,
+		Concurrent:  concurrent,
+		Dev:         dev,
+	})
+	if err != nil {
+		t.Fatalf("RunMatrix returned error: %v", err)
+	}
+	return res
+}
+
+func TestRunMatrix_Gating_TrueOnDefaults(t *testing.T) {
+	res := runMatrixWithStub(t, 0, false) // 0 → coerced to 1 (serial)
+	if !res.Gating {
+		t.Fatalf("expected Gating=true on defaults (serial, non-dev), got false")
+	}
+}
+
+func TestRunMatrix_Gating_FalseOnConcurrent(t *testing.T) {
+	res := runMatrixWithStub(t, 2, false)
+	if res.Gating {
+		t.Fatalf("expected Gating=false when Concurrent=2, got true")
+	}
+}
+
+func TestRunMatrix_Gating_FalseOnDev(t *testing.T) {
+	res := runMatrixWithStub(t, 1, true)
+	if res.Gating {
+		t.Fatalf("expected Gating=false when Dev=true, got true")
+	}
 }

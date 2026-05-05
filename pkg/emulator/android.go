@@ -9,6 +9,18 @@ import (
 	"time"
 )
 
+// killByPortHook is the package-level seam tests use to substitute a
+// fake KillByPort implementation. Production Teardown uses the real
+// KillByPort; tests override this so they don't have to spawn real
+// QEMU processes to test the fast-path branch.
+var killByPortHook = KillByPort
+
+// teardownGracePeriod is the wall-clock time Teardown waits after
+// `adb emu kill` before invoking the KillByPort fast-path. Set short
+// in tests so the suite stays fast; defaults to 30 seconds in
+// production (matches the 2026-05-05 grace already in the file).
+var teardownGracePeriod = 30 * time.Second
+
 // CommandExecutor is the seam through which the AndroidEmulator runs
 // host commands. The production impl shells out via os/exec; tests
 // substitute a fake that records invocations and returns canned output.
@@ -400,11 +412,12 @@ func (a *AndroidEmulator) Teardown(ctx context.Context, port int) error {
 		return fmt.Errorf("adb emu kill failed: %w; output=%s", err, out)
 	}
 
-	// Poll up to 30 seconds for the emulator to actually exit.
-	// "Exit" means: the localhost:<port> entry is no longer in
-	// `adb devices` output as "device" (it may briefly show "offline"
-	// while disconnecting; that's fine — we treat that as gone).
-	deadline := time.Now().Add(30 * time.Second)
+	// Poll for the emulator to actually exit. Bound by teardownGracePeriod
+	// (30s in production; tests override to keep the suite fast). "Exit"
+	// means: the localhost:<port> entry is no longer in `adb devices`
+	// output as "device" (it may briefly show "offline" while
+	// disconnecting; that's fine — we treat that as gone).
+	deadline := time.Now().Add(teardownGracePeriod)
 	for time.Now().Before(deadline) {
 		devicesOut, derr := a.executor.Execute(ctx, a.adbBinary(), "devices")
 		if derr != nil {
@@ -434,5 +447,60 @@ func (a *AndroidEmulator) Teardown(ctx context.Context, port int) error {
 		case <-time.After(1 * time.Second):
 		}
 	}
-	return fmt.Errorf("emulator on %s did not exit within 30s after `adb emu kill`", target)
+
+	// Group B fast-path: the adb-emu-kill grace expired but the
+	// emulator is still in /proc. Try a port-strict force-kill via
+	// emulator.KillByPort. Matched==0 means no /proc entry passed
+	// the strict adjacent-token check — concurrent emulators on
+	// other ports are untouched, and we surface the original
+	// "did not exit" error so the matrix runner records an honest
+	// row failure.
+	report, kerr := killByPortHook(ctx, port)
+	if kerr != nil {
+		// Forensic-only: log the KillByPort error but fall through
+		// to the "did not exit" return. KillByPort errors are
+		// best-effort signals, not gating ones.
+		fmt.Fprintf(os.Stderr,
+			"[teardown] KillByPort fast-path failed for port %d: %v\n",
+			port, kerr,
+		)
+	}
+	if report.Matched == 0 {
+		return fmt.Errorf(
+			"emulator on %s did not exit within %s after `adb emu kill`; KillByPort matched 0 processes (skip-on-mismatch safety)",
+			target, teardownGracePeriod,
+		)
+	}
+	// Re-poll briefly for /proc clearing.
+	postDeadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(postDeadline) {
+		devicesOut, derr := a.executor.Execute(ctx, a.adbBinary(), "devices")
+		if derr != nil {
+			return nil
+		}
+		stillAlive := false
+		for _, line := range strings.Split(string(devicesOut), "\n") {
+			if !strings.HasPrefix(line, target) {
+				continue
+			}
+			fields := strings.Fields(line)
+			if len(fields) >= 2 && fields[1] == "device" {
+				stillAlive = true
+				break
+			}
+		}
+		if !stillAlive {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+	return fmt.Errorf(
+		"emulator on %s did not exit within %s + KillByPort grace; %d process(es) still alive (sigtermed=%v sigkilled=%v surviving=%v)",
+		target, teardownGracePeriod,
+		report.Matched, report.Sigtermed, report.Sigkilled, report.Surviving,
+	)
 }
