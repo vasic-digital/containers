@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -66,6 +67,22 @@ func (r *QEMUMatrixRunner) RunMatrix(ctx context.Context, config VMMatrixConfig)
 	}
 	if config.ImageManifest == "" {
 		return VMMatrixResult{}, fmt.Errorf("VMMatrixConfig.ImageManifest is empty")
+	}
+	// I1 fix: reject CaptureSpec.HostSubpath that escapes EvidenceDir.
+	// runOne does filepath.Join(EvidenceDir, target.ID, cap.HostSubpath);
+	// without this guard, a malicious or fat-fingered "../../etc/shadow"
+	// or "/absolute/path" would land outside the evidence sandbox. Per
+	// §6.J ("tests must guarantee the product works"), the matrix runner
+	// MUST refuse to operate on path-traversal inputs rather than
+	// silently writing files where the operator did not intend.
+	for i, c := range config.Captures {
+		cleaned := filepath.Clean(c.HostSubpath)
+		if cleaned == ".." || strings.HasPrefix(cleaned, "../") || strings.HasPrefix(cleaned, "/") {
+			return VMMatrixResult{}, fmt.Errorf(
+				"VMMatrixConfig.Captures[%d].HostSubpath %q escapes EvidenceDir (path traversal forbidden)",
+				i, c.HostSubpath,
+			)
+		}
 	}
 	if err := os.MkdirAll(config.EvidenceDir, 0o755); err != nil {
 		return VMMatrixResult{}, fmt.Errorf("create evidence dir: %w", err)
@@ -176,7 +193,7 @@ func (r *QEMUMatrixRunner) runOne(ctx context.Context, target VMTarget, qcowPath
 		row.BootError = err.Error()
 		row.Passed = false
 		row.Duration = time.Since(row.Started)
-		_ = r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort)
+		stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
 		return row
 	}
 	row.Diag = r.captureDiagnostic(ctx, boot.SSHPort, target)
@@ -187,7 +204,7 @@ func (r *QEMUMatrixRunner) runOne(ctx context.Context, target VMTarget, qcowPath
 			})
 			row.Passed = false
 			row.Duration = time.Since(row.Started)
-			_ = r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort)
+			stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
 			return row
 		}
 	}
@@ -214,9 +231,28 @@ func (r *QEMUMatrixRunner) runOne(ctx context.Context, target VMTarget, qcowPath
 			row.CapturedFiles = append(row.CapturedFiles, dst)
 		}
 	}
-	_ = r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort)
+	stampTeardownError(&row, r.vm.Teardown(ctx, boot.MonitorPort, boot.SSHPort))
 	row.Duration = time.Since(row.Started)
 	return row
+}
+
+// stampTeardownError records a Teardown failure into the row's
+// FailureSummaries (per §6.I clause 4) and flips Passed to false.
+// Silent-swallowing Teardown errors (the prior `_ = r.vm.Teardown(...)`
+// pattern) was a §6.J bluff vector: the matrix runner would record a
+// passing row even when the VM was still running and consuming a
+// monitor port the next iteration would collide with. After this fix,
+// every Teardown failure lands in the attestation file as a
+// "teardown-failed" FailureSummary the operator can act on.
+func stampTeardownError(row *VMTestResult, err error) {
+	if err == nil {
+		return
+	}
+	row.FailureSummaries = append(row.FailureSummaries, FailureSummary{
+		Type:    "teardown-failed",
+		Message: err.Error(),
+	})
+	row.Passed = false
 }
 
 // captureDiagnostic gathers the per-VM forensic snapshot for the

@@ -30,8 +30,17 @@ func (osProcessRunner) StartDetached(name string, args ...string) error {
 }
 
 // sshClient abstracts SSH session + SCP operations.
+//
+// WaitForListener vs Authenticate (I4 split): WaitForListener is the
+// listener-up TCP probe used by WaitForReady; Authenticate is the full
+// SSH handshake + userauth used before Upload/Run/Download. Collapsing
+// these into one call (the v0.1 pre-fix `Dial`) made WaitForReady
+// require empty-password root auth to succeed, which production guests
+// reject — leaving the matrix runner timing out against fully-booted
+// VMs. See clients.go for production semantics.
 type sshClient interface {
-	Dial(ctx context.Context, port int, timeout time.Duration) error
+	WaitForListener(ctx context.Context, port int, timeout time.Duration) error
+	Authenticate(ctx context.Context, port int, timeout time.Duration) error
 	Upload(ctx context.Context, hostPath, vmPath string) error
 	Run(ctx context.Context, script string, env map[string]string, timeout time.Duration) (stdout, stderr string, exitCode int, err error)
 	Download(ctx context.Context, vmPath, hostPath string) error
@@ -142,11 +151,15 @@ func (v *QEMUVM) Boot(ctx context.Context, config VMConfig) (BootResult, error) 
 	}, nil
 }
 
-// WaitForReady polls SSH dial until the listener accepts. Bounded by timeout.
+// WaitForReady polls a plain TCP probe of the SSH listener until it
+// accepts. Bounded by timeout. Per I4 fix: this MUST be a
+// listener-up-only check, NOT a full SSH handshake + userauth — the
+// full path requires empty-password root which production guests
+// reject, so a handshake-based readiness probe would always time out.
 func (v *QEMUVM) WaitForReady(ctx context.Context, sshPort int, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if err := v.ssh.Dial(ctx, sshPort, 5*time.Second); err == nil {
+		if err := v.ssh.WaitForListener(ctx, sshPort, 5*time.Second); err == nil {
 			return nil
 		}
 		select {

@@ -6,8 +6,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"digital.vasic.containers/pkg/emulator"
 )
 
 // fakeProcessRunner is the seam through which QEMUVM launches qemu-system-*.
@@ -24,7 +22,8 @@ func (f *fakeProcessRunner) StartDetached(name string, args ...string) error {
 
 // fakeSSHClient is the seam for SSH/SCP operations.
 type fakeSSHClient struct {
-	dialError      error
+	listenerError  error // returned by WaitForListener (I4 — listener-up probe)
+	authError      error // returned by Authenticate (I4 — handshake + userauth)
 	uploaded       []UploadSpec
 	uploadError    error
 	runRequest     string
@@ -37,8 +36,11 @@ type fakeSSHClient struct {
 	closedSessions int
 }
 
-func (f *fakeSSHClient) Dial(_ context.Context, _ int, _ time.Duration) error {
-	return f.dialError
+func (f *fakeSSHClient) WaitForListener(_ context.Context, _ int, _ time.Duration) error {
+	return f.listenerError
+}
+func (f *fakeSSHClient) Authenticate(_ context.Context, _ int, _ time.Duration) error {
+	return f.authError
 }
 func (f *fakeSSHClient) Upload(_ context.Context, hostPath, vmPath string) error {
 	f.uploaded = append(f.uploaded, UploadSpec{HostPath: hostPath, VMPath: vmPath})
@@ -135,8 +137,13 @@ func TestQEMUVM_Boot_DistinctPortsAcrossInvocations(t *testing.T) {
 	}
 }
 
-func TestQEMUVM_WaitForReady_DialsSSHUntilTimeout(t *testing.T) {
-	ssh := &fakeSSHClient{dialError: errors.New("connection refused")}
+func TestQEMUVM_WaitForReady_PollsListenerUntilTimeout(t *testing.T) {
+	// I4 fix: WaitForReady now polls WaitForListener (TCP probe only)
+	// instead of Dial (TCP + SSH handshake + empty-password userauth).
+	// Production guests reject empty-password root, so the handshake-
+	// based probe would have always timed out — this test now reflects
+	// the intended listener-up semantics.
+	ssh := &fakeSSHClient{listenerError: errors.New("connection refused")}
 	v := newQEMUVMWithDeps(&fakeProcessRunner{}, ssh, nil, true)
 	err := v.WaitForReady(context.Background(), 10022, 200*time.Millisecond)
 	if err == nil {
@@ -175,8 +182,8 @@ func TestQEMUVM_Upload_Run_Download(t *testing.T) {
 
 func TestTeardown_FastPath_SkipsOnMismatch(t *testing.T) {
 	prev := killByPortHook
-	killByPortHook = func(_ context.Context, _ int) (emulator.KillReport, error) {
-		return emulator.KillReport{Matched: 0}, nil
+	killByPortHook = func(_ context.Context, _ int) (KillReport, error) {
+		return KillReport{Matched: 0}, nil
 	}
 	defer func() { killByPortHook = prev }()
 	prevGrace := teardownGracePeriod
@@ -198,8 +205,8 @@ func TestTeardown_FastPath_SkipsOnMismatch(t *testing.T) {
 
 func TestTeardown_FastPath_SucceedsAfterKillByPort(t *testing.T) {
 	prev := killByPortHook
-	killByPortHook = func(_ context.Context, _ int) (emulator.KillReport, error) {
-		return emulator.KillReport{Matched: 1, Sigtermed: []int{12345}}, nil
+	killByPortHook = func(_ context.Context, _ int) (KillReport, error) {
+		return KillReport{Matched: 1, Sigtermed: []int{12345}}, nil
 	}
 	defer func() { killByPortHook = prev }()
 	prevGrace := teardownGracePeriod

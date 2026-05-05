@@ -154,3 +154,29 @@ type VM interface {
 type VMMatrixRunner interface {
 	RunMatrix(ctx context.Context, config VMMatrixConfig) (VMMatrixResult, error)
 }
+
+// KillReport summarises the outcome of a KillByQEMUMonitorPort invocation.
+//
+// Same shape as pkg/emulator.KillReport — declared here in pkg/vm so the
+// matrix runner's Teardown fast-path doesn't pull in pkg/emulator just
+// for a 4-field struct. The Matched count is the gate the caller (Teardown
+// fast-path) uses to decide whether the kill succeeded enough to short-
+// circuit the "vm did not exit" error path. Matched=0 is a no-op safe
+// state: it means no /proc entry passed the strict adjacent-token check,
+// and the caller MUST treat that as "fast-path skipped" — typically by
+// returning the original timeout error so the matrix runner records an
+// honest row failure.
+type KillReport struct {
+	// Matched is the number of /proc entries whose argv contained the
+	// adjacent pair `-monitor`, `tcp:127.0.0.1:<port>,server,nowait`.
+	Matched int
+	// Sigtermed lists the PIDs that received SIGTERM (every matched
+	// PID receives one).
+	Sigtermed []int
+	// Sigkilled lists the PIDs that survived the 5-second SIGTERM
+	// grace and therefore received SIGKILL.
+	Sigkilled []int
+	// Surviving lists PIDs still alive after SIGKILL (rare; caused
+	// by permission errors, kernel-level holds, or PID-reuse races).
+	Surviving []int
+}
