@@ -138,6 +138,35 @@ func (r *AndroidMatrixRunner) RunMatrix(
 			Output:    out,
 			Error:     runErr,
 		})
+		// Persist gradle stdout per AVD for failure diagnosis.
+		// Best-effort — write errors do NOT fail the matrix run.
+		// Per the 2026-05-05 operator-feedback list: "matrix runner
+		// doesn't persist gradle stdout — when a test fails the
+		// operator has to re-run gradle directly to see the JUnit
+		// assertion".
+		avdDir := filepath.Join(config.EvidenceDir, avd.Name)
+		if mkErr := os.MkdirAll(avdDir, 0o755); mkErr == nil {
+			logPath := filepath.Join(avdDir, "gradle.log")
+			if werr := os.WriteFile(logPath, []byte(out), 0o644); werr != nil {
+				fmt.Fprintf(os.Stderr,
+					"[matrix] warning: failed to persist gradle.log for %s: %v\n",
+					avd.Name, werr,
+				)
+			}
+			matches, _ := filepath.Glob("app/build/outputs/androidTest-results/connected/debug/TEST-*.xml")
+			if len(matches) > 0 {
+				reportDir := filepath.Join(avdDir, "test-report")
+				_ = os.MkdirAll(reportDir, 0o755)
+				for _, src := range matches {
+					data, rerr := os.ReadFile(src)
+					if rerr != nil {
+						continue
+					}
+					dst := filepath.Join(reportDir, filepath.Base(src))
+					_ = os.WriteFile(dst, data, 0o644)
+				}
+			}
+		}
 		_ = r.emulator.Teardown(ctx, boot.ADBPort)
 	}
 	result.FinishedAt = time.Now()
@@ -151,15 +180,16 @@ func (r *AndroidMatrixRunner) RunMatrix(
 
 func writeAttestation(path string, r MatrixResult) error {
 	type rowJSON struct {
-		AVD          string  `json:"avd"`
-		APILevel     int     `json:"api_level,omitempty"`
-		FormFactor   string  `json:"form_factor,omitempty"`
-		BootSeconds  float64 `json:"boot_seconds"`
-		BootError    string  `json:"boot_error,omitempty"`
-		TestClass    string  `json:"test_class"`
-		TestPassed   bool    `json:"test_passed"`
-		TestSeconds  float64 `json:"test_seconds"`
-		TestError    string  `json:"test_error,omitempty"`
+		AVD           string  `json:"avd"`
+		APILevel      int     `json:"api_level,omitempty"`
+		FormFactor    string  `json:"form_factor,omitempty"`
+		BootSeconds   float64 `json:"boot_seconds"`
+		BootError     string  `json:"boot_error,omitempty"`
+		TestClass     string  `json:"test_class"`
+		TestPassed    bool    `json:"test_passed"`
+		TestSeconds   float64 `json:"test_seconds"`
+		TestError     string  `json:"test_error,omitempty"`
+		GradleLogPath string  `json:"gradle_log_path,omitempty"`
 	}
 	rows := make([]rowJSON, 0, len(r.Tests))
 	for i, t := range r.Tests {
@@ -176,15 +206,16 @@ func writeAttestation(path string, r MatrixResult) error {
 			testErr = t.Error.Error()
 		}
 		rows = append(rows, rowJSON{
-			AVD:         t.AVD.Name,
-			APILevel:    t.AVD.APILevel,
-			FormFactor:  t.AVD.FormFactor,
-			BootSeconds: bootSec,
-			BootError:   bootErr,
-			TestClass:   t.TestClass,
-			TestPassed:  t.Passed,
-			TestSeconds: t.Duration.Seconds(),
-			TestError:   testErr,
+			AVD:           t.AVD.Name,
+			APILevel:      t.AVD.APILevel,
+			FormFactor:    t.AVD.FormFactor,
+			BootSeconds:   bootSec,
+			BootError:     bootErr,
+			TestClass:     t.TestClass,
+			TestPassed:    t.Passed,
+			TestSeconds:   t.Duration.Seconds(),
+			TestError:     testErr,
+			GradleLogPath: filepath.Join(t.AVD.Name, "gradle.log"),
 		})
 	}
 	doc := map[string]any{

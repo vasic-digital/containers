@@ -213,6 +213,18 @@ func TestAndroidMatrixRunner_AllAVDsPass_ReportsAllPassed(t *testing.T) {
 	require.True(t, ok)
 	assert.Len(t, rows, 3)
 	assert.Equal(t, true, doc["all_passed"])
+
+	// Group A-prime: verify per-AVD gradle.log is written by RunMatrix.
+	// Falsifiability: skip the os.WriteFile call in matrix.go's RunMatrix
+	// → these assertions fail because the files don't exist.
+	for _, avd := range avds {
+		logPath := filepath.Join(evidenceDir, avd.Name, "gradle.log")
+		require.FileExists(t, logPath, "gradle.log must be written for AVD %s", avd.Name)
+		content, err := os.ReadFile(logPath)
+		require.NoError(t, err)
+		assert.Equal(t, "BUILD SUCCESSFUL", string(content),
+			"gradle.log for %s must contain the captured runOutputs[i]", avd.Name)
+	}
 }
 
 // TestAndroidMatrixRunner_BootFailure_RecordsRowAndContinues pins the
