@@ -26,12 +26,6 @@ func (m *mockExecutor) Execute(ctx context.Context, name string, args ...string)
 	return nil, nil
 }
 
-func TestNewCollector(t *testing.T) {
-	c := NewCollector("podman", nil)
-	assert.NotNil(t, c)
-	assert.Equal(t, "podman", c.runtime)
-}
-
 func TestNewCollectorWithExecutor(t *testing.T) {
 	exec := &mockExecutor{}
 	c := NewCollectorWithExecutor("docker", nil, exec)

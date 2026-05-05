@@ -35,3 +35,8 @@ vendor/
 /cmd/ctop/ctop
 scripts/resource-policy/__pycache__/
 *.pyc
+
+# go-mutesting artifacts
+report.json
+go-mutesting-report.html
+*.go.tmp

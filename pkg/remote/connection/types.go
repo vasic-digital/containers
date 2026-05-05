@@ -26,12 +26,12 @@ const (
 type AuthType string
 
 const (
-	AuthPassword   AuthType = "password"
-	AuthKey        AuthType = "key"
-	AuthAgent      AuthType = "agent"
+	AuthPassword    AuthType = "password"
+	AuthKey         AuthType = "key"
+	AuthAgent       AuthType = "agent"
 	AuthCertificate AuthType = "certificate"
-	AuthIAM        AuthType = "iam"
-	AuthToken      AuthType = "token"
+	AuthIAM         AuthType = "iam"
+	AuthToken       AuthType = "token"
 )
 
 // ConnectionStatus represents the state of a connection.
@@ -54,19 +54,19 @@ type ConnectionConfig struct {
 	Password string                 `json:"password,omitempty"`
 	KeyPath  string                 `json:"key_path,omitempty"`
 	Options  map[string]interface{} `json:"options,omitempty"`
-	
-	SSHAgent      *SSHAgentConfig      `json:"ssh_agent,omitempty"`
-	SSHCert       *SSHCertificateConfig `json:"ssh_certificate,omitempty"`
-	SSHBastion    *SSHBastionConfig    `json:"bastion,omitempty"`
-	WinRM         *WinRMConfig         `json:"winrm,omitempty"`
-	Ansible       *AnsibleConfig       `json:"ansible,omitempty"`
-	Docker        *DockerConfig        `json:"docker,omitempty"`
-	Kubernetes    *KubernetesConfig    `json:"kubernetes,omitempty"`
-	AWSSSM        *AWSSSMConfig        `json:"aws_ssm,omitempty"`
-	AzureSerial   *AzureSerialConfig   `json:"azure_serial,omitempty"`
-	GCPOSLogin    *GCPOSLoginConfig    `json:"gcp_os_login,omitempty"`
-	Local         *LocalConfig         `json:"local,omitempty"`
-	
+
+	SSHAgent    *SSHAgentConfig       `json:"ssh_agent,omitempty"`
+	SSHCert     *SSHCertificateConfig `json:"ssh_certificate,omitempty"`
+	SSHBastion  *SSHBastionConfig     `json:"bastion,omitempty"`
+	WinRM       *WinRMConfig          `json:"winrm,omitempty"`
+	Ansible     *AnsibleConfig        `json:"ansible,omitempty"`
+	Docker      *DockerConfig         `json:"docker,omitempty"`
+	Kubernetes  *KubernetesConfig     `json:"kubernetes,omitempty"`
+	AWSSSM      *AWSSSMConfig         `json:"aws_ssm,omitempty"`
+	AzureSerial *AzureSerialConfig    `json:"azure_serial,omitempty"`
+	GCPOSLogin  *GCPOSLoginConfig     `json:"gcp_os_login,omitempty"`
+	Local       *LocalConfig          `json:"local,omitempty"`
+
 	Timeout    time.Duration `json:"timeout"`
 	Retries    int           `json:"retries"`
 	MaxRetries int           `json:"max_retries"`
@@ -96,11 +96,11 @@ type SSHBastionConfig struct {
 
 // WinRMConfig holds WinRM configuration.
 type WinRMConfig struct {
-	Transport  string `json:"transport"`
-	AuthType   string `json:"auth_type"`
-	VerifySSL  bool   `json:"verify_ssl"`
-	CertPath   string `json:"cert_path,omitempty"`
-	KeyPath    string `json:"key_path,omitempty"`
+	Transport string `json:"transport"`
+	AuthType  string `json:"auth_type"`
+	VerifySSL bool   `json:"verify_ssl"`
+	CertPath  string `json:"cert_path,omitempty"`
+	KeyPath   string `json:"key_path,omitempty"`
 }
 
 // AnsibleConfig holds Ansible configuration.
@@ -162,19 +162,19 @@ type LocalConfig struct {
 
 // ExecutionResult holds the result of a command execution.
 type ExecutionResult struct {
-	Success    bool
-	Output     string
+	Success     bool
+	Output      string
 	ErrorOutput string
-	ExitCode   int
-	Duration   time.Duration
+	ExitCode    int
+	Duration    time.Duration
 }
 
 // TransferResult holds the result of a file transfer.
 type TransferResult struct {
-	Success         bool
+	Success          bool
 	BytesTransferred int64
-	Message         string
-	Duration        time.Duration
+	Message          string
+	Duration         time.Duration
 }
 
 // ConnectionMetadata holds connection metadata.

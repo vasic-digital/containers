@@ -75,9 +75,9 @@ func (f *FailoverHandler) CheckAndFailover(
 				rescheduleReqs, dc.Requirement,
 			)
 			actions = append(actions, FailoverAction{
-				ContainerName:  dc.Requirement.Name,
-				OriginalHost:   dc.HostName,
-				Reason:         "host offline",
+				ContainerName: dc.Requirement.Name,
+				OriginalHost:  dc.HostName,
+				Reason:        "host offline",
 			})
 		}
 	}

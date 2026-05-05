@@ -47,7 +47,7 @@ func TestStubSystemCollector_Implements(t *testing.T) {
 // range
 func TestDefaultSystemCollector_CPUBounds(t *testing.T) {
 	if !platform.IsLinux() {
-		t.Skip("CPU collection only supported on Linux")  // SKIP-OK: #legacy-untriaged
+		t.Skip("CPU collection only supported on Linux")
 	}
 
 	c := monitor.NewDefaultSystemCollector()

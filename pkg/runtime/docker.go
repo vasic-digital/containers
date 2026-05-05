@@ -108,7 +108,6 @@ func (c *streamCmdReadCloser) Close() error {
 	return c.cmd.Wait()
 }
 
-
 // DockerRuntime implements ContainerRuntime using the docker CLI.
 type DockerRuntime struct {
 	binary   string

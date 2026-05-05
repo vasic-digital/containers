@@ -27,11 +27,11 @@ const (
 var DefaultBuilderImage = "localhost/vasic-builder:latest"
 
 type BuildComponent struct {
-	Name         string
-	HasGo        bool
-	HasNPM       bool
-	HasJDK       bool
-	HasRust      bool
+	Name    string
+	HasGo   bool
+	HasNPM  bool
+	HasJDK  bool
+	HasRust bool
 	// BuilderImage pins the container image to schedule this
 	// component's build into. When empty the scheduler falls back to
 	// DefaultBuilderImage.

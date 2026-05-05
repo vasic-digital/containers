@@ -10,58 +10,58 @@ import (
 // comprehensive connection abstraction.
 type Connection interface {
 	Connect(ctx context.Context) (*ConnectionResult, error)
-	
+
 	Disconnect() error
-	
+
 	IsConnected() bool
-	
+
 	Execute(ctx context.Context, command string, opts ...ExecuteOption) (*ExecutionResult, error)
-	
+
 	Upload(ctx context.Context, localPath, remotePath string, opts ...TransferOption) (*TransferResult, error)
-	
+
 	Download(ctx context.Context, remotePath, localPath string, opts ...TransferOption) (*TransferResult, error)
-	
+
 	HealthCheck(ctx context.Context) (*ConnectionHealth, error)
-	
+
 	Metadata() *ConnectionMetadata
-	
+
 	Type() ConnectionType
-	
+
 	io.Closer
 }
 
 // RemoteConnection extends Connection with remote-specific operations.
 type RemoteConnection interface {
 	Connection
-	
+
 	Shell(ctx context.Context, opts ...ShellOption) (io.ReadWriteCloser, error)
-	
+
 	Tunnel(ctx context.Context, localPort, remotePort int) (Tunnel, error)
-	
+
 	Host() string
-	
+
 	Port() int
 }
 
 // ContainerConnection extends Connection for container environments.
 type ContainerConnection interface {
 	Connection
-	
+
 	ContainerExec(ctx context.Context, containerID, command string, opts ...ExecuteOption) (*ExecutionResult, error)
-	
+
 	ContainerLogs(ctx context.Context, containerID string, opts ...LogOption) (io.ReadCloser, error)
-	
+
 	ListContainers(ctx context.Context, filter ContainerFilter) ([]ContainerInfo, error)
 }
 
 // CloudConnection extends Connection for cloud provider access.
 type CloudConnection interface {
 	Connection
-	
+
 	InstanceID() string
-	
+
 	Region() string
-	
+
 	Provider() CloudProvider
 }
 
@@ -76,10 +76,10 @@ const (
 
 // ContainerFilter defines filter criteria for container listing.
 type ContainerFilter struct {
-	All     bool
-	Labels  map[string]string
-	Names   []string
-	Status  []string
+	All    bool
+	Labels map[string]string
+	Names  []string
+	Status []string
 }
 
 // ContainerInfo holds container information.
@@ -106,11 +106,11 @@ type ExecuteOption func(*ExecuteConfig)
 
 // ExecuteConfig holds execution configuration.
 type ExecuteConfig struct {
-	Timeout     int
-	Env         map[string]string
-	WorkingDir  string
-	User        string
-	Stdin       io.Reader
+	Timeout       int
+	Env           map[string]string
+	WorkingDir    string
+	User          string
+	Stdin         io.Reader
 	CaptureStderr bool
 }
 

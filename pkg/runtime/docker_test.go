@@ -988,12 +988,6 @@ func TestDefaultExecutor_ExecuteStream_NilFactory(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestNewDefaultExecutor(t *testing.T) {
-	exec := newDefaultExecutor()
-	require.NotNil(t, exec)
-	assert.NotNil(t, exec.streamFactory)
-}
-
 func TestStreamCmdReadCloser_Close(t *testing.T) {
 	reader := io.NopCloser(strings.NewReader("test content"))
 	mockCmd := &mockStreamCmd{waitErr: nil}

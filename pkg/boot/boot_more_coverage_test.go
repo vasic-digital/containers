@@ -92,9 +92,9 @@ func (m *moreMockDiscoverer) Discover(_ context.Context, t discovery.DiscoveryTa
 // moreMockRuntime implements runtime.ContainerRuntime.
 type moreMockRuntime struct{}
 
-func (m *moreMockRuntime) Name() string                                 { return "mock" }
-func (m *moreMockRuntime) Version(_ context.Context) (string, error)    { return "1.0", nil }
-func (m *moreMockRuntime) IsAvailable(_ context.Context) bool           { return true }
+func (m *moreMockRuntime) Name() string                              { return "mock" }
+func (m *moreMockRuntime) Version(_ context.Context) (string, error) { return "1.0", nil }
+func (m *moreMockRuntime) IsAvailable(_ context.Context) bool        { return true }
 func (m *moreMockRuntime) Start(_ context.Context, _ string, _ ...runtime.StartOption) error {
 	return nil
 }

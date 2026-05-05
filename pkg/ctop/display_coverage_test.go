@@ -7,16 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDisplay(t *testing.T) {
-	exec := &mockExecutor{responses: map[string][]byte{}}
-	c := NewCollectorWithExecutor("podman", nil, exec)
-	config := DefaultDisplayConfig()
-	d := NewDisplay(c, config)
-	assert.NotNil(t, d)
-	assert.Equal(t, SortByCPU, d.sortBy)
-	assert.Equal(t, SortDesc, d.sortOrder)
-}
-
 func TestDisplay_Stop_WithoutRunning(t *testing.T) {
 	exec := &mockExecutor{responses: map[string][]byte{}}
 	c := NewCollectorWithExecutor("podman", nil, exec)

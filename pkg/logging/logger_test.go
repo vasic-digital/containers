@@ -53,11 +53,11 @@ func TestStdLogger_ImplementsLogger(t *testing.T) {
 
 func TestStdLogger_Debug(t *testing.T) {
 	tests := []struct {
-		name           string
-		prefix         string
-		msg            string
-		args           []any
-		expectedParts  []string
+		name          string
+		prefix        string
+		msg           string
+		args          []any
+		expectedParts []string
 	}{
 		{
 			name:          "simple message",
@@ -103,11 +103,11 @@ func TestStdLogger_Debug(t *testing.T) {
 
 func TestStdLogger_Info(t *testing.T) {
 	tests := []struct {
-		name           string
-		prefix         string
-		msg            string
-		args           []any
-		expectedParts  []string
+		name          string
+		prefix        string
+		msg           string
+		args          []any
+		expectedParts []string
 	}{
 		{
 			name:          "simple message",
@@ -146,11 +146,11 @@ func TestStdLogger_Info(t *testing.T) {
 
 func TestStdLogger_Warn(t *testing.T) {
 	tests := []struct {
-		name           string
-		prefix         string
-		msg            string
-		args           []any
-		expectedParts  []string
+		name          string
+		prefix        string
+		msg           string
+		args          []any
+		expectedParts []string
 	}{
 		{
 			name:          "simple message",
@@ -189,11 +189,11 @@ func TestStdLogger_Warn(t *testing.T) {
 
 func TestStdLogger_Error(t *testing.T) {
 	tests := []struct {
-		name           string
-		prefix         string
-		msg            string
-		args           []any
-		expectedParts  []string
+		name          string
+		prefix        string
+		msg           string
+		args          []any
+		expectedParts []string
 	}{
 		{
 			name:          "simple message",

@@ -3,13 +3,13 @@ package compose
 // --- Up Options ---
 
 type upOptions struct {
-	Detach         bool
-	RemoveOrphans  bool
-	BuildFirst     bool
-	ForceRecreate  bool
-	NoRecreate     bool
-	Timeout        int
-	Wait           bool
+	Detach        bool
+	RemoveOrphans bool
+	BuildFirst    bool
+	ForceRecreate bool
+	NoRecreate    bool
+	Timeout       int
+	Wait          bool
 }
 
 // UpOption configures compose up behavior.
@@ -17,13 +17,13 @@ type UpOption func(*upOptions)
 
 func defaultUpOptions() *upOptions {
 	return &upOptions{
-		Detach:         true,
-		RemoveOrphans:  false,
-		BuildFirst:     false,
-		ForceRecreate:  false,
-		NoRecreate:     false,
-		Timeout:        0,
-		Wait:           false,
+		Detach:        true,
+		RemoveOrphans: false,
+		BuildFirst:    false,
+		ForceRecreate: false,
+		NoRecreate:    false,
+		Timeout:       0,
+		Wait:          false,
 	}
 }
 
@@ -89,10 +89,10 @@ func WithWait(wait bool) UpOption {
 // --- Down Options ---
 
 type downOptions struct {
-	RemoveOrphans  bool
-	RemoveVolumes  bool
-	RemoveImages   string
-	Timeout        int
+	RemoveOrphans bool
+	RemoveVolumes bool
+	RemoveImages  string
+	Timeout       int
 }
 
 // DownOption configures compose down behavior.

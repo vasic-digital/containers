@@ -209,14 +209,14 @@ func (p *PodmanRuntime) Stats(
 // podmanStatsJSON models podman stats --format json output.
 type podmanStatsJSON struct {
 	CPUPercent float64 `json:"cpu_percent"`
-	MemPerc   float64 `json:"mem_percent"`
-	MemUsage  uint64  `json:"mem_usage"`
-	MemLimit  uint64  `json:"mem_limit"`
-	NetInput  uint64  `json:"net_input"`
-	NetOutput uint64  `json:"net_output"`
-	BlockIn   uint64  `json:"block_input"`
-	BlockOut  uint64  `json:"block_output"`
-	PIDs      int     `json:"pids"`
+	MemPerc    float64 `json:"mem_percent"`
+	MemUsage   uint64  `json:"mem_usage"`
+	MemLimit   uint64  `json:"mem_limit"`
+	NetInput   uint64  `json:"net_input"`
+	NetOutput  uint64  `json:"net_output"`
+	BlockIn    uint64  `json:"block_input"`
+	BlockOut   uint64  `json:"block_output"`
+	PIDs       int     `json:"pids"`
 }
 
 func parsePodmanStats(data []byte) (*ContainerStats, error) {

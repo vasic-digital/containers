@@ -98,8 +98,8 @@ func NewEvent(t EventType, source, name string) Event {
 		Type:      t,
 		Timestamp: time.Now(),
 		Source:    source,
-		Name:     name,
-		Data:     make(map[string]any),
+		Name:      name,
+		Data:      make(map[string]any),
 	}
 }
 

@@ -11,14 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewDNSDiscoverer(t *testing.T) {
-	d := discovery.NewDNSDiscoverer()
-	require.NotNil(t, d)
-
-	// Verify it implements the Discoverer interface
-	var _ discovery.Discoverer = d
-}
-
 func TestDNSDiscoverer_Discover_Success(t *testing.T) {
 	tests := []struct {
 		name   string

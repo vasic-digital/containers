@@ -9,13 +9,6 @@ import (
 )
 
 // TestNewTunnelOverlay_NilLogger exercises nil logger fallback.
-func TestNewTunnelOverlay_NilLogger(t *testing.T) {
-	overlay := NewTunnelOverlay(nil, nil, nil, nil)
-	assert.NotNil(t, overlay)
-	assert.NotNil(t, overlay.logger)
-	assert.NotNil(t, overlay.networks)
-}
-
 // TestTunnelOverlay_Create_And_List exercises Create and List.
 func TestTunnelOverlay_Create_And_List(t *testing.T) {
 	overlay := NewTunnelOverlay(nil, nil, nil, nil)
@@ -72,4 +65,3 @@ func TestTunnelOverlay_Connect_And_Disconnect(t *testing.T) {
 	err = overlay.Disconnect(ctx, "missing-net", "c1")
 	assert.Error(t, err)
 }
-

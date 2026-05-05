@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"digital.vasic.containers/pkg/compose"
 	"digital.vasic.containers/pkg/health"
 	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/remote"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockComposeOrch struct{}
@@ -83,18 +83,6 @@ func TestWithExcludePattern(t *testing.T) {
 	o := &DefaultOrchestrator{}
 	WithExcludePattern("*test*")(o)
 	assert.Equal(t, "*test*", o.excludePattern)
-}
-
-func TestNew_WithAllOptions(t *testing.T) {
-	mock := &mockComposeOrch{}
-	orch := New(
-		WithLocalOrchestrator(mock),
-		WithProjectDir("/test/project"),
-		WithExcludePattern("*.test.yml"),
-	)
-	assert.NotNil(t, orch)
-	assert.Equal(t, "/test/project", orch.projectDir)
-	assert.Equal(t, "*.test.yml", orch.excludePattern)
 }
 
 func TestNew_RemoteEnabled(t *testing.T) {

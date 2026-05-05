@@ -66,15 +66,15 @@ func (c *DistributionConfig) ToRemoteHosts() []remote.RemoteHost {
 	hosts := make([]remote.RemoteHost, 0, len(c.Hosts))
 	for _, h := range c.Hosts {
 		host := remote.RemoteHost{
-			Name:    h.Name,
-			Address: h.Address,
-			Port:    h.Port,
-			User:    h.User,
-			KeyPath: h.KeyPath,
+			Name:     h.Name,
+			Address:  h.Address,
+			Port:     h.Port,
+			User:     h.User,
+			KeyPath:  h.KeyPath,
 			Password: h.Password,
-			Runtime: h.Runtime,
-			Auth:    remote.AuthSSHKey,
-			Labels:  h.Labels,
+			Runtime:  h.Runtime,
+			Auth:     remote.AuthSSHKey,
+			Labels:   h.Labels,
 		}
 		if host.User == "" {
 			host.User = c.DefaultUser

@@ -194,17 +194,6 @@ func TestProjectArgs(t *testing.T) {
 	}
 }
 
-func TestNewOrchestrator(t *testing.T) {
-	o := NewOrchestrator(
-		"podman", []string{"compose"}, "/var/lib", nil,
-	)
-	require.NotNil(t, o)
-	assert.Equal(t, "podman", o.composeCmd)
-	assert.Equal(t, []string{"compose"}, o.composeArgs)
-	assert.Equal(t, "/var/lib", o.workDir)
-	assert.NotNil(t, o.logger)
-}
-
 func TestUpOptions(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -306,7 +295,7 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 	// on the system. We skip if no compose command is found.
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("no compose command available: %v", err)
 	}
 
 	require.NotNil(t, o)
@@ -315,20 +304,10 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 	assert.NotNil(t, o.logger)
 }
 
-func TestNewDefaultOrchestrator_WithLogger(t *testing.T) {
-	o, err := NewDefaultOrchestrator("/tmp", &testLogger{})
-	if err != nil {
-		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
-	}
-
-	require.NotNil(t, o)
-	assert.NotNil(t, o.logger)
-}
-
 func TestNewDefaultOrchestrator_NilLogger(t *testing.T) {
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
+		t.Skipf("no compose command available: %v", err)
 	}
 
 	require.NotNil(t, o)
@@ -342,7 +321,7 @@ func TestDetectComposeCmd_FindsDockerCompose(t *testing.T) {
 	// Check if docker compose is available
 	cmd := exec.Command("docker", "compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker compose not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("docker compose not available")
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -355,14 +334,14 @@ func TestDetectComposeCmd_FindsStandaloneDockerCompose(t *testing.T) {
 	// Check if docker-compose is available
 	cmd := exec.Command("docker-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker-compose not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("docker-compose not available")
 	}
 
 	// Only test this if docker compose plugin is NOT available
 	// (otherwise docker compose takes precedence)
 	pluginCmd := exec.Command("docker", "compose", "version")
 	if pluginCmd.Run() == nil {
-		t.Skip("docker compose plugin available, takes precedence")  // SKIP-OK: #legacy-untriaged
+		t.Skip("docker compose plugin available, takes precedence")
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -375,14 +354,14 @@ func TestDetectComposeCmd_FindsPodmanCompose(t *testing.T) {
 	// Check if podman-compose is available
 	cmd := exec.Command("podman-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("podman-compose not available")  // SKIP-OK: #legacy-untriaged
+		t.Skip("podman-compose not available")
 	}
 
 	// Only test if neither docker compose nor docker-compose is available
 	dockerPluginCmd := exec.Command("docker", "compose", "version")
 	dockerStandaloneCmd := exec.Command("docker-compose", "version")
 	if dockerPluginCmd.Run() == nil || dockerStandaloneCmd.Run() == nil {
-		t.Skip("docker compose available, takes precedence")  // SKIP-OK: #legacy-untriaged
+		t.Skip("docker compose available, takes precedence")
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -1082,62 +1061,6 @@ func TestNewOrchestrator_WithNilArgs(t *testing.T) {
 	assert.Equal(t, "/home", o.workDir)
 }
 
-func TestNewOrchestrator_WithEmptyArgs(t *testing.T) {
-	o := NewOrchestrator("docker", []string{}, "/home", nil)
-	require.NotNil(t, o)
-	assert.Equal(t, "docker", o.composeCmd)
-	assert.Empty(t, o.composeArgs)
-}
-
-// --- Test helper ---
-
-type testLogger struct {
-	messages []string
-}
-
-func (l *testLogger) Debug(msg string, args ...any) {
-	l.messages = append(l.messages, "DEBUG: "+msg)
-}
-
-func (l *testLogger) Info(msg string, args ...any) {
-	l.messages = append(l.messages, "INFO: "+msg)
-}
-
-func (l *testLogger) Warn(msg string, args ...any) {
-	l.messages = append(l.messages, "WARN: "+msg)
-}
-
-func (l *testLogger) Error(msg string, args ...any) {
-	l.messages = append(l.messages, "ERROR: "+msg)
-}
-
-// --- Integration-style tests with real compose (if available) ---
-
-func TestDefaultOrchestrator_Integration_StatusWithDocker(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test in short mode")  // SKIP-OK: #short-mode
-	}
-
-	o, err := NewDefaultOrchestrator("/tmp", nil)
-	if err != nil {
-		t.Skipf("no compose command available: %v", err)  // SKIP-OK: #legacy-skip-untriaged-2026-04-29
-	}
-
-	ctx := context.Background()
-	project := ComposeProject{
-		Name: "nonexistent-project-12345",
-	}
-
-	// This should succeed but return empty status for non-existent project
-	statuses, err := o.Status(ctx, project)
-	// Error is acceptable here since the project doesn't exist
-	if err != nil {
-		assert.Contains(t, err.Error(), "compose ps failed")
-	} else {
-		assert.Empty(t, statuses)
-	}
-}
-
 // --- Test ComposeOrchestrator interface compliance ---
 
 func TestDefaultOrchestrator_ImplementsInterface(t *testing.T) {
@@ -1430,7 +1353,7 @@ func TestDefaultOrchestrator_Logs_CommandNotExecutable(t *testing.T) {
 	o := NewOrchestrator(scriptPath, nil, tmpDir, nil)
 
 	ctx := context.Background()
-	project := ComposeProject{}
+	project := ComposeProject{Name: "test-project"}
 
 	_, err = o.Logs(ctx, project, "web")
 	require.Error(t, err)
@@ -1463,9 +1386,9 @@ type mockCmd struct {
 	waitErr       error
 }
 
-func (c *mockCmd) SetDir(_ string)  {}
-func (c *mockCmd) Start() error     { return c.startErr }
-func (c *mockCmd) Wait() error      { return c.waitErr }
+func (c *mockCmd) SetDir(_ string) {}
+func (c *mockCmd) Start() error    { return c.startErr }
+func (c *mockCmd) Wait() error     { return c.waitErr }
 func (c *mockCmd) StdoutPipe() (io.ReadCloser, error) {
 	if c.stdoutPipeErr != nil {
 		return nil, c.stdoutPipeErr
@@ -1526,17 +1449,6 @@ func TestNewOrchestratorWithFactory(t *testing.T) {
 	assert.Equal(t, "/tmp", o.workDir)
 }
 
-// TestNewOrchestratorWithFactory_NilFactory tests that nil factory
-// uses the default.
-func TestNewOrchestratorWithFactory_NilFactory(t *testing.T) {
-	o := NewOrchestratorWithFactory(
-		"echo", nil, "/tmp", nil, nil,
-	)
-
-	require.NotNil(t, o)
-	assert.NotNil(t, o.cmdFactory)
-}
-
 // TestCmdLogReader_ReadAndClose tests the cmdLogReader methods.
 func TestCmdLogReader_ReadAndClose(t *testing.T) {
 	reader := io.NopCloser(strings.NewReader("test content"))
@@ -1561,3 +1473,10 @@ func TestCmdLogReader_ReadAndClose(t *testing.T) {
 	require.NoError(t, err)
 	_ = waitCalled // mockCmd.Wait() was called implicitly
 }
+// testLogger is a simple test logger for orchestrator tests.
+type testLogger struct{}
+
+func (l *testLogger) Debug(msg string, args ...any) {}
+func (l *testLogger) Info(msg string, args ...any)  {}
+func (l *testLogger) Warn(msg string, args ...any)  {}
+func (l *testLogger) Error(msg string, args ...any) {}

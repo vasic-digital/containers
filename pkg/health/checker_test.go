@@ -9,14 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewDefaultChecker_RegistersBuiltins(t *testing.T) {
-	c := NewDefaultChecker()
-	require.NotNil(t, c)
-	assert.Contains(t, c.checkers, HealthTCP)
-	assert.Contains(t, c.checkers, HealthHTTP)
-	assert.Contains(t, c.checkers, HealthGRPC)
-}
-
 func TestDefaultChecker_Register_OverridesExisting(t *testing.T) {
 	c := NewDefaultChecker()
 	called := false

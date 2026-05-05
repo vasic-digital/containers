@@ -39,9 +39,9 @@ func (m *moreVolExecutor) IsReachable(_ context.Context, _ remote.RemoteHost) bo
 
 // moreVolHostMgr is a configurable host manager for volume tests.
 type moreVolHostMgr struct {
-	hosts    map[string]remote.RemoteHost
-	getErr   error
-	nilHost  bool // when true GetHost returns nil, nil
+	hosts   map[string]remote.RemoteHost
+	getErr  error
+	nilHost bool // when true GetHost returns nil, nil
 }
 
 func (m *moreVolHostMgr) AddHost(h remote.RemoteHost) error {

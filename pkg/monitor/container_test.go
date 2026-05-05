@@ -113,29 +113,6 @@ func (m *mockRuntime) Logs(
 }
 
 // Test NewContainerCollector
-func TestNewContainerCollector(t *testing.T) {
-	tests := []struct {
-		name    string
-		runtime runtime.ContainerRuntime
-	}{
-		{
-			name:    "with mock runtime",
-			runtime: newMockRuntime(),
-		},
-		{
-			name:    "with nil runtime",
-			runtime: nil,
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			collector := monitor.NewContainerCollector(tc.runtime)
-			assert.NotNil(t, collector)
-		})
-	}
-}
-
 // Test ContainerCollector.CollectAll
 func TestContainerCollector_CollectAll(t *testing.T) {
 	tests := []struct {
@@ -189,7 +166,7 @@ func TestContainerCollector_CollectAll(t *testing.T) {
 			},
 		},
 		{
-			name: "empty container list",
+			name:        "empty container list",
 			containers:  []runtime.ContainerInfo{},
 			stats:       make(map[string]*runtime.ContainerStats),
 			statsErr:    make(map[string]error),

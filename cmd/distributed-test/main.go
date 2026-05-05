@@ -46,8 +46,8 @@ var (
 	// Catalogizer directory names — now each tier of tests is
 	// driven entirely by caller configuration so any project can
 	// use this runner.
-	flagGoAPIDir       = flag.String("go-api-dir", "", "Directory (relative to --root) holding the Go API module to test. Empty = skip Go tests.")
-	flagJSProjects     = flag.String("js-projects", "", "Comma-separated list of JS/TS project directories (relative to --root) to test. Empty = skip JS tests.")
+	flagGoAPIDir        = flag.String("go-api-dir", "", "Directory (relative to --root) holding the Go API module to test. Empty = skip Go tests.")
+	flagJSProjects      = flag.String("js-projects", "", "Comma-separated list of JS/TS project directories (relative to --root) to test. Empty = skip JS tests.")
 	flagAndroidProjects = flag.String("android-projects", "", "Comma-separated list of Android project directories (relative to --root) to test. Empty = skip Android tests.")
 )
 
