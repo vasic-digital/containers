@@ -358,6 +358,7 @@ Inheritance is recursive. Sub-submodules MAY paste this clause verbatim; they MU
 
 **Repository scope:** This anchor applies to all tests, all Challenges, and all CI/CD validation in this repository. It is cascaded from HelixCode root CONSTITUTION.md / CLAUDE.md / AGENTS.md and is identical across the HelixDevelopment + vasic-digital organizations.
 
+
 ## CONST-036 — Continuation Document Maintenance Mandate
 
 `docs/CONTINUATION.md` MUST be the single-file source-of-truth handoff document
@@ -367,3 +368,9 @@ artifact, discovers/resolves a known issue, or implements an operator scope
 directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The "Last
 updated" line MUST track HEAD. See root `CLAUDE.md` §6.S for the inherited
 clause text.
+
+## CONST-042 — No-Secret-Leak (cascaded)
+No credential may be committed. All secrets in .env (gitignored). Any leak is a release blocker.
+
+## CONST-043 — No-Force-Push (cascaded)
+No force push, history rewrite, branch deletion of main without explicit per-operation user approval.
