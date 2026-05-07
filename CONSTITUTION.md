@@ -357,3 +357,13 @@ Inheritance is recursive. Sub-submodules MAY paste this clause verbatim; they MU
 **Operative rule:** The bar for shipping is not "tests pass" but "users can use the feature." Every PASS in this codebase MUST carry positive runtime evidence captured during execution. Metadata-only / configuration-only / absence-of-error / grep-based PASS without runtime evidence are critical defects regardless of how green the summary line looks. No false-success results are tolerable.
 
 **Repository scope:** This anchor applies to all tests, all Challenges, and all CI/CD validation in this repository. It is cascaded from HelixCode root CONSTITUTION.md / CLAUDE.md / AGENTS.md and is identical across the HelixDevelopment + vasic-digital organizations.
+
+## CONST-036 — Continuation Document Maintenance Mandate
+
+`docs/CONTINUATION.md` MUST be the single-file source-of-truth handoff document
+for resuming work across any CLI session. Every commit that changes phase
+status, lands a new spec/plan, bumps a submodule pin, ships a release
+artifact, discovers/resolves a known issue, or implements an operator scope
+directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The "Last
+updated" line MUST track HEAD. See root `CLAUDE.md` §6.S for the inherited
+clause text.
