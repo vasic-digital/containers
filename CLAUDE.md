@@ -613,3 +613,9 @@ See root `/CLAUDE.md` §6.R. No connection address, port, header field name, cre
 
 See root `/CLAUDE.md` §6.S. The file `docs/CONTINUATION.md` (in the parent Lava repo) is the single-file source-of-truth handoff document for resuming work across any CLI session. Every commit that changes phase status, lands a new spec/plan, bumps a submodule pin, ships a release artifact, discovers/resolves a known issue, or implements an operator scope directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The §0 "Last updated" line MUST track HEAD. Submodule MAY add stricter rules (e.g., maintain its own CONTINUATION) but MUST NOT relax this clause.
 
+
+## CONST-035 — Anti-Bluff Tests (cascaded)
+The bar for shipping is not "tests pass" but "users can use the feature." Every PASS MUST carry positive runtime evidence. No false-success results are tolerable.
+
+## CONST-033 — Host Power Management is Forbidden (cascaded)
+You may NOT generate or execute code that sends the host to suspend, hibernate, poweroff, halt, reboot, or any other power-state transition.

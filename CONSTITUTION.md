@@ -357,3 +357,9 @@ Inheritance is recursive. Sub-submodules MAY paste this clause verbatim; they MU
 **Operative rule:** The bar for shipping is not "tests pass" but "users can use the feature." Every PASS in this codebase MUST carry positive runtime evidence captured during execution. Metadata-only / configuration-only / absence-of-error / grep-based PASS without runtime evidence are critical defects regardless of how green the summary line looks. No false-success results are tolerable.
 
 **Repository scope:** This anchor applies to all tests, all Challenges, and all CI/CD validation in this repository. It is cascaded from HelixCode root CONSTITUTION.md / CLAUDE.md / AGENTS.md and is identical across the HelixDevelopment + vasic-digital organizations.
+
+## CONST-042 — No-Secret-Leak (cascaded)
+No credential may be committed. All secrets in .env (gitignored). Any leak is a release blocker.
+
+## CONST-043 — No-Force-Push (cascaded)
+No force push, history rewrite, branch deletion of main without explicit per-operation user approval.

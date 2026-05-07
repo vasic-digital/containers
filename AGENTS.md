@@ -789,3 +789,12 @@ Inheritance is recursive: this clause applies to every dependency, every test, e
 ## Clause 6.Q (added 2026-05-05, inherited per 6.F)
 
 - **Clause 6.Q — Compose Layout Antipattern Guard** — see root `/CLAUDE.md` §6.Q. Forbids nesting vertically-scrolling lazy layouts (LazyColumn, LazyVerticalGrid, LazyVerticalStaggeredGrid) inside parents giving unbounded vertical space (verticalScroll, unbounded wrapContentHeight, LinearLayout-with-weight wrapper). Equivalent rule horizontally for LazyRow / LazyHorizontalGrid / LazyHorizontalStaggeredGrid. Per-feature structural tests + Compose UI Challenge Tests on the §6.I matrix are the load-bearing acceptance gates. Forensic anchor: 2026-05-05 23:51 operator-reported "Opening Trackers from Settings crashes the app" — TrackerSelectorList used LazyColumn nested in TrackerSettingsScreen's Column(verticalScroll). Closure log: `.lava-ci-evidence/crashlytics-resolved/2026-05-05-tracker-settings-nested-scroll.md`. Pattern guard: `feature/tracker_settings/src/test/.../TrackerSelectorListLazyColumnRegressionTest.kt`. The operator THIRTEENTH §6.L invocation triggered this clause.
+
+## CONST-035 — Anti-Bluff Tests (cascaded)
+The bar for shipping is not "tests pass" but "users can use the feature."
+
+## CONST-033 — Host Power Management Forbidden (cascaded)
+No suspend, hibernate, poweroff, halt, or reboot code.
+
+## CONST-042/043 — Security Mandates (cascaded)
+No secret leaks. No force pushes.
