@@ -798,3 +798,18 @@ No suspend, hibernate, poweroff, halt, or reboot code.
 
 ## CONST-042/043 — Security Mandates (cascaded)
 No secret leaks. No force pushes.
+
+## Anti-Bluff and Quality Mandate
+
+### Article XI §11.9 — Anti-Bluff Forensic Anchor
+
+> Verbatim user mandate: "We had been in position that all tests do execute
+> with success and all Challenges as well, but in reality the most of the
+> features does not work and can't be used! This MUST NOT be the case and
+> execution of tests and Challenges MUST guarantee the quality, the
+> completion and full usability by end users of the product!"
+
+**Operative rule:** Every PASS MUST carry positive runtime evidence.
+No false-success results are tolerable.
+
+**Bluff Taxonomy:** wrapper, contract, structural, comment, skip.
