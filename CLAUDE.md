@@ -613,3 +613,36 @@ See root `/CLAUDE.md` §6.R. No connection address, port, header field name, cre
 
 See root `/CLAUDE.md` §6.S. The file `docs/CONTINUATION.md` (in the parent Lava repo) is the single-file source-of-truth handoff document for resuming work across any CLI session. Every commit that changes phase status, lands a new spec/plan, bumps a submodule pin, ships a release artifact, discovers/resolves a known issue, or implements an operator scope directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The §0 "Last updated" line MUST track HEAD. Submodule MAY add stricter rules (e.g., maintain its own CONTINUATION) but MUST NOT relax this clause.
 
+
+
+**§11.4.6 — No-guessing mandate (User mandate, 2026-05-08)**
+
+**Forensic anchor — direct user mandate (verbatim, 2026-05-08T18:30 MSK):**
+
+> "'LIKELY' is guessing, we MUST NOT have guessing, since it can be
+> or may not be! No bluffing and uncertainity is allowed at any cost!
+> We MUST always know exactly precisly what is happening exactly, in
+> any context, under any conditions, everywhere!"
+
+Tests, gates, status reports, closure narratives, commit messages, and
+operator-facing text MUST NOT use `likely`, `probably`, `maybe`,
+`might`, `possibly`, `presumably`, `seems`, or `appears to` when
+describing causes of failures, behaviour, or fix effectiveness. Either
+prove the cause with captured forensic evidence (logcat, dmesg, /sys
+readings, getprop, kernel ramoops, dropbox, strace, etc.) and state it
+as fact, OR explicitly mark `UNCONFIRMED:` / `UNKNOWN:` /
+`PENDING_FORENSICS:` with a tracked-task ID for follow-up.
+
+Pre-build gate `CM-NO-GUESSING-MANDATE` greps recently-modified docs
++ test scripts for the forbidden vocabulary outside explicit
+`UNCONFIRMED:` / `UNKNOWN:` / `PENDING_FORENSICS:` blocks. Paired
+mutation introduces a `likely` token into a fresh status block →
+gate FAILs. Propagation gate `CM-COVENANT-114-6-PROPAGATION` enforces
+this anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned
+submodules + HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.6.
+
+Non-compliance is a release blocker regardless of context.

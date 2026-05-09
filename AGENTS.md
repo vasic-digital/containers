@@ -789,3 +789,36 @@ Inheritance is recursive: this clause applies to every dependency, every test, e
 ## Clause 6.Q (added 2026-05-05, inherited per 6.F)
 
 - **Clause 6.Q — Compose Layout Antipattern Guard** — see root `/CLAUDE.md` §6.Q. Forbids nesting vertically-scrolling lazy layouts (LazyColumn, LazyVerticalGrid, LazyVerticalStaggeredGrid) inside parents giving unbounded vertical space (verticalScroll, unbounded wrapContentHeight, LinearLayout-with-weight wrapper). Equivalent rule horizontally for LazyRow / LazyHorizontalGrid / LazyHorizontalStaggeredGrid. Per-feature structural tests + Compose UI Challenge Tests on the §6.I matrix are the load-bearing acceptance gates. Forensic anchor: 2026-05-05 23:51 operator-reported "Opening Trackers from Settings crashes the app" — TrackerSelectorList used LazyColumn nested in TrackerSettingsScreen's Column(verticalScroll). Closure log: `.lava-ci-evidence/crashlytics-resolved/2026-05-05-tracker-settings-nested-scroll.md`. Pattern guard: `feature/tracker_settings/src/test/.../TrackerSelectorListLazyColumnRegressionTest.kt`. The operator THIRTEENTH §6.L invocation triggered this clause.
+
+
+**§11.4.6 — No-guessing mandate (User mandate, 2026-05-08)**
+
+**Forensic anchor — direct user mandate (verbatim, 2026-05-08T18:30 MSK):**
+
+> "'LIKELY' is guessing, we MUST NOT have guessing, since it can be
+> or may not be! No bluffing and uncertainity is allowed at any cost!
+> We MUST always know exactly precisly what is happening exactly, in
+> any context, under any conditions, everywhere!"
+
+Tests, gates, status reports, closure narratives, commit messages, and
+operator-facing text MUST NOT use `likely`, `probably`, `maybe`,
+`might`, `possibly`, `presumably`, `seems`, or `appears to` when
+describing causes of failures, behaviour, or fix effectiveness. Either
+prove the cause with captured forensic evidence (logcat, dmesg, /sys
+readings, getprop, kernel ramoops, dropbox, strace, etc.) and state it
+as fact, OR explicitly mark `UNCONFIRMED:` / `UNKNOWN:` /
+`PENDING_FORENSICS:` with a tracked-task ID for follow-up.
+
+Pre-build gate `CM-NO-GUESSING-MANDATE` greps recently-modified docs
++ test scripts for the forbidden vocabulary outside explicit
+`UNCONFIRMED:` / `UNKNOWN:` / `PENDING_FORENSICS:` blocks. Paired
+mutation introduces a `likely` token into a fresh status block →
+gate FAILs. Propagation gate `CM-COVENANT-114-6-PROPAGATION` enforces
+this anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned
+submodules + HelixQA dependencies.
+
+**Canonical authority:** parent
+[`docs/guides/ATMOSPHERE_CONSTITUTION.md`](docs/guides/ATMOSPHERE_CONSTITUTION.md)
+§11.4.6.
+
+Non-compliance is a release blocker regardless of context.
