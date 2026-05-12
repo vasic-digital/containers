@@ -380,7 +380,7 @@ func TestRun_ExitCode(t *testing.T) {
 func TestRunInDir_PermissionDenied(t *testing.T) {
 	// Skip if running as root (root can access any directory)
 	if os.Getuid() == 0 {
-		t.Skip("Skipping permission test when running as root")
+		t.Skip("Skipping permission test when running as root") // SKIP-OK: #env-root-user
 	}
 
 	// Create a directory without execute permission
