@@ -816,3 +816,23 @@ No false-success results are tolerable.
 ## §6.T — Universal Quality Constraints (inherited 2026-05-06, per §6.F)
 
 See root `/CLAUDE.md` §6.T. All four sub-points (Reproduction-Before-Fix, Resource Limits for Tests & Challenges, No-Force-Push, Bugfix Documentation) apply verbatim. This submodule MAY add stricter rules but MUST NOT relax any of §6.T.1–§6.T.4.
+
+## CONST-036 — Continuation Document Maintenance Mandate
+
+**Status:** Mandatory. Non-negotiable. Inherited from root project; applies to every work session in this submodule.
+
+**Rule:** Each repository (root and every submodule, including this one when worked on standalone) MUST maintain a living `docs/CONTINUATION.md` that tracks ALL unfinished work, active tasks, known defects, implementation phases, and current repo state. During ANY work — implementation, debugging, fixing, refactoring, testing, documentation — the Continuation document MUST be kept in sync with current work and MUST NOT drift out of date.
+
+If work stops for any reason (session loss, context overflow, agent switch, model change, human interruption), the next CLI agent or LLM model MUST be able to continue exactly where work left off from the Continuation document alone.
+
+**Mandatory update points (within the SAME commit that makes the change):**
+1. After completing ANY task or subtask — mark task status.
+2. When creating new files (untracked) — record them with intent.
+3. When committing — refresh HEAD SHA and Last-updated timestamp.
+4. When discovering a new bug — add it to the Known Defects section.
+5. When starting a new feature stream or phase — record the entry point.
+6. Before any `git commit` — verify the Continuation document reflects reality.
+
+**Enforcement:** A stale or inaccurate Continuation document is a CONST-036 violation and MUST be corrected before proceeding. Reviewers SHOULD reject any commit that changes code or state without a corresponding Continuation update.
+
+**Why.** Session loss and agent/model switches are normal operational reality for AI-assisted development. Without a maintained Continuation document, work context is lost and must be reconstructed from scratch, wasting time and risking incomplete or duplicated work.
