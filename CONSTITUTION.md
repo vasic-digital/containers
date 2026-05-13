@@ -395,7 +395,68 @@ See root `/CLAUDE.md` §6.V. Every Android emulator instance for Challenge Tests
 
 See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*`) and GitLab (`vasic-digital/*`, `HelixDevelopment/*`) are permitted as Git remotes. GitFlic, GitVerse, and all other providers are forbidden. The 4-mirror model is replaced by 2-mirror (GitHub + GitLab). This submodule MAY add stricter rules but MUST NOT relax.
 
+<<<<<<< HEAD
 ## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
 
 See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
 
+=======
+## §11.4.7 — Operator-Path Test Coverage Rule (inherited from vasic-digital/tmux, 2026-05-13)
+
+**Forensic anchor.** Caught in `vasic-digital/tmux` 2026-05-13: tests
+that reported GREEN while the operator-facing feature was broken,
+because the tests bypassed the operator's wrapper and hand-crafted
+the underlying primitives (systemd-run scopes) directly. Two stacked
+failure modes:
+
+- **Test 11** always passed `-S "$SOCKET"` → exercised the explicit-
+  socket path only; the operator's `tmx new -s X` (default socket)
+  was uncovered. The captured-evidence claim was partial. Operator
+  reported the bug visually: status bar showed default green instead
+  of the hostname-derived colour. README marketing was a §1 bluff.
+
+- **Test 14** hand-spawned three `systemd-run --user --scope` units
+  with explicit `--unit` names to simulate isolation. The actual
+  `tmx new -s A -d; tmx new -s B -d` placed every session in ONE
+  shared cgroup scope. Test 14 PASSed; operator-facing isolation
+  did not exist. README's "if one session OOMs, others survive"
+  was a §1 bluff.
+
+**The mandate.** Every gate test for a feature MUST exercise the SAME
+entry point an end-user would invoke in production. Tests that bypass
+the operator's wrapper, helper, or install path — and instead
+reproduce its effects with hand-crafted equivalents — DO NOT satisfy
+captured-evidence requirements. When the operator's path and the
+test's path diverge:
+
+1. The test header MUST EXPLICITLY name what divergence exists.
+2. A SEPARATE end-to-end test MUST close that divergence with
+   captured evidence on the operator-facing entry point.
+
+**Operative test.** For every test under this submodule's
+`scripts/anti-bluff/` / `tests/` / `cmd/distributed-test/` paths,
+ask: "would a consumer of `digital.vasic.containers` hit this code
+path in their normal workflow?" If no, that test is supplementary;
+the operator-path test must exist alongside it.
+
+**No grep-on-script-content alone.** A `grep` for a literal flag or
+property name inside the wrapper/orchestrator/script is allowed AS A
+STATIC CHECK in addition to a runtime readback — never as the only
+assertion.
+
+**Layer-4 mutations MUST target operator-path code, not synthetic-
+test code.** When the submodule provides BOTH a thin host-side
+bridge (e.g. `scripts/tmx` on Darwin) AND a thick body of behaviour
+(e.g. `scripts/tmx-vm` inside the VM), paired mutations MUST target
+the body — that's the file consumers actually exercise. Mutating
+the bridge while the consumer-path lives in the body is a §1 bluff
+inside the gate itself.
+
+**Inheritance and propagation.** This submodule's tests inherit
+§11.4.7 from the parent `vasic-digital/tmux` Constitution. Submodule
+rules MAY add stricter clauses but MUST NOT relax. Both the parent
+project's rule set and this submodule's own apply; the stricter
+applies.
+
+Non-compliance is a release blocker.
+>>>>>>> fd92850fbf4a537bd04391cb21925d4077c1f853
