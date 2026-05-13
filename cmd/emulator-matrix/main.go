@@ -113,6 +113,21 @@ func main() {
 		"Override packet-loss (%) on top of --network-profile. 0 = use profile default. Range: [0, 100].")
 	flagCaptureScreenshot := flag.Bool("capture-screenshot-on-failure", true,
 		"Capture a forensic screenshot when a row fails. Default true; set false to opt out.")
+
+	// Parent Lava clause 6.X (Container-Submodule Emulator Wiring Mandate,
+	// added 2026-05-13) requires the emulator process to run INSIDE a
+	// podman/docker container for gate runs. Until §6.X-debt closes
+	// fully (Android-emulator container image baked + tested on Linux
+	// x86_64), the CLI accepts the runner choice as a parameter and
+	// records it in the attestation. The default is "host-direct"
+	// because clause 6.X explicitly permits host-direct for workstation
+	// iteration; release-tagging gates require "containerized".
+	flagRunner := flag.String("runner", "host-direct",
+		"Emulator runner: host-direct|containerized. §6.X gate runs require containerized; workstation iteration permits host-direct.")
+	flagContainerImage := flag.String("container-image", "",
+		"Container image for the Android emulator. Required when --runner=containerized.")
+	flagContainerRuntime := flag.String("container-runtime", "podman",
+		"Container runtime CLI: podman|docker. Used when --runner=containerized.")
 	flag.Parse()
 
 	if *flagAPK == "" {
@@ -150,8 +165,37 @@ func main() {
 		os.Exit(2)
 	}
 
+	// §6.X runner selection. host-direct preserves the pre-2026-05-13
+	// behavior (used by workstation iteration). containerized routes
+	// every emulator boot through the Containerized impl, which boots
+	// inside a podman/docker container per §6.X clause 1.
+	if *flagRunner != "host-direct" && *flagRunner != "containerized" {
+		fmt.Fprintf(os.Stderr, "ERROR: --runner must be 'host-direct' or 'containerized' (got: %q)\n", *flagRunner)
+		os.Exit(2)
+	}
+	if *flagRunner == "containerized" && *flagContainerImage == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: --container-image is required when --runner=containerized")
+		os.Exit(2)
+	}
+
 	ctx := context.Background()
-	emu := emulator.NewAndroidEmulator(*flagSdkRoot)
+	var emu emulator.Emulator
+	if *flagRunner == "containerized" {
+		c, ferr := emulator.NewContainerized(emulator.ContainerizedConfig{
+			RuntimeBinary: *flagContainerRuntime,
+			Image:         *flagContainerImage,
+		})
+		if ferr != nil {
+			fmt.Fprintf(os.Stderr, "ERROR: NewContainerized: %v\n", ferr)
+			os.Exit(2)
+		}
+		emu = c
+		fmt.Printf("[§6.X] runner=containerized image=%s runtime=%s\n",
+			*flagContainerImage, *flagContainerRuntime)
+	} else {
+		emu = emulator.NewAndroidEmulator(*flagSdkRoot)
+		fmt.Println("[§6.X] runner=host-direct (workstation iteration mode; §6.X-debt gate runs require containerized)")
+	}
 	runner := emulator.NewAndroidMatrixRunner(emu)
 	result, err := runner.RunMatrix(ctx, emulator.MatrixConfig{
 		AVDs:              avds,
