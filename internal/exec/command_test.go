@@ -479,11 +479,16 @@ func TestRunInDir_SymlinkDirectory(t *testing.T) {
 
 	ctx := context.Background()
 
-	// pwd -P resolves symlinks
+	// pwd -P resolves symlinks. On macOS the OS temp dir `/var/folders/...`
+	// is itself a symlink to `/private/var/folders/...`, so the resolved
+	// path differs from the literal tmpDir. Canonicalize tmpDir on the
+	// expectation side to keep this test portable.
+	expectedCanonical, err := filepath.EvalSymlinks(tmpDir)
+	require.NoError(t, err)
 	stdout, stderr, err := RunInDir(ctx, symlinkDir, "pwd", "-P")
 
 	require.NoError(t, err)
-	assert.Equal(t, tmpDir+"\n", stdout)
+	assert.Equal(t, expectedCanonical+"\n", stdout)
 	assert.Empty(t, stderr)
 }
 
