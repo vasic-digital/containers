@@ -654,3 +654,18 @@ You may NOT generate or execute code that sends the host to suspend, hibernate, 
 No false-success results are tolerable.
 
 **Bluff Taxonomy:** wrapper, contract, structural, comment, skip.
+
+## §11.4.7 — Operator-Path Test Coverage (inherited from vasic-digital/tmux, 2026-05-13)
+
+Every gate test for a feature MUST exercise the SAME entry point an end-user
+would invoke in production. Tests that hand-craft equivalents (e.g.
+`systemd-run --user --scope` invoked directly instead of through the
+project's wrapper) are supplementary — they MUST be accompanied by an
+operator-path test with captured runtime evidence per §11.4.2.
+
+**Layer-4 mutations** MUST target the operator-path code, not synthetic-
+test scaffolding. When this submodule provides both a thin host-side
+bridge and a thick body of behaviour, mutations target the body. See
+Containers/CONSTITUTION.md §11.4.7 for the full clause.
+
+Submodule MAY add stricter rules but MUST NOT relax.
