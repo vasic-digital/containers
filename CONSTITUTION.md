@@ -332,8 +332,128 @@ The authoritative verbatim text lives in the parent Lava `CLAUDE.md` under "Seve
 
 ## Clause 6.L — Anti-Bluff Functional Reality Mandate (Operator's Standing Order)
 
-Inherited verbatim from parent Lava `/CLAUDE.md` §6.L. The operator has invoked this mandate **TEN TIMES** across two working days. The 10th invocation (2026-05-05, after Phase 7 readiness was reported, when the operator commissioned the full rebuild-and-test-everything cycle for tag Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds into releases dir (with properly updated version codes) and execute all existing tests and Challenges! Any issue that pops up MUST BE properly addressed by addressing the root causes (fixing them) and covering everything with validation and verification tests and Challenges!"
+Inherited verbatim from parent Lava `/CLAUDE.md` §6.L. The operator has invoked this mandate **TWENTY-THREE TIMES** across two working days. The 10th invocation (2026-05-05, after Phase 7 readiness was reported, when the operator commissioned the full rebuild-and-test-everything cycle for tag Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds into releases dir (with properly updated version codes) and execute all existing tests and Challenges! Any issue that pops up MUST BE properly addressed by addressing the root causes (fixing them) and covering everything with validation and verification tests and Challenges!"
 
 Every test, every Challenge Test, every CI gate added to or maintained in this submodule MUST do exactly one job: confirm the feature it claims to cover actually works for an end user, end-to-end, on the gating matrix. CI green is necessary, NEVER sufficient. Tests must guarantee the product works — anything else is theatre.
 
 Inheritance is recursive. Sub-submodules MAY paste this clause verbatim; they MUST NOT abbreviate or relax it.
+
+## Clause 6.O (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.O — Crashlytics-Resolved Issue Coverage Mandate** — see root `/CLAUDE.md` §6.O. Every Crashlytics-recorded issue (fatal OR non-fatal) closed/resolved by any commit MUST gain (a) a validation test in the language of the crashing surface that reproduces the conditions, (b) a Challenge Test under `app/src/androidTest/kotlin/lava/app/challenges/` (client) or `tests/e2e/` (server) that drives the same user-facing path, and (c) a closure log at `.lava-ci-evidence/crashlytics-resolved/<date>-<slug>.md` recording the issue ID, root-cause analysis, fix commit SHA, and links to the tests. `scripts/tag.sh` MUST refuse release tags whose CHANGELOG mentions Crashlytics fixes without matching closure logs. Marking a Crashlytics issue "closed" in the Console requires the test coverage to land first — never close-mark before the regression-immunity tests exist. Forensic anchor: 2026-05-05, 2 Crashlytics-recorded crashes within minutes of the first Firebase-instrumented APK distribution (Lava-Android-1.2.3-1023, commit `e9de508`); post-mortem at `.lava-ci-evidence/crashlytics-resolved/2026-05-05-firebase-init-hardening.md`. The operator's ELEVENTH §6.L invocation made this clause load-bearing.
+
+## Clause 6.P (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.P — Distribution Versioning + Changelog Mandate** — see root `/CLAUDE.md` §6.P. Every distribute action (Firebase App Distribution, container registry pushes, releases/ snapshots, scripts/tag.sh) MUST: (1) carry a strictly increasing versionCode (no re-distribution of already-published codes); (2) include a CHANGELOG entry — canonical file `CHANGELOG.md` at repo root + per-version snapshot at `.lava-ci-evidence/distribute-changelog/<channel>/<version>-<code>.md`; (3) inject the changelog into the App Distribution release-notes via `--release-notes`. `scripts/firebase-distribute.sh` REFUSES to operate when current versionCode ≤ last-distributed versionCode for the channel, OR when CHANGELOG.md lacks an entry for the current version, OR when the per-version snapshot file is missing. `scripts/tag.sh` enforces the same gates pre-tag. Re-distributing the same versionCode is forbidden across distribute sessions; idempotent retry within a single session is permitted. Forensic anchor: 2026-05-05 23:11 operator's TWELFTH §6.L invocation: "when distributing new build it must have version code bigger by at least one then the last version code available for download (already distribited). Every distributed build MUST CONTAIN changelog with the details what it includes compared to previous one we have published!"
+
+## Clause 6.Q (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.Q — Compose Layout Antipattern Guard** — see root `/CLAUDE.md` §6.Q. Forbids nesting vertically-scrolling lazy layouts (LazyColumn, LazyVerticalGrid, LazyVerticalStaggeredGrid) inside parents giving unbounded vertical space (verticalScroll, unbounded wrapContentHeight, LinearLayout-with-weight wrapper). Equivalent rule horizontally for LazyRow / LazyHorizontalGrid / LazyHorizontalStaggeredGrid. Per-feature structural tests + Compose UI Challenge Tests on the §6.I matrix are the load-bearing acceptance gates. Forensic anchor: 2026-05-05 23:51 operator-reported "Opening Trackers from Settings crashes the app" — TrackerSelectorList used LazyColumn nested in TrackerSettingsScreen's Column(verticalScroll). Closure log: `.lava-ci-evidence/crashlytics-resolved/2026-05-05-tracker-settings-nested-scroll.md`. Pattern guard: `feature/tracker_settings/src/test/.../TrackerSelectorListLazyColumnRegressionTest.kt`. The operator THIRTEENTH §6.L invocation triggered this clause.
+
+## Article XI §11.9 — Anti-Bluff Forensic Anchor (CONST-035) — cascaded from HelixCode root
+
+> Verbatim user mandate: *"We had been in position that all tests do execute with success and all Challenges as well, but in reality the most of the features does not work and can't be used! This MUST NOT be the case and execution of tests and Challenges MUST guarantee the quality, the completion and full usability by end users of the product!"*
+
+**Operative rule:** The bar for shipping is not "tests pass" but "users can use the feature." Every PASS in this codebase MUST carry positive runtime evidence captured during execution. Metadata-only / configuration-only / absence-of-error / grep-based PASS without runtime evidence are critical defects regardless of how green the summary line looks. No false-success results are tolerable.
+
+**Repository scope:** This anchor applies to all tests, all Challenges, and all CI/CD validation in this repository. It is cascaded from HelixCode root CONSTITUTION.md / CLAUDE.md / AGENTS.md and is identical across the HelixDevelopment + vasic-digital organizations.
+
+
+## CONST-036 — Continuation Document Maintenance Mandate
+
+`docs/CONTINUATION.md` MUST be the single-file source-of-truth handoff document
+for resuming work across any CLI session. Every commit that changes phase
+status, lands a new spec/plan, bumps a submodule pin, ships a release
+artifact, discovers/resolves a known issue, or implements an operator scope
+directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The "Last
+updated" line MUST track HEAD. See root `CLAUDE.md` §6.S for the inherited
+clause text.
+
+## CONST-042 — No-Secret-Leak (cascaded)
+No credential may be committed. All secrets in .env (gitignored). Any leak is a release blocker.
+
+## CONST-043 — No-Force-Push (cascaded)
+No force push, history rewrite, branch deletion of main without explicit per-operation user approval.
+
+## §6.R — No-Hardcoding Mandate (inherited 2026-05-06, per §6.F)
+
+See root `/CLAUDE.md` §6.R. No connection address, port, header field name, credential, key, salt, secret, schedule, algorithm parameter, or domain literal shall appear as a string/int constant in tracked source code. Every such value MUST come from `.env` (gitignored), generated config class, runtime env var, or mounted file. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.T — Universal Quality Constraints (inherited 2026-05-06, per §6.F)
+
+See root `/CLAUDE.md` §6.T. All four sub-points (Reproduction-Before-Fix, Resource Limits for Tests & Challenges, No-Force-Push, Bugfix Documentation) apply verbatim. This submodule MAY add stricter rules but MUST NOT relax any of §6.T.1–§6.T.4.
+
+## §6.U — No sudo/su Mandate (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.U. Every use of `sudo` or `su` is strictly forbidden. Operations requiring elevated privileges MUST use container-based solutions from the `vasic-digital/Containers` submodule or be provided by local project/Submodule dependencies that build automatically. The pre-push hook rejects files containing `sudo ` or `su ` patterns. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.V — Container Emulators Mandate (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.V. Every Android emulator instance for Challenge Tests / UI verification MUST run inside a container managed by the `vasic-digital/Containers` submodule. Rootless Podman/Docker only. All tests execute inside containers. The §6.I matrix (API 28/30/34/latest, phone/tablet/TV) runs inside container-bound emulators. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.W — GitHub + GitLab Only Remotes (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*`) and GitLab (`vasic-digital/*`, `HelixDevelopment/*`) are permitted as Git remotes. GitFlic, GitVerse, and all other providers are forbidden. The 4-mirror model is replaced by 2-mirror (GitHub + GitLab). This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
+
+See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §11.4.7 — Operator-Path Test Coverage Rule (inherited from vasic-digital/tmux, 2026-05-13)
+
+**Forensic anchor.** Caught in `vasic-digital/tmux` 2026-05-13: tests
+that reported GREEN while the operator-facing feature was broken,
+because the tests bypassed the operator's wrapper and hand-crafted
+the underlying primitives (systemd-run scopes) directly. Two stacked
+failure modes:
+
+- **Test 11** always passed `-S "$SOCKET"` → exercised the explicit-
+  socket path only; the operator's `tmx new -s X` (default socket)
+  was uncovered. The captured-evidence claim was partial. Operator
+  reported the bug visually: status bar showed default green instead
+  of the hostname-derived colour. README marketing was a §1 bluff.
+
+- **Test 14** hand-spawned three `systemd-run --user --scope` units
+  with explicit `--unit` names to simulate isolation. The actual
+  `tmx new -s A -d; tmx new -s B -d` placed every session in ONE
+  shared cgroup scope. Test 14 PASSed; operator-facing isolation
+  did not exist. README's "if one session OOMs, others survive"
+  was a §1 bluff.
+
+**The mandate.** Every gate test for a feature MUST exercise the SAME
+entry point an end-user would invoke in production. Tests that bypass
+the operator's wrapper, helper, or install path — and instead
+reproduce its effects with hand-crafted equivalents — DO NOT satisfy
+captured-evidence requirements. When the operator's path and the
+test's path diverge:
+
+1. The test header MUST EXPLICITLY name what divergence exists.
+2. A SEPARATE end-to-end test MUST close that divergence with
+   captured evidence on the operator-facing entry point.
+
+**Operative test.** For every test under this submodule's
+`scripts/anti-bluff/` / `tests/` / `cmd/distributed-test/` paths,
+ask: "would a consumer of `digital.vasic.containers` hit this code
+path in their normal workflow?" If no, that test is supplementary;
+the operator-path test must exist alongside it.
+
+**No grep-on-script-content alone.** A `grep` for a literal flag or
+property name inside the wrapper/orchestrator/script is allowed AS A
+STATIC CHECK in addition to a runtime readback — never as the only
+assertion.
+
+**Layer-4 mutations MUST target operator-path code, not synthetic-
+test code.** When the submodule provides BOTH a thin host-side
+bridge (e.g. `scripts/tmx` on Darwin) AND a thick body of behaviour
+(e.g. `scripts/tmx-vm` inside the VM), paired mutations MUST target
+the body — that's the file consumers actually exercise. Mutating
+the bridge while the consumer-path lives in the body is a §1 bluff
+inside the gate itself.
+
+**Inheritance and propagation.** This submodule's tests inherit
+§11.4.7 from the parent `vasic-digital/tmux` Constitution. Submodule
+rules MAY add stricter clauses but MUST NOT relax. Both the parent
+project's rule set and this submodule's own apply; the stricter
+applies.
+
+Non-compliance is a release blocker.

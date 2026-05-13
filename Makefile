@@ -8,11 +8,16 @@
 MODULE := digital.vasic.containers
 GOMAXPROCS ?= 2
 
+# P1.5-WP4: API-key loader. Sourced before build/test recipes so credentials
+# from $HOME/api_keys.sh (or .env fallback) are available in the env. Guard
+# keeps recipes working when the loader is absent.
+LOAD_KEYS := if [ -f scripts/load_api_keys.sh ]; then . scripts/load_api_keys.sh; fi
+
 build:
-	go build ./...
+	@$(LOAD_KEYS); go build ./...
 
 test:
-	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 ./...
+	@$(LOAD_KEYS); GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 ./...
 
 test-race:
 	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 ./...

@@ -380,7 +380,7 @@ func TestRun_ExitCode(t *testing.T) {
 func TestRunInDir_PermissionDenied(t *testing.T) {
 	// Skip if running as root (root can access any directory)
 	if os.Getuid() == 0 {
-		t.Skip("Skipping permission test when running as root")
+		t.Skip("Skipping permission test when running as root") // SKIP-OK: #env-root-user
 	}
 
 	// Create a directory without execute permission
@@ -479,11 +479,16 @@ func TestRunInDir_SymlinkDirectory(t *testing.T) {
 
 	ctx := context.Background()
 
-	// pwd -P resolves symlinks
+	// pwd -P resolves symlinks. On macOS the OS temp dir `/var/folders/...`
+	// is itself a symlink to `/private/var/folders/...`, so the resolved
+	// path differs from the literal tmpDir. Canonicalize tmpDir on the
+	// expectation side to keep this test portable.
+	expectedCanonical, err := filepath.EvalSymlinks(tmpDir)
+	require.NoError(t, err)
 	stdout, stderr, err := RunInDir(ctx, symlinkDir, "pwd", "-P")
 
 	require.NoError(t, err)
-	assert.Equal(t, tmpDir+"\n", stdout)
+	assert.Equal(t, expectedCanonical+"\n", stdout)
 	assert.Empty(t, stderr)
 }
 

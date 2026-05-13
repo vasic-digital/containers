@@ -100,6 +100,9 @@ func TestCollectDiskLinux_RootAccessible(t *testing.T) {
 
 // TestCollectMemoryLinux_ValidData tests memory collection on Linux.
 func TestCollectMemoryLinux_ValidData(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("SKIP-OK: #env-linux-only — /proc/meminfo path unavailable on non-Linux") // SKIP-OK: #env-linux-only
+	}
 	c := &DefaultSystemCollector{}
 	res := &SystemResources{}
 
@@ -149,6 +152,9 @@ func TestCollectCPULinux_SameTotalReturnsZero(t *testing.T) {
 // TestNewDefaultSystemCollector_Initialization tests that the collector
 // initializes with valid CPU samples on Linux.
 func TestNewDefaultSystemCollector_Initialization(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("SKIP-OK: #env-linux-only — /proc/stat path unavailable on non-Linux") // SKIP-OK: #env-linux-only
+	}
 	c := NewDefaultSystemCollector()
 
 	// On Linux, prevIdle and prevTotal should be non-zero after init
@@ -233,6 +239,9 @@ func TestCollectMemoryLinux_EdgeCases(t *testing.T) {
 
 	// Test that the function handles edge cases without panicking
 	t.Run("normal collection", func(t *testing.T) {
+		if runtime.GOOS != "linux" {
+			t.Skip("SKIP-OK: #env-linux-only — /proc/meminfo unavailable on non-Linux") // SKIP-OK: #env-linux-only
+		}
 		res := &SystemResources{}
 		c.collectMemoryLinux(res)
 
@@ -296,6 +305,9 @@ func TestCollectCPULinux_ZeroDelta(t *testing.T) {
 
 // TestCollectCPULinux_SameTotal tests the case when total equals prevTotal.
 func TestCollectCPULinux_SameTotal(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("SKIP-OK: #env-linux-only — readCPUSample reads /proc/stat, unavailable on non-Linux")
+	}
 	c := &DefaultSystemCollector{}
 
 	// Set prev values to specific values
@@ -397,6 +409,9 @@ func TestParseMemInfoKB_MoreEdgeCases(t *testing.T) {
 
 // TestCollectMemoryLinux_VerifiesMemory verifies memory is collected correctly.
 func TestCollectMemoryLinux_VerifiesMemory(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("SKIP-OK: #env-linux-only — collectMemoryLinux reads /proc/meminfo, unavailable on non-Linux")
+	}
 	c := &DefaultSystemCollector{}
 	res := &SystemResources{}
 
@@ -462,10 +477,8 @@ func TestCollect_NilPlatformChecker(t *testing.T) {
 // TestDefaultPlatformChecker tests the default platform checker.
 func TestDefaultPlatformChecker(t *testing.T) {
 	checker := defaultPlatformChecker{}
-	// On Linux, this should return true
-	result := checker.isLinux()
-	// We're running on Linux, so it should be true
-	assert.True(t, result)
+	// isLinux() should return runtime.GOOS == "linux" regardless of host.
+	assert.Equal(t, runtime.GOOS == "linux", checker.isLinux())
 }
 
 // TestReadCPUSampleFromFile_ErrorCases tests error handling in CPU sample reading.

@@ -742,7 +742,7 @@ The authoritative verbatim text lives in the parent Lava `CLAUDE.md` "Seventh La
   - **`pkg/vm/`** (or sibling under `pkg/emulator/qemu/`) — QEMU full-system emulation for cross-architecture testing (ARM, RISC-V, MIPS via KVM-accelerated containers); roadmap items for non-Android OS emulators (Alpine/Debian/Fedora/Arch, FreeBSD, minimal Windows for `gradlew.bat` parity); iOS/macOS out of scope until Lava ships an iOS client.
 
   Until these packages ship, **clause 6.K-debt is OPEN against this submodule** and Lava-side transitional glue (`docker-compose.test.yml`, `docker/emulator/Dockerfile`, `scripts/run-emulator-tests.sh`) remains in the Lava repo as constitutional debt. The next phase of this submodule that touches release tagging, build orchestration, or the emulator-matrix gate output MUST close 6.K-debt before its tag, and the close MUST: (1) add `pkg/emulator/` extending `pkg/runtime` + `pkg/lifecycle`, (2) add at least the QEMU baseline to `pkg/vm/`, (3) provide thin-glue CLI surfaces consumed by Lava's transitional scripts so they can be retired, (4) update `scripts/check-constitution.sh` per root §6.K clause 5 to verify (a) the package presence, (b) Lava-side thin-glue invocation, (c) at least one passing real-container-emulator-boot test inside `pkg/emulator/`. No release tag of this submodule is cut while this debt is open, except for hotfixes whose changeset does not touch the emulator-matrix gate's output. Clause 6.K's falsifiability rehearsal applies recursively to the new packages' own tests (per 6.J + clause 6.A) — deliberate-mutation rehearsal recorded in commit body, observed-failure captured, reverted, before merge.
-- **Clause 6.L — Anti-Bluff Functional Reality Mandate (Operator's Standing Order)** — see root `/CLAUDE.md` §6.L. Every test, every Challenge Test, every CI gate has exactly one job: confirm the feature works for a real user end-to-end on the gating matrix. CI green is necessary, never sufficient. Tests must guarantee the product works — anything else is theatre. The operator has invoked this mandate TEN TIMES across two working days; the repetition itself is the forensic record. The 10th invocation (2026-05-05, immediately after Phase 7 readiness was reported, when the operator commissioned the full rebuild-and-test-everything cycle for tag Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds into releases dir (with properly updated version codes) and execute all existing tests and Challenges!". If you find yourself rationalizing a "small exception" — STOP. There are no small exceptions. The Internet Archive stuck-on-loading bug, the broken post-login navigation, the credential leak in C2, the bluffed C1-C8 — these are what "small exceptions" produce. Because this submodule is the SOURCE OF TRUTH for build orchestration, a bluff here propagates to every Lava artifact the gate produces — clause 6.L applies with extra weight to `pkg/emulator/`, `pkg/vm/`, `cmd/distributed-build`, and `cmd/distributed-test`.
+- **Clause 6.L — Anti-Bluff Functional Reality Mandate (Operator's Standing Order)** — see root `/CLAUDE.md` §6.L. Every test, every Challenge Test, every CI gate has exactly one job: confirm the feature works for a real user end-to-end on the gating matrix. CI green is necessary, never sufficient. Tests must guarantee the product works — anything else is theatre. The operator has invoked this mandate TWENTY-THREE TIMES across two working days; the repetition itself is the forensic record. The 10th invocation (2026-05-05, immediately after Phase 7 readiness was reported, when the operator commissioned the full rebuild-and-test-everything cycle for tag Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds into releases dir (with properly updated version codes) and execute all existing tests and Challenges!". If you find yourself rationalizing a "small exception" — STOP. There are no small exceptions. The Internet Archive stuck-on-loading bug, the broken post-login navigation, the credential leak in C2, the bluffed C1-C8 — these are what "small exceptions" produce. Because this submodule is the SOURCE OF TRUTH for build orchestration, a bluff here propagates to every Lava artifact the gate produces — clause 6.L applies with extra weight to `pkg/emulator/`, `pkg/vm/`, `cmd/distributed-build`, and `cmd/distributed-test`.
 
 ## Clause 6.M (added 2026-05-04 evening, inherited per 6.F — STRONGER variant: Containers is the source of truth for runtime detection)
 
@@ -760,6 +760,7 @@ The authoritative verbatim text lives in the parent Lava `CLAUDE.md` "Seventh La
   3. **Forensic anchor.** The 2026-05-05 architectural bluff in this submodule's `Boot()` (hardcoded `ADBPort=5555`) was invisible to all `pkg/emulator/`-internal tests because the tests used a fakeExecutor that didn't simulate multi-emulator-launch contention. The fix added `TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists` (commit 648a4bb) and `TestAndroidEmulator_Teardown_WaitsForEmulatorToActuallyExit` (commit f6d09cb). Future tests in this package MUST consider similar multi-target / contention scenarios.
   4. **Inheritance.** Submodule-internal CI gates inherit clause 6.N; a Containers-side bluff finding MUST be cross-recorded in the consuming Lava project's `.lava-ci-evidence/sixth-law-incidents/` AND in this submodule's `.evidence/bluff-hunt/` (or equivalent).
 
+<<<<<<< HEAD
 
 ## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
 
@@ -1064,3 +1065,82 @@ are NEVER manually invoked; they ALWAYS travel with the markdown.
 §11.4.12.
 
 Non-compliance is a release blocker regardless of context.
+=======
+## Clause 6.O (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.O — Crashlytics-Resolved Issue Coverage Mandate** — see root `/CLAUDE.md` §6.O. Every Crashlytics-recorded issue (fatal OR non-fatal) closed/resolved by any commit MUST gain (a) a validation test in the language of the crashing surface that reproduces the conditions, (b) a Challenge Test under `app/src/androidTest/kotlin/lava/app/challenges/` (client) or `tests/e2e/` (server) that drives the same user-facing path, and (c) a closure log at `.lava-ci-evidence/crashlytics-resolved/<date>-<slug>.md` recording the issue ID, root-cause analysis, fix commit SHA, and links to the tests. `scripts/tag.sh` MUST refuse release tags whose CHANGELOG mentions Crashlytics fixes without matching closure logs. Marking a Crashlytics issue "closed" in the Console requires the test coverage to land first — never close-mark before the regression-immunity tests exist. Forensic anchor: 2026-05-05, 2 Crashlytics-recorded crashes within minutes of the first Firebase-instrumented APK distribution (Lava-Android-1.2.3-1023, commit `e9de508`); post-mortem at `.lava-ci-evidence/crashlytics-resolved/2026-05-05-firebase-init-hardening.md`. The operator's ELEVENTH §6.L invocation made this clause load-bearing.
+
+## Clause 6.P (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.P — Distribution Versioning + Changelog Mandate** — see root `/CLAUDE.md` §6.P. Every distribute action (Firebase App Distribution, container registry pushes, releases/ snapshots, scripts/tag.sh) MUST: (1) carry a strictly increasing versionCode (no re-distribution of already-published codes); (2) include a CHANGELOG entry — canonical file `CHANGELOG.md` at repo root + per-version snapshot at `.lava-ci-evidence/distribute-changelog/<channel>/<version>-<code>.md`; (3) inject the changelog into the App Distribution release-notes via `--release-notes`. `scripts/firebase-distribute.sh` REFUSES to operate when current versionCode ≤ last-distributed versionCode for the channel, OR when CHANGELOG.md lacks an entry for the current version, OR when the per-version snapshot file is missing. `scripts/tag.sh` enforces the same gates pre-tag. Re-distributing the same versionCode is forbidden across distribute sessions; idempotent retry within a single session is permitted. Forensic anchor: 2026-05-05 23:11 operator's TWELFTH §6.L invocation: "when distributing new build it must have version code bigger by at least one then the last version code available for download (already distribited). Every distributed build MUST CONTAIN changelog with the details what it includes compared to previous one we have published!"
+
+## Clause 6.Q (added 2026-05-05, inherited per 6.F)
+
+- **Clause 6.Q — Compose Layout Antipattern Guard** — see root `/CLAUDE.md` §6.Q. Forbids nesting vertically-scrolling lazy layouts (LazyColumn, LazyVerticalGrid, LazyVerticalStaggeredGrid) inside parents giving unbounded vertical space (verticalScroll, unbounded wrapContentHeight, LinearLayout-with-weight wrapper). Equivalent rule horizontally for LazyRow / LazyHorizontalGrid / LazyHorizontalStaggeredGrid. Per-feature structural tests + Compose UI Challenge Tests on the §6.I matrix are the load-bearing acceptance gates. Forensic anchor: 2026-05-05 23:51 operator-reported "Opening Trackers from Settings crashes the app" — TrackerSelectorList used LazyColumn nested in TrackerSettingsScreen's Column(verticalScroll). Closure log: `.lava-ci-evidence/crashlytics-resolved/2026-05-05-tracker-settings-nested-scroll.md`. Pattern guard: `feature/tracker_settings/src/test/.../TrackerSelectorListLazyColumnRegressionTest.kt`. The operator THIRTEENTH §6.L invocation triggered this clause.
+
+
+## §6.R — No-Hardcoding Mandate (inherited 2026-05-06, per §6.F)
+
+See root `/CLAUDE.md` §6.R. No connection address, port, header field name, credential, key, salt, secret, schedule, algorithm parameter, or domain literal in tracked source code. Every such value MUST come from `.env` (gitignored), generated config, runtime env var, or mounted file. Submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.S — Continuation Document Maintenance Mandate (inherited 2026-05-06, per §6.F)
+
+See root `/CLAUDE.md` §6.S. The file `docs/CONTINUATION.md` (in the parent Lava repo) is the single-file source-of-truth handoff document for resuming work across any CLI session. Every commit that changes phase status, lands a new spec/plan, bumps a submodule pin, ships a release artifact, discovers/resolves a known issue, or implements an operator scope directive MUST update `docs/CONTINUATION.md` in the SAME COMMIT. The §0 "Last updated" line MUST track HEAD. Submodule MAY add stricter rules (e.g., maintain its own CONTINUATION) but MUST NOT relax this clause.
+
+## §6.T — Universal Quality Constraints (inherited 2026-05-06, per §6.F)
+
+See root `/CLAUDE.md` §6.T. All four sub-points (Reproduction-Before-Fix, Resource Limits for Tests & Challenges, No-Force-Push, Bugfix Documentation) apply verbatim. This submodule MAY add stricter rules but MUST NOT relax any of §6.T.1–§6.T.4.
+
+
+## §6.U — No sudo/su Mandate (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.U. Every use of `sudo` or `su` is strictly forbidden. Operations requiring elevated privileges MUST use container-based solutions from the `vasic-digital/Containers` submodule or be provided by local project/Submodule dependencies that build automatically. The pre-push hook rejects files containing `sudo ` or `su ` patterns. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.V — Container Emulators Mandate (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.V. Every Android emulator instance for Challenge Tests / UI verification MUST run inside a container managed by the `vasic-digital/Containers` submodule. Rootless Podman/Docker only. All tests execute inside containers. The §6.I matrix (API 28/30/34/latest, phone/tablet/TV) runs inside container-bound emulators. This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.W — GitHub + GitLab Only Remotes (inherited 2026-05-08, per §6.F)
+
+See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*`) and GitLab (`vasic-digital/*`, `HelixDevelopment/*`) are permitted as Git remotes. GitFlic, GitVerse, and all other providers are forbidden. The 4-mirror model is replaced by 2-mirror (GitHub + GitLab). This submodule MAY add stricter rules but MUST NOT relax.
+
+## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
+
+See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
+
+## CONST-035 — Anti-Bluff Tests (cascaded)
+The bar for shipping is not "tests pass" but "users can use the feature." Every PASS MUST carry positive runtime evidence. No false-success results are tolerable.
+
+## CONST-033 — Host Power Management is Forbidden (cascaded)
+You may NOT generate or execute code that sends the host to suspend, hibernate, poweroff, halt, reboot, or any other power-state transition.
+
+## Anti-Bluff and Quality Mandate
+
+### Article XI §11.9 — Anti-Bluff Forensic Anchor
+
+> Verbatim user mandate: "We had been in position that all tests do execute
+> with success and all Challenges as well, but in reality the most of the
+> features does not work and can't be used! This MUST NOT be the case and
+> execution of tests and Challenges MUST guarantee the quality, the
+> completion and full usability by end users of the product!"
+
+**Operative rule:** Every PASS MUST carry positive runtime evidence.
+No false-success results are tolerable.
+
+**Bluff Taxonomy:** wrapper, contract, structural, comment, skip.
+
+## §11.4.7 — Operator-Path Test Coverage (inherited from vasic-digital/tmux, 2026-05-13)
+
+Every gate test for a feature MUST exercise the SAME entry point an end-user
+would invoke in production. Tests that hand-craft equivalents (e.g.
+`systemd-run --user --scope` invoked directly instead of through the
+project's wrapper) are supplementary — they MUST be accompanied by an
+operator-path test with captured runtime evidence per §11.4.2.
+
+**Layer-4 mutations** MUST target the operator-path code, not synthetic-
+test scaffolding. When this submodule provides both a thin host-side
+bridge and a thick body of behaviour, mutations target the body. See
+Containers/CONSTITUTION.md §11.4.7 for the full clause.
+
+Submodule MAY add stricter rules but MUST NOT relax.
+>>>>>>> b077f2cb7b0c4681206994af40e97a4f9d85e2fb

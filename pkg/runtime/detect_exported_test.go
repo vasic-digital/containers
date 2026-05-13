@@ -12,7 +12,7 @@ import (
 func TestAutoDetectWithPriority_Exported(t *testing.T) {
 	// bluff-scan: no-assert-ok (auto-detect smoke — must not panic)
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)") // SKIP-OK: #env-integration-only
 	}
 }
 
@@ -20,6 +20,6 @@ func TestAutoDetectWithPriority_Exported(t *testing.T) {
 func TestDetectByPriority_Exported(t *testing.T) {
 	// bluff-scan: no-assert-ok (auto-detect smoke — must not panic)
 	if os.Getenv("CONTAINERS_INTEGRATION_TEST") != "1" {
-		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)")
+		t.Skip("Set CONTAINERS_INTEGRATION_TEST=1 to run (execs real runtimes)") // SKIP-OK: #env-integration-only
 	}
 }

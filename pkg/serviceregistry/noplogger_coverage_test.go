@@ -37,7 +37,7 @@ func TestSaveToDisk_MarshalFail(t *testing.T) {
 	// write fails, exercising the os.WriteFile error branch in saveToDisk.
 	tmpDir, err := os.MkdirTemp("", "registry-save-fail-*")
 	if err != nil {
-		t.Skip("could not create temp dir")
+		t.Skip("could not create temp dir") // SKIP-OK: #env-tempdir-unavailable
 	}
 	// Remove write permissions so WriteFile fails.
 	_ = os.Chmod(tmpDir, 0o555)
@@ -57,7 +57,7 @@ func TestSaveToDisk_MarshalFail(t *testing.T) {
 func TestLoadFromDisk_UnmarshalFail(t *testing.T) {
 	tmpDir, err := os.MkdirTemp("", "registry-load-fail-*")
 	if err != nil {
-		t.Skip("could not create temp dir")
+		t.Skip("could not create temp dir") // SKIP-OK: #env-tempdir-unavailable
 	}
 	defer os.RemoveAll(tmpDir)
 

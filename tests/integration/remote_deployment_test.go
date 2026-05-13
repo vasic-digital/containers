@@ -27,7 +27,7 @@ func skipIfNoRemoteHost(t *testing.T) *envconfig.DistributionConfig {
 
 	cfg := envconfig.LoadFromEnv()
 	if !cfg.Enabled || len(cfg.ToRemoteHosts()) == 0 {
-		t.Skip("No remote host configured - set CONTAINERS_REMOTE_ENABLED=true and CONTAINERS_REMOTE_HOST_1_*")
+		t.Skip("No remote host configured - set CONTAINERS_REMOTE_ENABLED=true and CONTAINERS_REMOTE_HOST_1_*") // SKIP-OK: #env-remote-disabled
 	}
 
 	return cfg

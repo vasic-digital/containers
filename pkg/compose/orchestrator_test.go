@@ -295,7 +295,7 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 	// on the system. We skip if no compose command is found.
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err) // SKIP-OK: #env-compose-cmd-missing
 	}
 
 	require.NotNil(t, o)
@@ -307,7 +307,7 @@ func TestNewDefaultOrchestrator_Success(t *testing.T) {
 func TestNewDefaultOrchestrator_NilLogger(t *testing.T) {
 	o, err := NewDefaultOrchestrator("/tmp", nil)
 	if err != nil {
-		t.Skipf("no compose command available: %v", err)
+		t.Skipf("no compose command available: %v", err) // SKIP-OK: #env-compose-cmd-missing
 	}
 
 	require.NotNil(t, o)
@@ -321,7 +321,7 @@ func TestDetectComposeCmd_FindsDockerCompose(t *testing.T) {
 	// Check if docker compose is available
 	cmd := exec.Command("docker", "compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker compose not available")
+		t.Skip("docker compose not available") // SKIP-OK: #env-docker-compose
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -334,14 +334,14 @@ func TestDetectComposeCmd_FindsStandaloneDockerCompose(t *testing.T) {
 	// Check if docker-compose is available
 	cmd := exec.Command("docker-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("docker-compose not available")
+		t.Skip("docker-compose not available") // SKIP-OK: #env-docker-compose-standalone
 	}
 
 	// Only test this if docker compose plugin is NOT available
 	// (otherwise docker compose takes precedence)
 	pluginCmd := exec.Command("docker", "compose", "version")
 	if pluginCmd.Run() == nil {
-		t.Skip("docker compose plugin available, takes precedence")
+		t.Skip("docker compose plugin available, takes precedence") // SKIP-OK: #env-precedence-docker-plugin
 	}
 
 	composecmd, args, err := detectComposeCmd()
@@ -354,14 +354,14 @@ func TestDetectComposeCmd_FindsPodmanCompose(t *testing.T) {
 	// Check if podman-compose is available
 	cmd := exec.Command("podman-compose", "version")
 	if err := cmd.Run(); err != nil {
-		t.Skip("podman-compose not available")
+		t.Skip("podman-compose not available") // SKIP-OK: #env-podman-compose
 	}
 
 	// Only test if neither docker compose nor docker-compose is available
 	dockerPluginCmd := exec.Command("docker", "compose", "version")
 	dockerStandaloneCmd := exec.Command("docker-compose", "version")
 	if dockerPluginCmd.Run() == nil || dockerStandaloneCmd.Run() == nil {
-		t.Skip("docker compose available, takes precedence")
+		t.Skip("docker compose available, takes precedence") // SKIP-OK: #env-precedence-docker
 	}
 
 	composecmd, args, err := detectComposeCmd()
