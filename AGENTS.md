@@ -975,7 +975,6 @@ Every test, every Challenge Test, every CI gate added to or maintained in this s
 
 Inheritance is recursive: this clause applies to every dependency, every test, every Challenge, every CI gate this submodule introduces. Sub-submodules MAY paste this clause verbatim; they MUST NOT abbreviate it.
 
-<<<<<<< HEAD
 
 ## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
 
@@ -1292,7 +1291,6 @@ are NEVER manually invoked; they ALWAYS travel with the markdown.
 §11.4.12.
 
 Non-compliance is a release blocker regardless of context.
-=======
 ## Clause 6.O (added 2026-05-05, inherited per 6.F)
 
 - **Clause 6.O — Crashlytics-Resolved Issue Coverage Mandate** — see root `/CLAUDE.md` §6.O. Every Crashlytics-recorded issue (fatal OR non-fatal) closed/resolved by any commit MUST gain (a) a validation test in the language of the crashing surface that reproduces the conditions, (b) a Challenge Test under `app/src/androidTest/kotlin/lava/app/challenges/` (client) or `tests/e2e/` (server) that drives the same user-facing path, and (c) a closure log at `.lava-ci-evidence/crashlytics-resolved/<date>-<slug>.md` recording the issue ID, root-cause analysis, fix commit SHA, and links to the tests. `scripts/tag.sh` MUST refuse release tags whose CHANGELOG mentions Crashlytics fixes without matching closure logs. Marking a Crashlytics issue "closed" in the Console requires the test coverage to land first — never close-mark before the regression-immunity tests exist. Forensic anchor: 2026-05-05, 2 Crashlytics-recorded crashes within minutes of the first Firebase-instrumented APK distribution (Lava-Android-1.2.3-1023, commit `e9de508`); post-mortem at `.lava-ci-evidence/crashlytics-resolved/2026-05-05-firebase-init-hardening.md`. The operator's ELEVENTH §6.L invocation made this clause load-bearing.
@@ -1363,7 +1361,6 @@ Tests that hand-craft equivalents are supplementary; the operator-path
 test MUST exist alongside. Layer-4 mutations target the body that
 consumers exercise, NOT the thin bridge. See Containers/CONSTITUTION.md
 §11.4.7 for the full clause.
->>>>>>> b077f2cb7b0c4681206994af40e97a4f9d85e2fb
 <!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
 
 ## Submodule Decoupling & Reusability — MANDATORY for ALL AI Agents
@@ -1399,3 +1396,38 @@ matrix hardcoded.
 Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
 
 See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+## Cross-Platform Impact — MANDATORY for ALL AI Agents (mirrors Yole CONST-037)
+
+**Applies to ALL CLI agents (Codex, Cursor, Gemini CLI, Copilot CLI,
+Claude Code, etc.) working on this submodule.**
+
+This submodule is consumed by the Yole multi-platform project
+(Android / Desktop / iOS / Web). Every change MUST be reasoned about
+across all four target platforms BEFORE coding. A regression on one
+target ships to end users on that target.
+
+**Pre-edit checklist:**
+
+- [ ] Does this compile on every Yole target?
+- [ ] Does it behave identically — or by-design differently — on each?
+- [ ] Is the change covered by a test on every affected target?
+- [ ] Are platform manifests updated coherently?
+
+**Commit body requirement:** any change affecting more than one Yole
+platform MUST include a "Cross-platform impact" block enumerating each
+platform's disposition.
+
+```
+Cross-platform impact:
+- Android: <disposition>
+- Desktop: <disposition>
+- iOS:     <disposition>
+- Web:     <disposition>
+```
+
+See CONST-037 in the parent Yole repo's `CONSTITUTION.md` for the full
+rule and forensic anchor.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->

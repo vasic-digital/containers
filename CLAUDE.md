@@ -780,7 +780,6 @@ The authoritative verbatim text lives in the parent Lava `CLAUDE.md` "Seventh La
   3. **Forensic anchor.** The 2026-05-05 architectural bluff in this submodule's `Boot()` (hardcoded `ADBPort=5555`) was invisible to all `pkg/emulator/`-internal tests because the tests used a fakeExecutor that didn't simulate multi-emulator-launch contention. The fix added `TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists` (commit 648a4bb) and `TestAndroidEmulator_Teardown_WaitsForEmulatorToActuallyExit` (commit f6d09cb). Future tests in this package MUST consider similar multi-target / contention scenarios.
   4. **Inheritance.** Submodule-internal CI gates inherit clause 6.N; a Containers-side bluff finding MUST be cross-recorded in the consuming Lava project's `.lava-ci-evidence/sixth-law-incidents/` AND in this submodule's `.evidence/bluff-hunt/` (or equivalent).
 
-<<<<<<< HEAD
 
 ## MANDATORY §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate, 2026-04-30)
 
@@ -1097,7 +1096,6 @@ are NEVER manually invoked; they ALWAYS travel with the markdown.
 §11.4.12.
 
 Non-compliance is a release blocker regardless of context.
-=======
 ## Clause 6.O (added 2026-05-05, inherited per 6.F)
 
 - **Clause 6.O — Crashlytics-Resolved Issue Coverage Mandate** — see root `/CLAUDE.md` §6.O. Every Crashlytics-recorded issue (fatal OR non-fatal) closed/resolved by any commit MUST gain (a) a validation test in the language of the crashing surface that reproduces the conditions, (b) a Challenge Test under `app/src/androidTest/kotlin/lava/app/challenges/` (client) or `tests/e2e/` (server) that drives the same user-facing path, and (c) a closure log at `.lava-ci-evidence/crashlytics-resolved/<date>-<slug>.md` recording the issue ID, root-cause analysis, fix commit SHA, and links to the tests. `scripts/tag.sh` MUST refuse release tags whose CHANGELOG mentions Crashlytics fixes without matching closure logs. Marking a Crashlytics issue "closed" in the Console requires the test coverage to land first — never close-mark before the regression-immunity tests exist. Forensic anchor: 2026-05-05, 2 Crashlytics-recorded crashes within minutes of the first Firebase-instrumented APK distribution (Lava-Android-1.2.3-1023, commit `e9de508`); post-mortem at `.lava-ci-evidence/crashlytics-resolved/2026-05-05-firebase-init-hardening.md`. The operator's ELEVENTH §6.L invocation made this clause load-bearing.
@@ -1175,7 +1173,6 @@ bridge and a thick body of behaviour, mutations target the body. See
 Containers/CONSTITUTION.md §11.4.7 for the full clause.
 
 Submodule MAY add stricter rules but MUST NOT relax.
->>>>>>> b077f2cb7b0c4681206994af40e97a4f9d85e2fb
 <!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
 
 ## Submodule Decoupling & Reusability — MANDATORY
@@ -1210,3 +1207,25 @@ matrix hardcoded.
 Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
 
 See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+## Cross-Platform Impact — MANDATORY Consideration (mirrors Yole CONST-037)
+
+This submodule is consumed by the Yole multi-platform project
+(Android / Desktop (Linux x64 / Windows x64 / macOS arm64) / iOS /
+Web (Wasm PWA)). Every change MUST be reasoned about across all four
+target platforms BEFORE coding.
+
+**Pre-edit checklist:**
+
+- [ ] Does this compile on every Yole target?
+- [ ] Does it behave identically — or by-design differently — on each?
+- [ ] Is the change covered by a test on every affected target?
+- [ ] Are platform manifests updated coherently?
+
+**Commit body requirement:** any change affecting more than one Yole
+platform MUST include a "Cross-platform impact" block enumerating each
+platform's disposition. See CONST-037 in the parent Yole repo's
+`CONSTITUTION.md` for the full rule.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->
