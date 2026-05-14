@@ -521,3 +521,55 @@ we are not their owners.
 Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
 
 See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.
+<!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
+
+### Cross-Platform Impact — Mandatory Consideration (mirrors Yole CONST-037)
+
+**Status:** Mandatory. Non-negotiable. Mirrors CONST-037 in the parent
+Yole project's `CONSTITUTION.md`.
+
+**Rule:** This submodule is consumed by the Yole multi-platform project
+(Android / Desktop / iOS / Web). Every change MUST be reasoned about
+across all four target platforms BEFORE coding. A fix that works on one
+target but silently breaks another is a regression.
+
+**Pre-edit checklist:** Before any code change, answer:
+
+1. Does this compile on every Yole target (Android, Desktop, iOS, Web)?
+2. Does it behave identically — or by-design differently — on each?
+3. Is the change covered by a test on every affected target?
+4. Are platform manifests (AndroidManifest.xml, Info.plist, web
+   manifest, container packaging) updated coherently?
+
+**Commit body requirement:** every change MUST include a
+"Cross-platform impact" block listing each Yole platform's disposition
+(changed / unchanged / N/A with reason).
+
+```
+Cross-platform impact:
+- Android: <disposition>
+- Desktop: <disposition>
+- iOS:     <disposition>
+- Web:     <disposition>
+```
+
+**Why:** End users experience the integrated Yole product, not this
+submodule in isolation. Cross-platform regressions caused by
+submodule-local changes have shipped to users in the past; mandatory
+up-front consideration is the only mitigation.
+
+**Enforcement:** the parent Yole repo runs
+`yole-challenges/scripts/cross_platform_parity_challenge.sh` in
+`make qa-all`. Submodule changes that cause that challenge to fail
+MUST be reverted or fixed.
+
+**See also:** CONST-037 in the parent Yole repo's `CONSTITUTION.md`
+for the full rule and forensic anchor.
+
+<!-- END cross-platform-impact (mirrors Yole CONST-037) -->
+## §6.Z — Anti-Bluff Distribute Guard (inherited 2026-05-14, per §6.F)
+
+See root `/CLAUDE.md` §6.Z. No artifact may be distributed (Firebase App Distribution, Google Play Store release, container image push, this submodule's binary release, any future channel) UNLESS the corresponding end-to-end tests have been **EXECUTED — not source-compiled, EXECUTED** — against the EXACT artifact about to be distributed, AND have **passed**. Pre-distribute test-evidence file required at `.lava-ci-evidence/distribute-changelog/<channel>/<version>-<code>-test-evidence.{md,json}` with matching commit SHA, timestamp within 24h, `BUILD SUCCESSFUL` (or per-language pass marker) verbatim in captured output. Cold-start verification is the load-bearing canary. Distributing a faulty version is a constitutional violation by construction. §6.Z-debt is open: mechanical enforcement via `scripts/firebase-distribute.sh` Phase 1 Gate 6 + pre-push hook check is documented but not yet enforced. Forensic anchor: 2026-05-14 Galaxy S23 Ultra cold-launch crash on Lava-Android-1.2.19-1039 (Crashlytics `40a62f97a5c65abb56142b4ca2c37eeb` — `painterResource()` rejection of `<layer-list>` drawable); agent had skipped Compose UI test execution citing the wrong §6.X caveat. Operator's 26th §6.L invocation: "Anti-bluff policy MUST BE ENFORCED ALWAYS!!!" This submodule MAY add stricter rules but MUST NOT relax this clause.
+## §6.AA — Two-Stage Distribute Mandate (inherited 2026-05-14, per §6.F)
+
+See root `/CLAUDE.md` §6.AA. When an artifact has both a debug and a release variant (or analogous dev-vs-prod build types — including this submodule's binary release if it ships separate dev / prod variants), distribute MUST happen in TWO STAGES with operator-confirmed verification between them. Stage 1 distributes the debug / dev variant only; the operator verifies the **distributed** debug variant on the failure-surface device class. Stage 2 distributes the release / prod variant only ONLY AFTER written stage-1 verification, with the §6.Z test-evidence file appended with a `release-stage` section. No combined distribute permitted by default; the combined path requires explicit per-cycle operator authorization recorded in the evidence file. The R8 / minification surprise class on Android (or analogous stripping / production-only optimization classes on other artifacts) is the load-bearing reason. §6.AA-debt is open: mechanical enforcement via `scripts/firebase-distribute.sh` default flip + refusal of out-of-order `--release-only` + paired `last-version-{debug,release}` per-channel pre-push check is documented but not yet enforced. Forensic anchor: 2026-05-14 operator directive immediately after the §6.Z forensic-anchor crash on Lava-Android-1.2.19-1039: "for purposes like this one we shall distribute via Firebase DEV / DEBUG version only. Once we try it, you continue and once all verified you distribute RELEASE too!" This submodule MAY add stricter rules but MUST NOT relax this clause.
