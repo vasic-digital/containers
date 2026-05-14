@@ -1364,3 +1364,38 @@ test MUST exist alongside. Layer-4 mutations target the body that
 consumers exercise, NOT the thin bridge. See Containers/CONSTITUTION.md
 §11.4.7 for the full clause.
 >>>>>>> b077f2cb7b0c4681206994af40e97a4f9d85e2fb
+<!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
+
+## Submodule Decoupling & Reusability — MANDATORY for ALL AI Agents
+
+**Applies to ALL CLI agents (Codex, Cursor, Gemini CLI, Copilot CLI,
+Claude Code, etc.) working in this repository.**
+
+This repository is **shared infrastructure** consumed by multiple
+independent consumer projects. The value of this repository depends
+on staying fully decoupled and reusable.
+
+**Hard rules:**
+
+- DO NOT hardcode any specific consumer project's name, platform
+  list, paths, version strings, or release-naming conventions.
+- DO NOT import / reference any consumer-project namespace.
+- DO NOT embed consumer-project-specific governance, branding, or
+  rule numbering in `CONSTITUTION.md` / `CLAUDE.md` / `AGENTS.md`.
+- DO assume N ≥ 2 unrelated consumer projects exist.
+
+Cross-project rules MUST be phrased generically ("every consuming
+project's full platform matrix"), never with a specific consumer's
+matrix hardcoded.
+
+<!-- END submodule-decoupling-and-reusability (parent-mirror) -->
+
+---
+
+## CONST-047 — Recursive Submodule Application Mandate (cascaded from root CONSTITUTION.md)
+
+> Verbatim user mandate (2026-05-14): *"Make sure all work we do is applied ALWAYS to all Submodules we control under our organizations (vasic-digital and HelixDevelopment) fully recursively everywhere with full bluff-proofing and comprehensive documentation, user manuals and guides and full tests and Challenges coverage!"*
+
+Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
+
+See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.

@@ -457,3 +457,67 @@ project's rule set and this submodule's own apply; the stricter
 applies.
 
 Non-compliance is a release blocker.
+<!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
+
+### Submodule Decoupling & Reusability — Mandatory
+
+**Status:** Mandatory. Non-negotiable.
+
+**Rule:** This repository is a **shared submodule** consumed by
+multiple independent consumer projects. Its value depends on staying
+**fully decoupled and reusable**. No change in this repository may
+introduce coupling that breaks its standalone reusability for any
+consumer.
+
+**Prohibited inside this repository:**
+
+1. Hardcoding any specific consumer project's name, paths, platform
+   list, version strings, release-naming conventions, branding, or
+   feature names.
+2. `import` / dependency on any consumer-project namespace, package,
+   or build coordinate.
+3. Embedding consumer-project-specific governance, rule numbering, or
+   release cadence into this repository's `CONSTITUTION.md` /
+   `CLAUDE.md` / `AGENTS.md`.
+4. Assuming this repository is consumed by a particular CLI, build
+   system, language toolchain version, or target architecture beyond
+   what its public interface documents.
+
+**Required inside this repository:**
+
+1. All public surfaces (APIs, CLIs, configuration files, environment
+   variables, scripts) MUST be expressed in terms of THIS repository's
+   own domain — not any consumer's.
+2. Governance MUST describe responsibilities and contract from THIS
+   repository's perspective. Consumer projects appear as illustrative
+   examples at most, never as load-bearing requirements.
+3. Cross-project rules adopted from a consumer (such as a
+   cross-platform impact mandate) MUST be phrased generically —
+   "every consuming project's full platform matrix" — and never
+   hardcode any single consumer's matrix.
+
+**Why:** Repositories like this one have shipped changes in the past
+where one consumer's platform list, feature names, or rule numbering
+leaked into shared-repo governance — and then collided at merge time
+with another consumer's parallel work, leaving the repository
+unmergeable until manual conflict resolution stripped the
+consumer-specific text back out. Decoupling is the only mechanism
+that preserves this repository's value as shared infrastructure.
+
+**Recursive scope:** any submodule this repository consumes inherits
+the same decoupling+reusability rule. Third-party upstream submodules
+that this repository merely vendors (e.g. open-source tools under a
+`tools/opensource/` tree, if present) are explicitly out of scope —
+we are not their owners.
+
+<!-- END submodule-decoupling-and-reusability (parent-mirror) -->
+
+---
+
+## CONST-047 — Recursive Submodule Application Mandate (cascaded from root CONSTITUTION.md)
+
+> Verbatim user mandate (2026-05-14): *"Make sure all work we do is applied ALWAYS to all Submodules we control under our organizations (vasic-digital and HelixDevelopment) fully recursively everywhere with full bluff-proofing and comprehensive documentation, user manuals and guides and full tests and Challenges coverage!"*
+
+Every engineering deliverable produced for the main project MUST be applied — fully and recursively — to every owned submodule under the `vasic-digital` and `HelixDevelopment` GitHub organizations. Each owned submodule (including this one) MUST receive in lockstep: (1) anti-bluff posture (CONST-035 / Article XI §11.9), (2) comprehensive documentation matching actual capabilities, (3) full tests + Challenges coverage with captured runtime evidence, (4) recursive propagation through nested submodules under the same orgs, (5) synchronized commits when meta-repo state advances this surface.
+
+See the root `CONSTITUTION.md` §CONST-047 for the full mandate. This anchor MUST remain in this submodule's CONSTITUTION.md, CLAUDE.md, and AGENTS.md.
