@@ -1,0 +1,50 @@
+# Containers/scripts/resource-policy/resource-policy-skip-paths.example.list
+#
+# Example project-specific skip-path fragments for apply_caps.py.
+# Per CONST-051(B): the Containers submodule's apply_caps.py source MUST
+# NOT enumerate consuming-project-internal paths. Each consuming project
+# supplies its own list via `--skip-paths-file <path>` (or
+# `RESOURCE_POLICY_SKIP_PATHS_FILE=<path>` env var).
+#
+# Format:
+#   - One path fragment per line.
+#   - Leading/trailing whitespace stripped.
+#   - Lines beginning with `#` are comments.
+#   - Blank lines ignored.
+#   - Fragments are matched as substrings against the full posix path
+#     (with leading slash prepended), so include leading + trailing
+#     slashes when you mean a directory boundary.
+#
+# Example contents below — copy + adapt to your project. The example
+# entries name HelixCode-internal directories the original hardcoded
+# list used to cover; they are LEGITIMATELY HelixCode-specific and
+# now live in HelixCode's own copy of this file rather than in the
+# decoupled submodule's source.
+
+# Third-party submodules under HelixCode's tree
+/MCP/submodules/
+/cli_agents/openhands/
+/cli_agents/fauxpilot/
+/cli_agents/gpt-engineer/
+/cli_agents/claude-code-source/
+/cli_agents/claude-plugins/
+/cli_agents/postgres-mcp/
+/cli_agents/kilo-code/
+/cli_agents/roo-code/
+/cli_agents/nanocoder/
+/cli_agents/plandex/
+/cli_agents/taskweaver/
+/cli_agents/bridle/
+/cli_agents/qwen-code/
+/cli_agents/swe-agent/
+/cli_agents/HelixCode/HelixCode/
+
+# Third-party tools shipped in HelixQA
+/HelixQA/tools/opensource/
+
+# Third-party MCP servers shipped beside HelixCode
+/mcp-servers/
+/HelixCode/mcp-servers/
+
+# HelixLLM example/docs compose files
+/HelixLLM/docs/

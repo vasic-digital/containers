@@ -55,42 +55,54 @@ except ImportError as exc:  # pragma: no cover
 # ---------------------------------------------------------------------------
 # Skip rules — paths whose compose files we must NOT modify.
 # ---------------------------------------------------------------------------
-SKIP_PATH_FRAGMENTS: tuple[str, ...] = (
+# Universal skip patterns — fragments true for every consuming project,
+# regardless of repo layout. Per CONST-051(B) this submodule MUST NOT
+# enumerate consuming-project-internal paths in source; project-specific
+# skip fragments come from `--skip-paths-file` / `RESOURCE_POLICY_SKIP_PATHS_FILE`
+# at runtime, supplied by the consuming project (see the example file shipped
+# alongside this script at `resource-policy-skip-paths.example.list`).
+SKIP_PATH_FRAGMENTS_DEFAULT: tuple[str, ...] = (
     "/.git/",
     "/node_modules/",
     "/vendor/",
+    "/external/",
     # Our own backup directories
     "/.container-caps-backup-",
-    # Third-party submodules
-    "/MCP/submodules/",
-    "/external/",
-    # Third-party cli_agents (only HelixCode is ours)
-    "/cli_agents/openhands/",
-    "/cli_agents/fauxpilot/",
-    "/cli_agents/gpt-engineer/",
-    "/cli_agents/claude-code-source/",
-    "/cli_agents/claude-plugins/",
-    "/cli_agents/postgres-mcp/",
-    "/cli_agents/kilo-code/",
-    "/cli_agents/roo-code/",
-    "/cli_agents/nanocoder/",
-    "/cli_agents/plandex/",
-    "/cli_agents/taskweaver/",
-    "/cli_agents/bridle/",
-    "/cli_agents/qwen-code/",
-    "/cli_agents/swe-agent/",
-    "/cli_agents/HelixCode/HelixCode/",  # nested checkout
-    # Third-party tools shipped in HelixQA
-    "/HelixQA/tools/opensource/",
-    # Third-party MCP servers shipped beside HelixCode
-    "/mcp-servers/",
-    "/HelixCode/mcp-servers/",
     # Documentation directories that contain example compose files
-    "/HelixLLM/docs/",
     "/docs/research/",
     "/docs/specs/",
     "/docs/examples/",
 )
+
+# Mutable, set at startup from defaults + --skip-paths-file + --exclude.
+SKIP_PATH_FRAGMENTS: tuple[str, ...] = SKIP_PATH_FRAGMENTS_DEFAULT
+
+
+def load_skip_paths_file(path: Path) -> tuple[str, ...]:
+    """Load extra skip-path fragments from a one-per-line file.
+
+    Per CONST-051(B): the consuming project supplies its own project-
+    specific skip fragments via this file so this submodule's source
+    stays decoupled from any specific consumer's directory layout.
+
+    Format:
+      - One fragment per line.
+      - Leading/trailing whitespace stripped.
+      - Lines starting with `#` (after stripping) are comments.
+      - Blank lines ignored.
+
+    The file MUST exist; missing-file is a hard error (the operator
+    invoked us with --skip-paths-file so they expect it).
+    """
+    if not path.is_file():
+        raise FileNotFoundError(f"--skip-paths-file not found: {path}")
+    out: list[str] = []
+    for raw in path.read_text().splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        out.append(line)
+    return tuple(out)
 
 COMPOSE_GLOBS: tuple[str, ...] = (
     "docker-compose*.yml",
@@ -327,7 +339,19 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--only-file", default=None,
                         help="only process files matching this glob")
     parser.add_argument("--exclude", default=None,
-                        help="additional path fragment to skip")
+                        help="additional path fragment to skip (single)")
+    parser.add_argument(
+        "--skip-paths-file",
+        default=os.environ.get("RESOURCE_POLICY_SKIP_PATHS_FILE"),
+        type=Path,
+        help=(
+            "file with project-specific skip-path fragments, one per line. "
+            "Comments (#) and blank lines ignored. The consuming project "
+            "supplies this file so apply_caps stays decoupled from any "
+            "specific consumer's directory layout (CONST-051(B)). Falls "
+            "back to RESOURCE_POLICY_SKIP_PATHS_FILE env var."
+        ),
+    )
     parser.add_argument("--force-rewrite", action="store_true",
                         help="overwrite existing cap fields")
     parser.add_argument("--report", default=None, type=Path,
@@ -343,9 +367,21 @@ def main(argv: list[str]) -> int:
         print(f"policy error: {exc}", file=sys.stderr)
         return 3
 
+    # Build the effective skip-paths set: defaults + project-file + --exclude.
+    global SKIP_PATH_FRAGMENTS
+    effective_skip: tuple[str, ...] = SKIP_PATH_FRAGMENTS_DEFAULT
+    if args.skip_paths_file:
+        try:
+            project_skips = load_skip_paths_file(args.skip_paths_file)
+        except FileNotFoundError as exc:
+            print(f"skip-paths-file error: {exc}", file=sys.stderr)
+            return 1
+        if project_skips:
+            print(f"loaded {len(project_skips)} skip-path fragment(s) from {args.skip_paths_file}")
+            effective_skip = effective_skip + project_skips
     if args.exclude:
-        global SKIP_PATH_FRAGMENTS
-        SKIP_PATH_FRAGMENTS = SKIP_PATH_FRAGMENTS + (args.exclude,)
+        effective_skip = effective_skip + (args.exclude,)
+    SKIP_PATH_FRAGMENTS = effective_skip
 
     files = find_compose_files(args.root.resolve())
     if args.only_file:
