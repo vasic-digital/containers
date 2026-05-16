@@ -1,4 +1,4 @@
-# Containers/scripts/resource-policy/resource-policy-skip-paths.example.list
+# containers/scripts/resource-policy/resource-policy-skip-paths.example.list
 #
 # Example project-specific skip-path fragments for apply_caps.py.
 # Per CONST-051(B): the Containers submodule's apply_caps.py source MUST
@@ -37,14 +37,14 @@
 /cli_agents/bridle/
 /cli_agents/qwen-code/
 /cli_agents/swe-agent/
-/cli_agents/HelixCode/HelixCode/
+/cli_agents/helix_code/helix_code/
 
 # Third-party tools shipped in HelixQA
-/HelixQA/tools/opensource/
+/helix_qa/tools/opensource/
 
 # Third-party MCP servers shipped beside HelixCode
 /mcp-servers/
-/HelixCode/mcp-servers/
+/helix_code/mcp-servers/
 
 # HelixLLM example/docs compose files
 /HelixLLM/docs/

@@ -36,7 +36,7 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ```bash
 # Real orchestration flow (Hard Stop #2 canonical demo)
-# Builds HelixAgent and boots every container declared in Containers/.env.
+# Builds HelixAgent and boots every container declared in containers/.env.
 cd /run/media/milosvasic/DATA4TB/Projects/HelixAgent
 make build
 GOMAXPROCS=2 nice -n 19 ./bin/helixagent &
@@ -47,7 +47,7 @@ curl -fsS http://localhost:8100/v1/health | jq -e '.status == "healthy"'
 curl -fsS http://localhost:8100/v1/monitoring/status | jq -e '.services | all(.status == "healthy")'
 kill $HELIXAGENT_PID
 ```
-Expect: both `jq -e` exits 0; the binary's boot log shows each service from `Containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
+Expect: both `jq -e` exits 0; the binary's boot log shows each service from `containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
 
 
 ## MANDATORY HOST-SESSION SAFETY (Constitution §12)
@@ -297,7 +297,7 @@ Distributor receives a batch of container requirements, asks Scheduler which hos
 This is what the root HelixAgent `CLAUDE.md` Hard Stop #2 refers to. The flow is:
 
 1. **Build:** `make build` → `./bin/helixagent`.
-2. **Env load:** HelixAgent reads `Containers/.env` via `envconfig.LoadFromFile()`:
+2. **Env load:** HelixAgent reads `containers/.env` via `envconfig.LoadFromFile()`:
    - `CONTAINERS_REMOTE_ENABLED` (bool)
    - `CONTAINERS_REMOTE_HOST_N_*` (N = 1..100; loader stops at the first absent `_NAME`)
    - SSH pool, timeouts, scheduler strategy
@@ -1152,7 +1152,7 @@ See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*
 
 ## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
 
-See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
+See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/containers/`. This submodule MAY add stricter rules but MUST NOT relax.
 
 ## CONST-035 — Anti-Bluff Tests (cascaded)
 The bar for shipping is not "tests pass" but "users can use the feature." Every PASS MUST carry positive runtime evidence. No false-success results are tolerable.
@@ -1186,7 +1186,7 @@ operator-path test with captured runtime evidence per §11.4.2.
 **Layer-4 mutations** MUST target the operator-path code, not synthetic-
 test scaffolding. When this submodule provides both a thin host-side
 bridge and a thick body of behaviour, mutations target the body. See
-Containers/CONSTITUTION.md §11.4.7 for the full clause.
+containers/CONSTITUTION.md §11.4.7 for the full clause.
 
 Submodule MAY add stricter rules but MUST NOT relax.
 <!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->

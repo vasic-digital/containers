@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	flagEnvFile        = flag.String("env", "Containers/.env", "Path to distribution config .env file")
+	flagEnvFile        = flag.String("env", "containers/.env", "Path to distribution config .env file")
 	flagProjectRoot    = flag.String("root", ".", "Project root directory")
 	flagOutput         = flag.String("output", "reports/distributed-test", "Output directory for results")
 	flagTimeout        = flag.Duration("timeout", 30*time.Minute, "Overall timeout")

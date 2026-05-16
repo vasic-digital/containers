@@ -1,6 +1,6 @@
 # Container Cap Application Report
 
-Policy: `/run/media/milosvasic/DATA4TB/Projects/HelixAgent/Containers/scripts/resource-policy/policy.yaml`
+Policy: `/run/media/milosvasic/DATA4TB/Projects/helix_agent/containers/scripts/resource-policy/policy.yaml`
 
 Total: 500 service(s) across 45 file(s)
 
@@ -35,7 +35,7 @@ Total: 500 service(s) across 45 file(s)
 - redis  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (1g/1024p)
 - postgres  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (4g/1024p)
 
-### `HelixQA/docker-compose.stack.yml` — 8 service(s) updated
+### `helix_qa/docker-compose.stack.yml` — 8 service(s) updated
 
 - mediamtx  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (2g/1024p)
 - nats  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (1g/1024p)
@@ -118,7 +118,7 @@ Total: 500 service(s) across 45 file(s)
 - helixagent-mongo  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (4g/2048p)
 - helixagent-qdrant  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (4g/2048p)
 
-### `cli_agents/HelixCode/docker-compose.helix.yml` — 5 service(s) updated
+### `cli_agents/helix_code/docker-compose.helix.yml` — 5 service(s) updated
 
 - helixcode  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (3g/2048p)
 - postgres  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (4g/1024p)
@@ -126,7 +126,7 @@ Total: 500 service(s) across 45 file(s)
 - worker-1  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (2g/1024p)
 - worker-2  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (2g/1024p)
 
-### `cli_agents/HelixCode/security/docker-compose.security.yml` — 4 service(s) updated
+### `cli_agents/helix_code/security/docker-compose.security.yml` — 4 service(s) updated
 
 - sonarqube  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (8g/2048p)
 - sonarqube-db  +mem_limit,memswap_limit,pids_limit,oom_score_adj  (8g/2048p)
