@@ -32,6 +32,9 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 ## INHERITED FROM constitution/AGENTS.md
 
 All rules in `constitution/AGENTS.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
+> **Base agent rules:** `HelixConstitution/AGENTS.md` — READ IT FIRST.
+> All rules in `HelixConstitution/AGENTS.md` apply unconditionally.
+> Rules below extend them and MUST NOT weaken any inherited clause.
 
 ## MANDATORY HOST-SESSION SAFETY (Constitution §12)
 
@@ -1640,3 +1643,25 @@ If `HEAD..@{u}` is non-empty, integrate the upstream changes BEFORE any local ed
 **Anti-bluff invariant**: the fetch+log check MUST produce captured evidence — the actual `HEAD..@{u}` output, even if empty. Skipping the check on the basis of "I just fetched" or "nothing could have changed in the last N minutes" is a §11.4.6 (no-guessing) violation: the remote state is not knowable without a fetch.
 
 **Cascade requirement**: This anchor (verbatim or by `CONST-060` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the parallel-session-coordination layer. See constitution submodule `Constitution.md` §11.4.37 for the full mandate.
+<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
+
+## Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
+
+**Canonical authority:** `HelixConstitution/Constitution.md` §7.1 + §11.4.
+
+**Forensic anchor — verbatim operator mandate (2026-04-28):**
+
+> "We had been in position that all tests do execute with success and all
+> Challenges as well, but in reality the most of the features does not work
+> and can't be used! This MUST NOT be the case and execution of tests and
+> Challenges MUST guarantee the quality, the completition and full usability
+> by end users of the product! This MUST BE part of Constitution of our
+> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
+> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
+> (if not there already)!"
+
+Every PASS MUST carry positive runtime evidence. Consuming-project-specific
+requirements are defined by each consuming project's Constitution.
+This submodule's rules remain project-agnostic.
+
+<!-- END helix-constitution-inheritance + anti-bluff escalation -->
