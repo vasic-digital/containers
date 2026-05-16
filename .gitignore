@@ -33,6 +33,8 @@ vendor/
 .env.*
 .service-registry/
 /cmd/ctop/ctop
+/crossbuild-matrix
+/bin/crossbuild-matrix
 scripts/resource-policy/__pycache__/
 *.pyc
 
