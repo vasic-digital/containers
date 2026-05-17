@@ -99,9 +99,9 @@ The cap for a service is chosen by **first-match-wins glob matching
 against the lowercased service name**. The full table lives in two
 synchronized places:
 
-* `Containers/scripts/resource-policy/policy.yaml` — used by the bulk
+* `containers/scripts/resource-policy/policy.yaml` — used by the bulk
   cap-applier (`apply_caps.py`).
-* `Containers/pkg/policy/policy.go::Default()` — used at runtime by Go
+* `containers/pkg/policy/policy.go::Default()` — used at runtime by Go
   callers that want to apply the same caps when starting a container
   programmatically.
 
@@ -143,7 +143,7 @@ poorly with services that *should* survive a pressure spike (Postgres);
 Two cases:
 
 1. **The service name matches an existing pattern** — nothing to do.
-   Run `Containers/scripts/resource-policy/apply_caps.py` and the four
+   Run `containers/scripts/resource-policy/apply_caps.py` and the four
    keys will be inserted at the top of the new service block.
 
 2. **It needs a custom cap (heavier than its pattern allows)** — add a
@@ -157,7 +157,7 @@ Then run the test suite (§ 5). If `test_caps.py` passes, you're done.
 ## 5. Tooling
 
 ```
-Containers/
+containers/
 └── scripts/resource-policy/
     ├── policy.yaml          # YAML rules (single source of truth #1)
     ├── apply_caps.py        # bulk-applier (idempotent)
@@ -173,7 +173,7 @@ Containers/
 
 ```sh
 cd HelixAgent
-Containers/scripts/resource-policy/apply_caps.py [--dry-run]
+containers/scripts/resource-policy/apply_caps.py [--dry-run]
 ```
 
 It walks the project, skips third-party submodules, applies caps to
@@ -183,8 +183,8 @@ every user-owned compose file. Idempotent on repeat runs.
 
 ```sh
 cd HelixAgent
-python3 Containers/scripts/resource-policy/test_caps.py
-go test ./Containers/pkg/policy/...
+python3 containers/scripts/resource-policy/test_caps.py
+go test ./containers/pkg/policy/...
 ```
 
 ### Use the Go policy at runtime
@@ -210,9 +210,9 @@ if err := cap.Validate(); err != nil { ... }
 * `/.container-caps-backup-*` (its own backups)
 * `/MCP/submodules/`, `/external/` (third-party MCP servers)
 * `/cli_agents/{openhands,fauxpilot,gpt-engineer,claude-code-source,claude-plugins,postgres-mcp,kilo-code,roo-code,nanocoder,plandex,taskweaver,bridle,qwen-code,swe-agent}/`
-* `/cli_agents/HelixCode/HelixCode/` (nested checkout)
-* `/HelixQA/tools/opensource/` (third-party tools)
-* `/mcp-servers/`, `/HelixCode/mcp-servers/`
+* `/cli_agents/helix_code/helix_code/` (nested checkout)
+* `/helix_qa/tools/opensource/` (third-party tools)
+* `/mcp-servers/`, `/helix_code/mcp-servers/`
 * `/HelixLLM/docs/`, `/docs/research/`, `/docs/specs/`, `/docs/examples/`
 
 Adding new third-party submodules? Extend `SKIP_PATH_FRAGMENTS` in

@@ -21,7 +21,7 @@ green-CI / red-Build distinction stays honest.
 ## Provisioning steps (Linux x86_64 host, rootless podman)
 
 ```bash
-cd Submodules/Containers/pkg/crossbuild
+cd Submodules/containers/pkg/crossbuild
 
 # 1. Build the image. ~2-5 minutes on a reasonable network.
 podman build \

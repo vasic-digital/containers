@@ -34,7 +34,7 @@ import (
 // Operator provisioning steps:
 //
 //	# On a Linux host with rootless podman:
-//	cd Submodules/Containers/pkg/crossbuild
+//	cd Submodules/containers/pkg/crossbuild
 //	podman build -t ghcr.io/vasic-digital/crossbuild-wine:latest \
 //	    -f windows_wine.Containerfile .
 //

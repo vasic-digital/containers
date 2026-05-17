@@ -35,7 +35,7 @@ from typing import Any
 from ruamel.yaml import YAML
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent.parent.parent  # HelixAgent/
+ROOT = HERE.parent.parent.parent  # helix_agent/
 POLICY_PATH = HERE / "policy.yaml"
 APPLY_SCRIPT = HERE / "apply_caps.py"
 

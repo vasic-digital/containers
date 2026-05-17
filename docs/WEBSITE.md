@@ -247,7 +247,7 @@ MIT License - See [LICENSE](../LICENSE) for details.
 ## Support
 
 - **Documentation:** [docs/](.)
-- **Issues:** [GitHub Issues](https://github.com/vasic-digital/Containers/issues)
+- **Issues:** [GitHub Issues](https://github.com/vasic-digital/containers/issues)
 - **Examples:** [examples/](../examples/)
 
 ---
