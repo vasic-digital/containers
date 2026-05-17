@@ -97,7 +97,7 @@ func TestIOSBuilder_XcodeVersion_Installed(t *testing.T) {
 // return ErrXcodeNotAvailable immediately without touching xcodeRunner.
 func TestIOSBuilder_BuildIPA_NonMacOS(t *testing.T) {
 	if runtime.GOOS == "darwin" {
-		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS SKIP-OK: #darwin-skip-non-macos-fastpath")
 	}
 	fake := &fakeXcodeRunner{}
 	b := newIOSBuilderWithRunner(fake)
@@ -216,7 +216,7 @@ func TestIOSBuilder_BuildIPA_ArchiveFails(t *testing.T) {
 // TestIOSBuilder_ListSimulators_NonMacOS: on non-macOS returns error.
 func TestIOSBuilder_ListSimulators_NonMacOS(t *testing.T) {
 	if runtime.GOOS == "darwin" {
-		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS SKIP-OK: #darwin-skip-non-macos-fastpath")
 	}
 	b := NewIOSBuilder()
 	_, err := b.ListSimulators(context.Background())
