@@ -42,3 +42,4 @@ scripts/resource-policy/__pycache__/
 report.json
 go-mutesting-report.html
 *.go.tmp
+/bin/
