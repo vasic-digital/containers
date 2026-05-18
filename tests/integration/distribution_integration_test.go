@@ -44,13 +44,18 @@ func TestDistributionWorkflow_AllPhases(t *testing.T) {
 			"phase at index %d should match", i)
 	}
 
-	// Verify each phase has a non-empty description.
+	// Verify each phase has a non-empty description and that the
+	// NoopTranslator fallback (translator=nil) returns the namespaced
+	// message ID, not the unknown-phase sentinel. The verbatim ID is
+	// positive runtime evidence per CONST-035 / §11.9 — the assertion
+	// here proves the i18n pipeline is wired through the integration
+	// layer, not just the unit-test sandbox.
 	for _, phase := range phases {
-		desc := distribution.PhaseDescription(phase)
+		desc := distribution.PhaseDescription(context.Background(), nil, phase)
 		assert.NotEmpty(t, desc,
 			"phase %q should have a description", phase)
-		assert.NotEqual(t, "Unknown phase", desc,
-			"phase %q should not be unknown", phase)
+		assert.NotEqual(t, "containers_workflow_phase_unknown", desc,
+			"phase %q should not resolve to the unknown msgID", phase)
 	}
 }
 

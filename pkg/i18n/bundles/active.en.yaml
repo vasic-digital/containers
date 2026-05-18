@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Milos Vasic
+#
+# Containers active English bundle.
+# Message IDs are prefixed `containers_` for namespace clarity when
+# bundled alongside other vasic-digital library surfaces.
+#
+# CONST-046 (no-hardcoded-content) lineage:
+# - Round 129 (2026-05-18) migrated the first batch of user-facing
+#   literals embedded in pkg/distribution/workflow.go (phase
+#   descriptions surfaced to operators monitoring the distribution
+#   workflow) and internal/buildpkg/executor.go (build-execution error
+#   strings surfaced through BuildResult.Error to API consumers).
+#
+# Placeholders use `{{.name}}` style; consuming Translator
+# implementations may pick any template engine compatible with that
+# arg map.
+containers_workflow_phase_probe: "Probing remote hosts for resource availability."
+containers_workflow_phase_schedule: "Scheduling containers across hosts."
+containers_workflow_phase_volumes: "Mounting volumes on remote hosts."
+containers_workflow_phase_deploy: "Deploying containers."
+containers_workflow_phase_tunnels: "Creating SSH tunnels for networking."
+containers_workflow_phase_health: "Running health checks."
+containers_workflow_phase_events: "Emitting distribution events."
+containers_workflow_phase_unknown: "Unknown distribution workflow phase."
+containers_buildpkg_execution_failed: "Build execution failed: {{.err}}."
+containers_buildpkg_exit_code_failed: "Build exited with code {{.code}}: {{.stderr}}."
