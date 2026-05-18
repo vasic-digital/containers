@@ -47,6 +47,7 @@ ENV PATH=/opt/gradle/bin:/opt/jdk/bin:${PATH}
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
         ca-certificates curl wget gnupg \
+        git \
         unzip zip \
         binutils fakeroot rpm \
         fonts-dejavu fonts-liberation \
