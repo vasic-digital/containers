@@ -23,12 +23,12 @@ func skipIfNoRemoteHost(t *testing.T) (*envconfig.DistributionConfig, *remote.SS
 
 	cfg := envconfig.LoadFromEnv()
 	if !cfg.Enabled {
-		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true to run remote challenges")
+		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true to run remote challenges") // SKIP-OK: #env-remote-disabled
 	}
 
 	hosts := cfg.ToRemoteHosts()
 	if len(hosts) == 0 {
-		t.Skip("No remote hosts configured - set CONTAINERS_REMOTE_HOST_1_*")
+		t.Skip("No remote hosts configured - set CONTAINERS_REMOTE_HOST_1_*") // SKIP-OK: #env-remote-hosts-unset
 	}
 
 	logger := logging.NopLogger{}
@@ -120,7 +120,7 @@ func TestChallenge_ComposeDetection_FallbackChain(t *testing.T) {
 // Challenge: Single Container Deployment
 func TestChallenge_Deploy_SingleContainer(t *testing.T) {
 	if os.Getenv("CONTAINERS_CHALLENGE_DEPLOY") == "" {
-		t.Skip("Set CONTAINERS_CHALLENGE_DEPLOY=1 to run deployment challenges")
+		t.Skip("Set CONTAINERS_CHALLENGE_DEPLOY=1 to run deployment challenges") // SKIP-OK: #env-challenge-deploy-only
 	}
 
 	_, executor, host := skipIfNoRemoteHost(t)
@@ -185,7 +185,7 @@ func TestChallenge_Deploy_SingleContainer(t *testing.T) {
 // Challenge: Compose Project Deployment
 func TestChallenge_Deploy_ComposeProject(t *testing.T) {
 	if os.Getenv("CONTAINERS_CHALLENGE_DEPLOY") == "" {
-		t.Skip("Set CONTAINERS_CHALLENGE_DEPLOY=1 to run deployment challenges")
+		t.Skip("Set CONTAINERS_CHALLENGE_DEPLOY=1 to run deployment challenges") // SKIP-OK: #env-challenge-deploy-only
 	}
 
 	_, executor, host := skipIfNoRemoteHost(t)
@@ -357,7 +357,7 @@ func TestChallenge_MultiHost_Configuration(t *testing.T) {
 	// bluff-scan: no-assert-ok (challenge config smoke — parsing/configuration must not panic)
 	cfg := envconfig.LoadFromEnv()
 	if !cfg.Enabled {
-		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true")
+		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true") // SKIP-OK: #env-remote-disabled
 	}
 
 	hosts := cfg.ToRemoteHosts()
@@ -377,7 +377,7 @@ func TestChallenge_MultiHost_Configuration(t *testing.T) {
 func TestChallenge_Scheduler_Strategy(t *testing.T) {
 	cfg := envconfig.LoadFromEnv()
 	if !cfg.Enabled {
-		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true")
+		t.Skip("Set CONTAINERS_REMOTE_ENABLED=true") // SKIP-OK: #env-remote-disabled
 	}
 
 	validStrategies := map[string]bool{
