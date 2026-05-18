@@ -24,9 +24,6 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 ## INHERITED FROM constitution/Constitution.md
 
 All rules in `constitution/Constitution.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
-> **Inherits from:** `HelixConstitution/Constitution.md` — all universal
-> clauses in that document apply unconditionally. Rules below extend or
-> tighten them; they MUST NOT weaken any inherited clause.
 
 This Constitution governs the `digital.vasic.containers` module. It
 inherits the universal mandatory constraints cascaded from the
@@ -42,7 +39,7 @@ distribution, and service discovery across Docker, Podman, and
 Kubernetes runtimes. It is the single integration point through which
 the HelixAgent binary (and any other consumer) brings up its full
 container topology — local and remote — driven entirely by the
-consumer's `.env` file (`containers/.env` for HelixAgent).
+consumer's `.env` file (`Containers/.env` for HelixAgent).
 
 This module is foundational: it has no upstream sibling modules and is
 consumed by `Challenges`, `HelixLLM`, `HelixQA`, and HelixAgent itself.
@@ -425,7 +422,7 @@ See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*
 
 ## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
 
-See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/containers/`. This submodule MAY add stricter rules but MUST NOT relax.
+See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
 
 ## §11.4.7 — Operator-Path Test Coverage Rule (inherited from vasic-digital/tmux, 2026-05-13)
 
@@ -788,40 +785,3 @@ If `HEAD..@{u}` is non-empty, integrate the upstream changes BEFORE any local ed
 **Anti-bluff invariant**: the fetch+log check MUST produce captured evidence — the actual `HEAD..@{u}` output, even if empty. Skipping the check on the basis of "I just fetched" or "nothing could have changed in the last N minutes" is a §11.4.6 (no-guessing) violation: the remote state is not knowable without a fetch.
 
 **Cascade requirement**: This anchor (verbatim or by `CONST-060` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the parallel-session-coordination layer. See constitution submodule `Constitution.md` §11.4.37 for the full mandate.
-<!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
-
-## Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
-
-**Canonical authority:** `HelixConstitution/Constitution.md` §7.1 and §11.4.
-This section is this submodule's binding pointer to those universal clauses.
-
-**Forensic anchor — verbatim operator mandate (2026-04-28):**
-
-> "We had been in position that all tests do execute with success and all
-> Challenges as well, but in reality the most of the features does not work
-> and can't be used! This MUST NOT be the case and execution of tests and
-> Challenges MUST guarantee the quality, the completition and full usability
-> by end users of the product! This MUST BE part of Constitution of our
-> project, its CLAUDE.MD and AGENTS.MD if it is not there already, and to be
-> applied to all Submodules's Constitution, CLAUDE.MD and AGENTS.MD as well
-> (if not there already)!"
-
-**Operative rule:** the bar for shipping is **not** "tests pass" but
-**"users of any consuming project can use the feature."** Every PASS MUST
-carry positive runtime evidence captured during execution that the feature
-actually works end-to-end. Metadata-only PASS, configuration-only PASS,
-"absence-of-error" PASS, and source-grep-only PASS without runtime evidence
-are critical defects.
-
-**Required minimum evidence per test category:**
-
-| Category | Minimum evidence |
-|---|---|
-| Unit tests | Real inputs + mutation-verified assertions (stub-swap must cause FAIL) |
-| Integration tests | Real subsystems only; mocks only at honest external boundaries |
-| E2E / Challenge tests | Per-test PASS/FAIL lines + log-file artefact path; RUNTIME layer mandatory |
-
-**Decoupling constraint:** this rule applies to every consuming project's
-full platform matrix — specific platform names are not hardcoded here.
-
-<!-- END helix-constitution-inheritance + anti-bluff escalation -->

@@ -18,7 +18,7 @@ import (
 //
 //	"Every Android emulator instance the project depends on for testing
 //	 MUST execute its emulator process INSIDE a podman/docker container
-//	 managed by Submodules/containers/, NOT be host-direct-launched by
+//	 managed by Submodules/Containers/, NOT be host-direct-launched by
 //	 Containers-submodule code that runs on the host."
 //
 // Architecture

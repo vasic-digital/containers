@@ -33,8 +33,6 @@ vendor/
 .env.*
 .service-registry/
 /cmd/ctop/ctop
-/crossbuild-matrix
-/bin/crossbuild-matrix
 scripts/resource-policy/__pycache__/
 *.pyc
 
@@ -42,3 +40,6 @@ scripts/resource-policy/__pycache__/
 report.json
 go-mutesting-report.html
 *.go.tmp
+
+# Built CLI from cmd/crossbuild-matrix/ — Go binary, never committed (CONST-053)
+/crossbuild-matrix

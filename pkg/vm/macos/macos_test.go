@@ -118,7 +118,7 @@ func TestMacOSBuilder_TartVersion_Installed(t *testing.T) {
 // immediately without touching the tartRunner.
 func TestMacOSBuilder_RunInVM_NonMacOSReturnsErrTartNotAvailable(t *testing.T) {
 	if runtime.GOOS == "darwin" {
-		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS SKIP-OK: #darwin-skip-non-macos-fastpath")
 	}
 	fake := &fakeTartRunner{}
 	b := newMacOSBuilderWithRunner(fake)

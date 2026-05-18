@@ -28,7 +28,7 @@ actionable error pointing at this document + the
 ## Provisioning steps (any host, rootless podman)
 
 ```bash
-cd Submodules/containers/pkg/crossbuild
+cd Submodules/Containers/pkg/crossbuild
 
 # 1. Build the image FOR THE TARGET ARCHITECTURE you intend to ship.
 #    Build both if you ship to both x86_64 + arm64 Linux users.

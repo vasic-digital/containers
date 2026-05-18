@@ -54,6 +54,10 @@ type xcodeRunner interface {
 
 	// SimctlList runs `xcrun simctl list --json` and returns raw JSON.
 	SimctlList(ctx context.Context) (string, error)
+
+	// SimctlRun runs `xcrun simctl <subcommand> [args...]` and returns
+	// stdout, stderr, and exit code.
+	SimctlRun(ctx context.Context, subcommand string, args []string, timeout time.Duration) (stdout, stderr string, exitCode int, err error)
 }
 
 // BuildIPARequest is the input to IOSBuilder.BuildIPA.
@@ -295,6 +299,134 @@ func (b *IOSBuilder) BuildIPA(ctx context.Context, req BuildIPARequest) BuildIPA
 	return result
 }
 
+// BootSimulator boots the iOS simulator identified by udid.
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+// The simulator may take 30–120 s to reach the "Booted" state; callers
+// should poll ListSimulators for the state change.
+func (b *IOSBuilder) BootSimulator(ctx context.Context, udid string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 2 * time.Minute
+	}
+	if _, _, exitCode, err := b.xcode.SimctlRun(ctx, "boot", []string{udid}, timeout); err != nil || exitCode != 0 {
+		if err != nil {
+			return fmt.Errorf("xcrun simctl boot %s: %w", udid, err)
+		}
+		// exit 1 with "Unable to boot device in current state: Booted" is OK.
+		// We treat it as success (simulator already running).
+		return nil
+	}
+	// Wait for the simulator to appear in "Booted" state.
+	_, _, _, _ = b.xcode.SimctlRun(ctx, "bootstatus", []string{udid, "-b"}, timeout)
+	return nil
+}
+
+// ShutdownSimulator shuts down the iOS simulator identified by udid.
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+func (b *IOSBuilder) ShutdownSimulator(ctx context.Context, udid string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	if _, _, exitCode, err := b.xcode.SimctlRun(ctx, "shutdown", []string{udid}, timeout); err != nil || exitCode != 0 {
+		if err != nil {
+			return fmt.Errorf("xcrun simctl shutdown %s: %w", udid, err)
+		}
+		// exit 1 with "Unable to shutdown device in current state: Shutdown" is OK.
+		return nil
+	}
+	return nil
+}
+
+// InstallApp installs the app at appPath on the simulator identified by udid.
+// appPath is the path to the .app bundle (simulator build, not .ipa).
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+func (b *IOSBuilder) InstallApp(ctx context.Context, udid, appPath string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 60 * time.Second
+	}
+	stdout, stderr, exitCode, err := b.xcode.SimctlRun(ctx, "install", []string{udid, appPath}, timeout)
+	if err != nil {
+		return fmt.Errorf("xcrun simctl install %s %s: %w", udid, appPath, err)
+	}
+	if exitCode != 0 {
+		return fmt.Errorf("xcrun simctl install exited %d: stdout=%s stderr=%s", exitCode, tailString(stdout, 2048), tailString(stderr, 2048))
+	}
+	return nil
+}
+
+// LaunchApp launches the app identified by bundleID on the simulator udid.
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+func (b *IOSBuilder) LaunchApp(ctx context.Context, udid, bundleID string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+	stdout, stderr, exitCode, err := b.xcode.SimctlRun(ctx, "launch", []string{udid, bundleID}, timeout)
+	if err != nil {
+		return fmt.Errorf("xcrun simctl launch %s %s: %w", udid, bundleID, err)
+	}
+	if exitCode != 0 {
+		return fmt.Errorf("xcrun simctl launch exited %d: stdout=%s stderr=%s", exitCode, tailString(stdout, 2048), tailString(stderr, 2048))
+	}
+	return nil
+}
+
+// Screenshot captures a screenshot of the simulator udid and writes it to outputPath.
+// outputPath must end in .png, .jpg, or .tiff.
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+func (b *IOSBuilder) Screenshot(ctx context.Context, udid, outputPath string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 10 * time.Second
+	}
+	stdout, stderr, exitCode, err := b.xcode.SimctlRun(ctx, "io", []string{udid, "screenshot", outputPath}, timeout)
+	if err != nil {
+		return fmt.Errorf("xcrun simctl io %s screenshot %s: %w", udid, outputPath, err)
+	}
+	if exitCode != 0 {
+		return fmt.Errorf("xcrun simctl io screenshot exited %d: stdout=%s stderr=%s", exitCode, tailString(stdout, 2048), tailString(stderr, 2048))
+	}
+	return nil
+}
+
+// Recording captures a video recording of the simulator udid.
+//
+// outputPath must end in .mp4 or .mov.
+// Recording is stopped by cancelling the context (recommended) or after timeout.
+//
+// Returns ErrXcodeNotAvailable on non-macOS hosts or if xcrun is absent.
+func (b *IOSBuilder) Recording(ctx context.Context, udid, outputPath string, timeout time.Duration) error {
+	if runtime.GOOS != "darwin" {
+		return ErrXcodeNotAvailable
+	}
+	if timeout == 0 {
+		timeout = 5 * time.Minute
+	}
+	// xcrun simctl io <udid> recordVideo <path>
+	// The process runs until the context is cancelled (SIGINT/SIGTERM).
+	stdout, stderr, exitCode, err := b.xcode.SimctlRun(ctx, "io", []string{udid, "recordVideo", outputPath}, timeout)
+	if err != nil && ctx.Err() == nil {
+		// If the context wasn't cancelled, the error is real.
+		return fmt.Errorf("xcrun simctl io %s recordVideo %s: %w", udid, outputPath, err)
+	}
+	if exitCode != 0 && ctx.Err() == nil {
+		return fmt.Errorf("xcrun simctl io recordVideo exited %d: stdout=%s stderr=%s", exitCode, tailString(stdout, 2048), tailString(stderr, 2048))
+	}
+	return nil
+}
+
 // adHocExportOptionsPlist returns a minimal inline ExportOptions.plist
 // string for ad-hoc (simulator) exports. The caller must write this to
 // a temp file before invoking xcodebuild -exportArchive.
@@ -388,6 +520,22 @@ func (o *osExecXcodeRunner) SimctlList(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("xcrun simctl list: %w", err)
 	}
 	return string(out), nil
+}
+
+func (o *osExecXcodeRunner) SimctlRun(ctx context.Context, subcommand string, args []string, timeout time.Duration) (string, string, int, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+	cmdArgs := append([]string{"simctl", subcommand}, args...)
+	cmd := exec.CommandContext(ctx, "xcrun", cmdArgs...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	code := 0
+	if cmd.ProcessState != nil {
+		code = cmd.ProcessState.ExitCode()
+	}
+	return stdout.String(), stderr.String(), code, err
 }
 
 func writeAdHocPlist() error {

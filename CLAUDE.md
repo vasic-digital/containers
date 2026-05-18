@@ -23,11 +23,7 @@ Canonical reference: <https://github.com/HelixDevelopment/HelixConstitution>
 ## INHERITED FROM constitution/CLAUDE.md
 
 All rules in `constitution/CLAUDE.md` (and the `constitution/Constitution.md` it references) apply unconditionally. This file's rules below extend them — they MUST NOT weaken any inherited rule. See parent root `CLAUDE.md` §6.AD for the Lava-specific incorporation context (29th §6.L cycle, 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use `constitution/find_constitution.sh` from the parent project root to resolve the absolute path of the submodule from any nested location.
-## INHERITED FROM HelixConstitution/CLAUDE.md
 
-All rules in `HelixConstitution/CLAUDE.md` (and the `HelixConstitution/Constitution.md`
-it references) apply unconditionally. The project-specific rules below extend them.
-Rules below MUST NOT weaken any inherited clause.
 
 ## Definition of Done
 
@@ -40,7 +36,7 @@ same session as the change.** Coverage and green suites are not evidence.
 
 ```bash
 # Real orchestration flow (Hard Stop #2 canonical demo)
-# Builds HelixAgent and boots every container declared in containers/.env.
+# Builds HelixAgent and boots every container declared in Containers/.env.
 cd /run/media/milosvasic/DATA4TB/Projects/HelixAgent
 make build
 GOMAXPROCS=2 nice -n 19 ./bin/helixagent &
@@ -51,7 +47,7 @@ curl -fsS http://localhost:8100/v1/health | jq -e '.status == "healthy"'
 curl -fsS http://localhost:8100/v1/monitoring/status | jq -e '.services | all(.status == "healthy")'
 kill $HELIXAGENT_PID
 ```
-Expect: both `jq -e` exits 0; the binary's boot log shows each service from `containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
+Expect: both `jq -e` exits 0; the binary's boot log shows each service from `Containers/.env` coming up and health-check-passing. If `CONTAINERS_REMOTE_ENABLED=true` the distributed host resources also appear in `/v1/monitoring/status`.
 
 
 ## MANDATORY HOST-SESSION SAFETY (Constitution §12)
@@ -301,7 +297,7 @@ Distributor receives a batch of container requirements, asks Scheduler which hos
 This is what the root HelixAgent `CLAUDE.md` Hard Stop #2 refers to. The flow is:
 
 1. **Build:** `make build` → `./bin/helixagent`.
-2. **Env load:** HelixAgent reads `containers/.env` via `envconfig.LoadFromFile()`:
+2. **Env load:** HelixAgent reads `Containers/.env` via `envconfig.LoadFromFile()`:
    - `CONTAINERS_REMOTE_ENABLED` (bool)
    - `CONTAINERS_REMOTE_HOST_N_*` (N = 1..100; loader stops at the first absent `_NAME`)
    - SSH pool, timeouts, scheduler strategy
@@ -1156,7 +1152,7 @@ See root `/CLAUDE.md` §6.W. Only GitHub (`vasic-digital/*`, `HelixDevelopment/*
 
 ## §6.X — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per §6.F)
 
-See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/containers/`. This submodule MAY add stricter rules but MUST NOT relax.
+See root `/CLAUDE.md` §6.X. Every Android emulator instance the project depends on for testing MUST execute its emulator process INSIDE a podman/docker container managed by `Submodules/Containers/`, NOT be host-direct-launched by Containers-submodule code that runs on the host. The Containers submodule's `pkg/runtime/` (rootless podman/docker auto-detection) brings the container up; `pkg/emulator/` orchestrates the AVD lifecycle inside it. Lava-side `scripts/run-emulator-tests.sh` is thin glue forwarding to the Containers CLI. The container-bound path is the gate — host-direct emulators are permitted for workstation iteration only. §6.X-debt tracks the wiring implementation owed to `Submodules/Containers/`. This submodule MAY add stricter rules but MUST NOT relax.
 
 ## CONST-035 — Anti-Bluff Tests (cascaded)
 The bar for shipping is not "tests pass" but "users can use the feature." Every PASS MUST carry positive runtime evidence. No false-success results are tolerable.
@@ -1190,7 +1186,7 @@ operator-path test with captured runtime evidence per §11.4.2.
 **Layer-4 mutations** MUST target the operator-path code, not synthetic-
 test scaffolding. When this submodule provides both a thin host-side
 bridge and a thick body of behaviour, mutations target the body. See
-containers/CONSTITUTION.md §11.4.7 for the full clause.
+Containers/CONSTITUTION.md §11.4.7 for the full clause.
 
 Submodule MAY add stricter rules but MUST NOT relax.
 <!-- BEGIN submodule-decoupling-and-reusability (parent-mirror) -->
@@ -1255,24 +1251,6 @@ See root `/CLAUDE.md` §6.Z. No artifact may be distributed (Firebase App Distri
 ## §6.AA — Two-Stage Distribute Mandate (inherited 2026-05-14, per §6.F)
 
 See root `/CLAUDE.md` §6.AA. When an artifact has both a debug and a release variant (or analogous dev-vs-prod build types — including this submodule's binary release if it ships separate dev / prod variants), distribute MUST happen in TWO STAGES with operator-confirmed verification between them. Stage 1 distributes the debug / dev variant only; the operator verifies the **distributed** debug variant on the failure-surface device class. Stage 2 distributes the release / prod variant only ONLY AFTER written stage-1 verification, with the §6.Z test-evidence file appended with a `release-stage` section. No combined distribute permitted by default; the combined path requires explicit per-cycle operator authorization recorded in the evidence file. The R8 / minification surprise class on Android (or analogous stripping / production-only optimization classes on other artifacts) is the load-bearing reason. §6.AA-debt is open: mechanical enforcement via `scripts/firebase-distribute.sh` default flip + refusal of out-of-order `--release-only` + paired `last-version-{debug,release}` per-channel pre-push check is documented but not yet enforced. Forensic anchor: 2026-05-14 operator directive immediately after the §6.Z forensic-anchor crash on Lava-Android-1.2.19-1039: "for purposes like this one we shall distribute via Firebase DEV / DEBUG version only. Once we try it, you continue and once all verified you distribute RELEASE too!" This submodule MAY add stricter rules but MUST NOT relax this clause.
-<<<<<<< HEAD
-
-**§11.4.40 — Full-suite retest before release tag mandate (User mandate, 2026-05-17)**
-
-A release tag MUST NOT be created until a COMPLETE retest with ALL existing tests has been executed on a clean baseline AFTER every workable item in the batch is done, fixed, polished, and individually verified. Spot-check retests that run only the tests touched by the batch are FORBIDDEN — they miss interaction defects between the batch's fixes and previously-stable code.
-
-The complete retest comprises: (1) pre-build full sweep, (2) post-build full sweep, (3) on-device 4-phase cycle on EVERY owned device, (4) meta-test full mutation sweep, (5) Challenge bank full sweep, (6) Issues.md/Fixed.md state audit, (7) CONTINUATION.md sync check.
-
-Time is essential — complete retest is typically 12–48 hour elapsed effort. NOT optional, NOT abbreviated. Skipping is the exact "tests passed but feature broken" failure mode §11.4 specifically prohibits.
-
-Composes with §11.4.4 (per-fix retest) — §11.4.37 is the additional final integrity check at RELEASE granularity. Composes with §11.4.7 — full-suite retest is the authoritative baseline for closures in the batch. No escape hatch — no `--skip-full-retest` or `--quick-release` flag exists.
-
-Pre-build gate `CM-FULL-SUITE-RETEST-MANDATE` + paired mutation. Propagation gate `CM-COVENANT-114-40-PROPAGATION` enforces this anchor in every CLAUDE.md/AGENTS.md across parent + 10 owned submodules + HelixQA dependencies.
-
-**Canonical authority:** constitution submodule [`Constitution.md`](../../../constitution/Constitution.md) §11.4.37.
-
-Non-compliance is a release blocker regardless of context.
-=======
 ## §6.AB — Anti-Bluff Test-Suite Reinforcement (inherited 2026-05-14, per §6.F)
 
 See root `/CLAUDE.md` §6.AB. Every existing test + Challenge in this submodule MUST be auditable for the anti-bluff property "would this test fail if the user-visible behavior broke in a way a real user would notice?" Per-feature completeness checklist: rendering correctness (assert dominant color matches expected hue, not just RGB-variance), state-machine completeness (negative tests for forbidden transitions), gating logic (gate fires only on actual completion criterion). Bluff-hunt cadence escalation: every defect not caught by an existing test triggers a 5-file defect-driven hunt of adjacent tests, recorded under `.lava-ci-evidence/bluff-hunt/<date>-defect-driven-<slug>.json`. Discrimination test mandatory per Challenge Test: deliberately-broken-but-non-crashing production code MUST cause the Challenge Test to fail. Forensic anchor: 2026-05-14 Lava-Android-1.2.20-1040 white-icon + onboarding-gate-bypass — both passed all existing tests but failed for the user. Operator's 27th §6.L invocation: "all existing tests and Challenges do work in anti-bluff manner — they MUST confirm that all tested codebase really works as expected!" This submodule MAY add stricter rules but MUST NOT relax this clause.
@@ -1460,6 +1438,7 @@ If `HEAD..@{u}` is non-empty, integrate the upstream changes BEFORE any local ed
 **Anti-bluff invariant**: the fetch+log check MUST produce captured evidence — the actual `HEAD..@{u}` output, even if empty. Skipping the check on the basis of "I just fetched" or "nothing could have changed in the last N minutes" is a §11.4.6 (no-guessing) violation: the remote state is not knowable without a fetch.
 
 **Cascade requirement**: This anchor (verbatim or by `CONST-060` ID reference) MUST appear in every owned submodule's `CONSTITUTION.md`, `CLAUDE.md`, and `AGENTS.md`. Severity-equivalent to §11.4 PASS-bluff at the parallel-session-coordination layer. See constitution submodule `Constitution.md` §11.4.37 for the full mandate.
+<<<<<<< HEAD
 <!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
 
 ## Anti-Bluff End-User Quality Guarantee (Escalated via HelixConstitution)
@@ -1504,3 +1483,5 @@ Pre-build gates: `CM-COVENANT-114-52-PROPAGATION` + `CM-AF-AUTONOMOUS-PATH-PER-F
 **Canonical authority:** constitution submodule Constitution.md §11.4.52.
 
 Non-compliance is a release blocker regardless of context.
+=======
+>>>>>>> a4bde3a4fd0431be95f391602c2e535940a76568

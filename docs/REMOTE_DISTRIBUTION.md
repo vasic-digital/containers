@@ -308,7 +308,7 @@ CONTAINERS_REMOTE_HOST_1_PASSWORD=host-specific-password
 
 A complete example deploying all HelixAgent infrastructure containers to a local network host.
 
-### containers/.env
+### Containers/.env
 
 ```bash
 CONTAINERS_REMOTE_ENABLED=true
@@ -357,7 +357,7 @@ Also duplicate the `CONTAINERS_REMOTE_*` vars so they're available at HelixAgent
 
 ### What Happens on Startup
 
-1. `NewAdapterFromConfig()` loads `containers/.env`
+1. `NewAdapterFromConfig()` loads `Containers/.env`
 2. Detects `CONTAINERS_REMOTE_ENABLED=true`
 3. For each host, checks if key auth works (`NeedsBootstrap`)
 4. If not, bootstraps key auth using the configured password

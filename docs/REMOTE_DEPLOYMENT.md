@@ -53,9 +53,9 @@ CONTAINERS_REMOTE_HOST_2_RUNTIME=docker
 CONTAINERS_REMOTE_HOST_2_LABELS=gpu=true,arch=amd64
 ```
 
-### Configuration File (containers/.env)
+### Configuration File (Containers/.env)
 
-Alternatively, create `containers/.env`:
+Alternatively, create `Containers/.env`:
 
 ```bash
 # Remote distribution

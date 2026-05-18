@@ -30,9 +30,15 @@ type fakeXcodeRunner struct {
 	exportErr          error
 	simctlResult       string
 	simctlErr          error
+	simctlRunStdout    string
+	simctlRunStderr    string
+	simctlRunExitCode  int
+	simctlRunErr       error
 	buildCalled        bool
 	exportCalled       bool
 	simctlCalled       bool
+	simctlRunCalled    bool
+	lastSimctlSubcmd   string
 	lastBuildArgs      []string
 }
 
@@ -58,6 +64,16 @@ func (f *fakeXcodeRunner) ExportArchive(_ context.Context, _, _, _ string, _ tim
 func (f *fakeXcodeRunner) SimctlList(_ context.Context) (string, error) {
 	f.simctlCalled = true
 	return f.simctlResult, f.simctlErr
+}
+
+func (f *fakeXcodeRunner) SimctlRun(_ context.Context, subcommand string, _ []string, _ time.Duration) (string, string, int, error) {
+	if !f.simctlRunCalled {
+		// Record only the FIRST subcommand so tests can assert the primary
+		// operation that was requested (BootSimulator calls boot then bootstatus).
+		f.lastSimctlSubcmd = subcommand
+	}
+	f.simctlRunCalled = true
+	return f.simctlRunStdout, f.simctlRunStderr, f.simctlRunExitCode, f.simctlRunErr
 }
 
 // TestIOSBuilder_XcodeVersion_NonMacOS: on non-macOS host, XcodeVersion
@@ -97,7 +113,7 @@ func TestIOSBuilder_XcodeVersion_Installed(t *testing.T) {
 // return ErrXcodeNotAvailable immediately without touching xcodeRunner.
 func TestIOSBuilder_BuildIPA_NonMacOS(t *testing.T) {
 	if runtime.GOOS == "darwin" {
-		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS SKIP-OK: #darwin-skip-non-macos-fastpath")
 	}
 	fake := &fakeXcodeRunner{}
 	b := newIOSBuilderWithRunner(fake)
@@ -216,7 +232,7 @@ func TestIOSBuilder_BuildIPA_ArchiveFails(t *testing.T) {
 // TestIOSBuilder_ListSimulators_NonMacOS: on non-macOS returns error.
 func TestIOSBuilder_ListSimulators_NonMacOS(t *testing.T) {
 	if runtime.GOOS == "darwin" {
-		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS SKIP-OK: #darwin-skip-non-macos-fastpath")
 	}
 	b := NewIOSBuilder()
 	_, err := b.ListSimulators(context.Background())
@@ -239,6 +255,92 @@ func TestIOSBuilder_ListSimulators_HappyPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, out, "devices")
 	assert.True(t, fake.simctlCalled)
+}
+
+// TestIOSBuilder_BootSimulator_NonMacOS verifies the non-macOS guard.
+func TestIOSBuilder_BootSimulator_NonMacOS(t *testing.T) {
+	if runtime.GOOS == "darwin" {
+		t.Skip("this test verifies the non-macOS fast-path; skip on macOS")
+	}
+	b := NewIOSBuilder()
+	err := b.BootSimulator(context.Background(), "fake-udid", 0)
+	require.Error(t, err)
+	assert.Equal(t, ErrXcodeNotAvailable, err)
+}
+
+// TestIOSBuilder_BootSimulator_HappyPath verifies BootSimulator calls simctl boot.
+//
+// SKIP-OK: #ios-build-requires-xcode-macos
+func TestIOSBuilder_BootSimulator_HappyPath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("// SKIP-OK: #ios-build-requires-xcode-macos")
+	}
+	fake := &fakeXcodeRunner{simctlRunExitCode: 0}
+	b := newIOSBuilderWithRunner(fake)
+	err := b.BootSimulator(context.Background(), "test-udid", 5*time.Second)
+	require.NoError(t, err)
+	assert.True(t, fake.simctlRunCalled)
+	assert.Equal(t, "boot", fake.lastSimctlSubcmd)
+}
+
+// TestIOSBuilder_ShutdownSimulator_HappyPath verifies ShutdownSimulator calls simctl shutdown.
+//
+// SKIP-OK: #ios-build-requires-xcode-macos
+func TestIOSBuilder_ShutdownSimulator_HappyPath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("// SKIP-OK: #ios-build-requires-xcode-macos")
+	}
+	fake := &fakeXcodeRunner{simctlRunExitCode: 0}
+	b := newIOSBuilderWithRunner(fake)
+	err := b.ShutdownSimulator(context.Background(), "test-udid", 5*time.Second)
+	require.NoError(t, err)
+	assert.True(t, fake.simctlRunCalled)
+	assert.Equal(t, "shutdown", fake.lastSimctlSubcmd)
+}
+
+// TestIOSBuilder_InstallApp_HappyPath verifies InstallApp calls simctl install.
+//
+// SKIP-OK: #ios-build-requires-xcode-macos
+func TestIOSBuilder_InstallApp_HappyPath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("// SKIP-OK: #ios-build-requires-xcode-macos")
+	}
+	fake := &fakeXcodeRunner{simctlRunExitCode: 0}
+	b := newIOSBuilderWithRunner(fake)
+	err := b.InstallApp(context.Background(), "test-udid", "/path/to/Yole.app", 10*time.Second)
+	require.NoError(t, err)
+	assert.True(t, fake.simctlRunCalled)
+	assert.Equal(t, "install", fake.lastSimctlSubcmd)
+}
+
+// TestIOSBuilder_LaunchApp_HappyPath verifies LaunchApp calls simctl launch.
+//
+// SKIP-OK: #ios-build-requires-xcode-macos
+func TestIOSBuilder_LaunchApp_HappyPath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("// SKIP-OK: #ios-build-requires-xcode-macos")
+	}
+	fake := &fakeXcodeRunner{simctlRunExitCode: 0}
+	b := newIOSBuilderWithRunner(fake)
+	err := b.LaunchApp(context.Background(), "test-udid", "digital.vasic.yole.ios", 10*time.Second)
+	require.NoError(t, err)
+	assert.True(t, fake.simctlRunCalled)
+	assert.Equal(t, "launch", fake.lastSimctlSubcmd)
+}
+
+// TestIOSBuilder_Screenshot_HappyPath verifies Screenshot calls simctl io screenshot.
+//
+// SKIP-OK: #ios-build-requires-xcode-macos
+func TestIOSBuilder_Screenshot_HappyPath(t *testing.T) {
+	if runtime.GOOS != "darwin" {
+		t.Skip("// SKIP-OK: #ios-build-requires-xcode-macos")
+	}
+	fake := &fakeXcodeRunner{simctlRunExitCode: 0}
+	b := newIOSBuilderWithRunner(fake)
+	err := b.Screenshot(context.Background(), "test-udid", "/tmp/screen.png", 5*time.Second)
+	require.NoError(t, err)
+	assert.True(t, fake.simctlRunCalled)
+	assert.Equal(t, "io", fake.lastSimctlSubcmd)
 }
 
 // TestXcodeInstalled is the real-stack smoke test for the CI environment.
