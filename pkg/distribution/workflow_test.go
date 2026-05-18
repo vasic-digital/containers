@@ -1,6 +1,7 @@
 package distribution
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,23 +19,28 @@ func TestAllPhases(t *testing.T) {
 	assert.Equal(t, PhaseEvents, phases[6])
 }
 
+// TestPhaseDescription asserts that the i18n-aware PhaseDescription
+// returns the namespaced message ID under the NoopTranslator default
+// (translator=nil). The verbatim message-ID return is itself positive
+// runtime evidence per CONST-035 / §11.9 — operators can map each ID
+// back to pkg/i18n/bundles/active.en.yaml without ambiguity.
 func TestPhaseDescription(t *testing.T) {
 	tests := []struct {
 		phase WorkflowPhase
 		want  string
 	}{
-		{PhaseProbe, "Probing remote hosts for resource availability"},
-		{PhaseSchedule, "Scheduling containers across hosts"},
-		{PhaseVolumes, "Mounting volumes on remote hosts"},
-		{PhaseDeploy, "Deploying containers"},
-		{PhaseTunnels, "Creating SSH tunnels for networking"},
-		{PhaseHealth, "Running health checks"},
-		{PhaseEvents, "Emitting distribution events"},
-		{WorkflowPhase("invalid"), "Unknown phase"},
+		{PhaseProbe, "containers_workflow_phase_probe"},
+		{PhaseSchedule, "containers_workflow_phase_schedule"},
+		{PhaseVolumes, "containers_workflow_phase_volumes"},
+		{PhaseDeploy, "containers_workflow_phase_deploy"},
+		{PhaseTunnels, "containers_workflow_phase_tunnels"},
+		{PhaseHealth, "containers_workflow_phase_health"},
+		{PhaseEvents, "containers_workflow_phase_events"},
+		{WorkflowPhase("invalid"), "containers_workflow_phase_unknown"},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.phase), func(t *testing.T) {
-			got := PhaseDescription(tt.phase)
+			got := PhaseDescription(context.Background(), nil, tt.phase)
 			assert.Equal(t, tt.want, got)
 		})
 	}
