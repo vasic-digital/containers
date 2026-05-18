@@ -40,3 +40,6 @@ scripts/resource-policy/__pycache__/
 report.json
 go-mutesting-report.html
 *.go.tmp
+
+# Built CLI from cmd/crossbuild-matrix/ — Go binary, never committed (CONST-053)
+/crossbuild-matrix
