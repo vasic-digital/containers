@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ANTI_BLUFF</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">ANTI_BLUFF</h1>
+</header>
+<h1 id="anti-bluff-discipline-const-035--runbook">Anti-Bluff Discipline
+(CONST-035) — Runbook</h1>
+<p>This document is the runbook for working with the anti-bluff gates in
+this repository. The rule itself lives in <code>CONSTITUTION.md</code>
+(CONST-035).</p>
+<h2 id="what-bluff-means-here">What "bluff" means here</h2>
+<p>A test is <strong>bluff</strong> if it can pass without exercising
+the user-visible behavior it claims to verify. In this Go submodule,
+"user-visible" means an operator invoking the CLI/binary can observe the
+result — the anchor signal is a CLI invocation against a real target
+producing an observable artifact (file on disk, exit code, log line)
+that the test asserts on.</p>
+<h2 id="three-gates">Three gates</h2>
+<ol type="1">
+<li><strong>Static scanner</strong>
+(<code>scripts/anti-bluff/bluff-scanner.sh</code>) — pattern matcher
+that flags forbidden constructs. Runs on every commit (pre-commit hook)
+and in <code>make qa-all</code>.</li>
+<li><strong>Mutation testing</strong> (<code>go-mutesting</code>) —
+kills generated mutants. Threshold: 90% on changed code, 80%
+project-wide ratchet. Runs in <code>make qa-all</code> (slow; not in
+pre-commit).</li>
+<li><strong>Behavior-anchor manifest</strong>
+(<code>docs/behavior-anchors.md</code>) — every user-facing capability
+has at least one anchor test that proves it works end-to-end.</li>
+</ol>
+<h2 id="i-got-a-bluff-hit-what-now">"I got a bluff hit, what now?"</h2>
+<p>The scanner output names the file, line, BLUFF-G-NNN ID, and a
+one-line context. Look up the BLUFF-G-NNN in the table below:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Pattern</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BLUFF-G-001</td>
+<td><code>t.Skip()</code> without exempt comment</td>
+<td>Add <code>// SKIP-OK: #&lt;ticket&gt;</code> on the line above (or
+<code>// ANTI-BLUFF-EXEMPT: &lt;ticket&gt;</code> synonym), or remove
+the skip and fix the underlying issue.</td>
+</tr>
+<tr>
+<td>BLUFF-G-002</td>
+<td><code>if testing.Short()</code> early return without long-path
+coverage elsewhere</td>
+<td>Add a sub-test that runs the long path; or add the exempt comment if
+short is correct here.</td>
+</tr>
+<tr>
+<td>BLUFF-G-003</td>
+<td>Test body has only <code>t.Log</code>, no assertions</td>
+<td>Add <code>t.Fatal</code>/<code>t.Error</code>/<code>testify</code>
+assertions.</td>
+</tr>
+<tr>
+<td>BLUFF-G-004</td>
+<td><code>gomock</code> mocking a type from the same package</td>
+<td>Stop mocking the SUT; use the real type or move the mocked type to a
+different package.</td>
+</tr>
+<tr>
+<td>BLUFF-G-005</td>
+<td><code>t.Run("", func)</code> empty subtest body</td>
+<td>Fill the subtest body with assertions or remove.</td>
+</tr>
+<tr>
+<td>BLUFF-G-006</td>
+<td>Empty test function body</td>
+<td>Fill or delete.</td>
+</tr>
+<tr>
+<td>BLUFF-G-007</td>
+<td><code>assert.True(t, true)</code> / <code>assert.NotNil(t, x)</code>
+as sole assertion</td>
+<td>Add a real assertion that exercises the SUT's behavior.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="skip-exempt-marker-convention">Skip-exempt marker
+convention</h2>
+<p>The repository convention is <code>// SKIP-OK: #&lt;ticket&gt;</code>
+(the existing project-wide marker). The scanner also recognizes the
+synonym <code>// ANTI-BLUFF-EXEMPT: &lt;ticket&gt;</code> and, for
+mutation-equivalent exemptions,
+<code>// ANTI-BLUFF-EXEMPT: TRIVIAL-CORRECT — &lt;reason&gt;</code>.
+Place the marker on the line <strong>above</strong> the offending
+statement.</p>
+<h2 id="mutation-gate-failed-on-my-change">"Mutation gate failed on my
+change"</h2>
+<p><code>go-mutesting</code> printed mutants that survived (the test
+suite did not detect them). Each surviving mutant is a place where the
+SUT's behavior could change without any test noticing. Either:</p>
+<ul>
+<li>Add a test that would notice (preferred), or</li>
+<li>Add an in-line
+<code>// ANTI-BLUFF-EXEMPT: TRIVIAL-CORRECT — &lt;reason&gt;</code> if
+the mutant is genuinely equivalent (the mutated code is semantically
+identical to the original — extremely rare).</li>
+</ul>
+<p>The challenge enforces 90% kill rate on changed files. Equivalent
+mutants count toward the 10% slack; you should not need exemptions
+unless your change happens to hit a mathematical identity.</p>
+<h2 id="anchor-manifest-check-failed">"Anchor manifest check
+failed"</h2>
+<p><code>anchor_manifest_challenge.sh</code> validates
+<code>docs/behavior-anchors.md</code>. Most failures are: the
+<code>anchor_test_path</code> you wrote does not resolve to an existing
+test method. Re-check the path; the format is
+<code>&lt;relative path&gt;.go::TestName</code> for Go.</p>
+<h2 id="reducing-the-baseline">Reducing the baseline</h2>
+<p>The baseline file
+<code>challenges/baselines/bluff-baseline.txt</code> is expected to
+shrink during sub-project 4. Removing a line is a <strong>ratchet
+improvement</strong>: do it in the same commit that fixes the underlying
+bluff. The scanner exits with code 2 if it sees a baselined hit that is
+no longer present — this is the signal that the baseline file is
+stale.</p>
+<h2 id="verification-commands">Verification commands</h2>
+<p>Run all three before declaring work done:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> scripts/anti-bluff/bluff-scanner.sh <span class="at">--mode</span> all</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/anchor_manifest_challenge.sh</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/mutation_ratchet_challenge.sh</span></code></pre></div>
+<p>All three must pass.</p>
+</body>
+</html>

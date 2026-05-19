@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CONTRIBUTING</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CONTRIBUTING</h1>
+</header>
+<h1 id="contributing-to-containers">Contributing to Containers</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Go 1.24 or later</li>
+<li>Docker and/or Podman installed (for integration tests)</li>
+<li>Git with SSH access configured</li>
+<li><code>kubectl</code> (optional, for Kubernetes testing)</li>
+</ul>
+<h2 id="getting-started">Getting Started</h2>
+<ol type="1">
+<li><p>Clone the repository:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone <span class="op">&lt;</span>ssh-url<span class="op">&gt;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Containers</span></code></pre></div></li>
+<li><p>Verify the build:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...</span></code></pre></div></li>
+<li><p>Run all tests:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1 <span class="at">-race</span></span></code></pre></div></li>
+</ol>
+<h2 id="development-workflow">Development Workflow</h2>
+<h3 id="branch-naming">Branch Naming</h3>
+<p>Create a branch from <code>main</code> using the conventional
+prefix:</p>
+<table>
+<thead>
+<tr>
+<th>Prefix</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>feat/</code></td>
+<td>New features</td>
+</tr>
+<tr>
+<td><code>fix/</code></td>
+<td>Bug fixes</td>
+</tr>
+<tr>
+<td><code>refactor/</code></td>
+<td>Code restructuring without behavior change</td>
+</tr>
+<tr>
+<td><code>test/</code></td>
+<td>Adding or improving tests</td>
+</tr>
+<tr>
+<td><code>docs/</code></td>
+<td>Documentation changes</td>
+</tr>
+<tr>
+<td><code>chore/</code></td>
+<td>Build, CI, tooling changes</td>
+</tr>
+</tbody>
+</table>
+<p>Examples:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> feat/kubernetes-runtime-support</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> fix/podman-health-check-timeout</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> checkout <span class="at">-b</span> test/lazy-boot-integration</span></code></pre></div>
+<h3 id="commit-conventions">Commit Conventions</h3>
+<p>Use Conventional Commits with package scope:</p>
+<pre><code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code></pre>
+<p>Scopes correspond to package names: <code>runtime</code>,
+<code>compose</code>, <code>health</code>, <code>boot</code>,
+<code>lifecycle</code>, <code>monitor</code>, <code>discovery</code>,
+<code>event</code>, or <code>containers</code> for cross-cutting
+changes.</p>
+<p>Examples:</p>
+<pre><code>feat(runtime): add Kubernetes runtime implementation
+fix(health): prevent timeout on slow health checks
+test(boot): add parallel service startup test
+docs(containers): update architecture diagrams
+refactor(lifecycle): extract state machine to separate file</code></pre>
+<h3 id="code-style">Code Style</h3>
+<p>Follow standard Go conventions:</p>
+<ul>
+<li>Format with <code>gofmt</code> (or <code>goimports</code>).</li>
+<li>Imports grouped with blank line separators: stdlib, third-party,
+internal.</li>
+<li>Line length at most 100 characters.</li>
+<li>Naming: <code>camelCase</code> for unexported,
+<code>PascalCase</code> for exported, <code>UPPER_SNAKE_CASE</code> for
+constants, acronyms all-caps (<code>ID</code>, <code>HTTP</code>,
+<code>URL</code>).</li>
+<li>Receivers: 1-2 letter abbreviations (<code>bm</code> for
+BootManager, <code>rt</code> for runtime, <code>hc</code> for health
+checker, <code>lm</code> for lifecycle manager).</li>
+<li>Always check errors, wrap with
+<code>fmt.Errorf("...: %w", err)</code>.</li>
+<li>Use <code>defer</code> for cleanup.</li>
+<li>Add doc comments to all exported types, functions, and methods.</li>
+</ul>
+<h3 id="writing-tests">Writing Tests</h3>
+<ul>
+<li>Use table-driven tests with the <code>testify</code> library
+(<code>assert</code>, <code>require</code>).</li>
+<li>Naming convention:
+<code>Test&lt;Struct&gt;_&lt;Method&gt;_&lt;Scenario&gt;</code>.</li>
+<li>Test both success and failure paths.</li>
+<li>Use <code>-tags=integration</code> for tests requiring
+Docker/Podman.</li>
+<li>Test concurrent access with goroutines and race detection.</li>
+<li>Mock external dependencies in unit tests.</li>
+</ul>
+<p>Example:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TestBootManager_Start_RequiredServiceFails<span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    runtime <span class="op">:=</span> <span class="op">&amp;</span>mockRuntime<span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>        startFunc<span class="op">:</span> <span class="kw">func</span><span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> id <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;start failed&quot;</span><span class="op">)</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">},</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    manager <span class="op">:=</span> boot<span class="op">.</span>NewBootManager<span class="op">(</span>boot<span class="op">.</span>WithRuntime<span class="op">(</span>runtime<span class="op">))</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>        Required<span class="op">:</span> <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    err <span class="op">:=</span> manager<span class="op">.</span>Start<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    require<span class="op">.</span>Error<span class="op">(</span>t<span class="op">,</span> err<span class="op">)</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    assert<span class="op">.</span>Contains<span class="op">(</span>t<span class="op">,</span> err<span class="op">.</span>Error<span class="op">(),</span> <span class="st">&quot;required service failed&quot;</span><span class="op">)</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="running-tests">Running Tests</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># All tests with race detection</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1 <span class="at">-race</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Unit tests only (no Docker required)</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-short</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Integration tests (requires Docker/Podman)</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-tags</span><span class="op">=</span>integration ./...</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Specific package</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> ./pkg/boot/</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Specific test</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> <span class="at">-run</span> TestBootManager_Start ./pkg/boot/</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Benchmarks</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-bench</span><span class="op">=</span>. ./tests/benchmark/</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Coverage report</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-coverprofile</span><span class="op">=</span>coverage.out</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> tool cover <span class="at">-html</span><span class="op">=</span>coverage.out <span class="at">-o</span> coverage.html</span></code></pre></div>
+<h3 id="pre-commit-checklist">Pre-Commit Checklist</h3>
+<p>Before creating a pull request, verify:</p>
+<ol type="1">
+<li><strong>Format</strong>: <code>gofmt -l .</code> returns no
+files.</li>
+<li><strong>Vet</strong>: <code>go vet ./...</code> passes cleanly.</li>
+<li><strong>Tests</strong>: <code>go test ./... -count=1 -race</code>
+passes.</li>
+<li><strong>Integration Tests</strong>:
+<code>go test -tags=integration ./...</code> passes (if
+applicable).</li>
+<li><strong>Coverage</strong>: No reduction in test coverage.</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gofmt</span> <span class="at">-w</span> . <span class="kw">&amp;&amp;</span> <span class="ex">go</span> vet ./... <span class="kw">&amp;&amp;</span> <span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1 <span class="at">-race</span></span></code></pre></div>
+<h2 id="adding-a-new-runtime">Adding a New Runtime</h2>
+<ol type="1">
+<li><p>Create runtime implementation in
+<code>pkg/runtime/&lt;runtime_name&gt;.go</code>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> runtime</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> LXCRuntime <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    client <span class="op">*</span>lxc<span class="op">.</span>Client</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewLXCRuntime<span class="op">(</span>opts <span class="op">...</span>LXCOption<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Implementation</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>r <span class="op">*</span>LXCRuntime<span class="op">)</span> Start<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Implementation</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">// Implement all ContainerRuntime interface methods</span></span></code></pre></div></li>
+<li><p>Update auto-detection in
+<code>pkg/runtime/autodetect.go</code>:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> AutoDetect<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Try Docker</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> dockerAvailable<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> NewDockerRuntime<span class="op">()</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Try Podman</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> podmanAvailable<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> NewPodmanRuntime<span class="op">()</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Try LXC</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> lxcAvailable<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> NewLXCRuntime<span class="op">()</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> ErrNoRuntimeAvailable</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p>Add tests to
+<code>pkg/runtime/&lt;runtime_name&gt;_test.go</code>.</p></li>
+<li><p>Run tests: <code>go test -v ./pkg/runtime/</code></p></li>
+</ol>
+<h2 id="adding-a-new-health-check-strategy">Adding a New Health Check
+Strategy</h2>
+<ol type="1">
+<li><p>Create health check in
+<code>pkg/health/&lt;strategy&gt;.go</code>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> health</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">// RedisCheck returns a health check that validates Redis availability</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">// by executing a PING command.</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> RedisCheck<span class="op">(</span>host <span class="dt">string</span><span class="op">,</span> port <span class="dt">int</span><span class="op">,</span> password <span class="dt">string</span><span class="op">,</span> timeout time<span class="op">.</span>Duration<span class="op">)</span> HealthCheck <span class="op">{</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="kw">func</span><span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        <span class="co">// Implementation using Redis client</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        client <span class="op">:=</span> redis<span class="op">.</span>NewClient<span class="op">(&amp;</span>redis<span class="op">.</span>Options<span class="op">{</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>            Addr<span class="op">:</span>     fmt<span class="op">.</span>Sprintf<span class="op">(</span><span class="st">&quot;%s:%d&quot;</span><span class="op">,</span> host<span class="op">,</span> port<span class="op">),</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>            Password<span class="op">:</span> password<span class="op">,</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>            Timeout<span class="op">:</span>  timeout<span class="op">,</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>        <span class="op">})</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">defer</span> client<span class="op">.</span>Close<span class="op">()</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> client<span class="op">.</span>Ping<span class="op">(</span>ctx<span class="op">).</span>Err<span class="op">()</span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p>Add tests to
+<code>pkg/health/&lt;strategy&gt;_test.go</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TestRedisCheck<span class="op">(</span>t <span class="op">*</span>testing<span class="op">.</span>T<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Mock Redis server or use testcontainers</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">// table-driven tests ...</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p>Run tests: <code>go test -v ./pkg/health/</code></p></li>
+<li><p>Update <code>NewDefaultChecker()</code> to include the new
+strategy if appropriate.</p></li>
+</ol>
+<h2 id="adding-lifecycle-features">Adding Lifecycle Features</h2>
+<ol type="1">
+<li><p>Add feature to <code>pkg/lifecycle/&lt;feature&gt;.go</code>:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> lifecycle</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">// AutoRestart automatically restarts services that exit unexpectedly</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>lm <span class="op">*</span>lifecycleManager<span class="op">)</span> EnableAutoRestart<span class="op">(</span>maxRestarts <span class="dt">int</span><span class="op">,</span> cooldown time<span class="op">.</span>Duration<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    lm<span class="op">.</span>autoRestartEnabled <span class="op">=</span> <span class="ot">true</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    lm<span class="op">.</span>maxRestarts <span class="op">=</span> maxRestarts</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    lm<span class="op">.</span>restartCooldown <span class="op">=</span> cooldown</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">go</span> lm<span class="op">.</span>watchForUnexpectedExits<span class="op">()</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div></li>
+<li><p>Add corresponding tests.</p></li>
+<li><p>Update <code>LifecycleManager</code> interface if adding new
+public methods.</p></li>
+</ol>
+<h2 id="testing-with-different-runtimes">Testing with Different
+Runtimes</h2>
+<h3 id="docker-testing">Docker Testing</h3>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure Docker is running</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> ps</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run integration tests</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-tags</span><span class="op">=</span>integration ./pkg/runtime <span class="at">-run</span> TestDockerRuntime</span></code></pre></div>
+<h3 id="podman-testing">Podman Testing</h3>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure Podman is running</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> ps</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Set environment variable to force Podman</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINER_RUNTIME</span><span class="op">=</span>podman <span class="ex">go</span> test <span class="at">-tags</span><span class="op">=</span>integration ./pkg/runtime <span class="at">-run</span> TestPodmanRuntime</span></code></pre></div>
+<h3 id="kubernetes-testing">Kubernetes Testing</h3>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Ensure kubectl is configured</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">kubectl</span> cluster-info</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run Kubernetes tests</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-tags</span><span class="op">=</span>integration ./pkg/runtime <span class="at">-run</span> TestKubernetesRuntime</span></code></pre></div>
+<h2 id="pull-request-process">Pull Request Process</h2>
+<ol type="1">
+<li>Create a branch with the appropriate prefix.</li>
+<li>Make changes, commit with conventional commit messages.</li>
+<li>Ensure all tests pass (unit + integration).</li>
+<li>Update documentation if adding new features.</li>
+<li>Push the branch and create a pull request against
+<code>main</code>.</li>
+<li>PR title should follow the same conventional commit format.</li>
+<li>Describe:
+<ul>
+<li>What changed</li>
+<li>Why the change was necessary</li>
+<li>How to test it</li>
+<li>Which runtimes are affected</li>
+</ul></li>
+<li>Wait for review approval before merging.</li>
+</ol>
+<h2 id="reporting-issues">Reporting Issues</h2>
+<p>When reporting a bug, include:</p>
+<ul>
+<li>Go version (<code>go version</code>)</li>
+<li>Container runtime and version (<code>docker version</code> or
+<code>podman version</code>)</li>
+<li>OS and architecture</li>
+<li>Minimal reproduction case (ideally with Docker Compose file)</li>
+<li>Expected vs. actual behavior</li>
+<li>Logs from the affected service</li>
+<li>Output from <code>go test -v &lt;package&gt;</code> if
+applicable</li>
+</ul>
+<h2 id="performance-considerations">Performance Considerations</h2>
+<ul>
+<li>Use connection pooling for runtime clients</li>
+<li>Implement health check caching where appropriate</li>
+<li>Minimize blocking operations in lifecycle hooks</li>
+<li>Use goroutines for parallel operations with proper
+synchronization</li>
+<li>Profile before optimizing:
+<code>go test -bench=. -cpuprofile=cpu.prof</code></li>
+</ul>
+<h2 id="release-process">Release Process</h2>
+<ol type="1">
+<li>Ensure all tests pass on all supported runtimes</li>
+<li>Update CHANGELOG.md with changes</li>
+<li>Tag the release: <code>git tag v1.x.x</code></li>
+<li>Push tags: <code>git push --tags</code></li>
+<li>CI will automatically build and publish</li>
+</ol>
+<hr />
+<p><strong>Last Updated</strong>: February 10, 2026
+<strong>Version</strong>: 1.0.0</p>
+</body>
+</html>

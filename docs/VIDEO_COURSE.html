@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>VIDEO_COURSE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">VIDEO_COURSE</h1>
+</header>
+<h1 id="containers-module---video-course-outline">Containers Module -
+Video Course Outline</h1>
+<p><strong>Course Title:</strong> Mastering Container Orchestration with
+Go<br />
+<strong>Duration:</strong> ~4 hours<br />
+<strong>Level:</strong> Intermediate to Advanced<br />
+<strong>Prerequisites:</strong> Go basics, container fundamentals</p>
+<hr />
+<h2 id="module-1-introduction-and-setup-20-minutes">Module 1:
+Introduction and Setup (20 minutes)</h2>
+<h3 id="lesson-11-course-overview">Lesson 1.1: Course Overview</h3>
+<ul>
+<li>What you'll learn</li>
+<li>Prerequisites checklist</li>
+<li>Course structure</li>
+</ul>
+<h3 id="lesson-12-module-installation">Lesson 1.2: Module
+Installation</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get digital.vasic.containers@latest</span></code></pre></div>
+<ul>
+<li>Go module setup</li>
+<li>Dependency management</li>
+<li>Development environment</li>
+</ul>
+<h3 id="lesson-13-quick-demo">Lesson 1.3: Quick Demo</h3>
+<ul>
+<li>Auto-detecting container runtime</li>
+<li>Starting a compose project</li>
+<li>Health checking services</li>
+</ul>
+<hr />
+<h2 id="module-2-container-runtimes-30-minutes">Module 2: Container
+Runtimes (30 minutes)</h2>
+<h3 id="lesson-21-runtime-abstraction">Lesson 2.1: Runtime
+Abstraction</h3>
+<ul>
+<li>Why abstraction matters</li>
+<li>ContainerRuntime interface</li>
+<li>Supported runtimes</li>
+</ul>
+<h3 id="lesson-22-auto-detection">Lesson 2.2: Auto-Detection</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>rt<span class="op">,</span> err <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span></code></pre></div>
+<ul>
+<li>Detection order: Docker → Podman → Kubernetes</li>
+<li>Manual runtime selection</li>
+<li>Runtime capabilities</li>
+</ul>
+<h3 id="lesson-23-basic-operations">Lesson 2.3: Basic Operations</h3>
+<ul>
+<li>List containers</li>
+<li>Inspect containers</li>
+<li>Start/Stop/Remove</li>
+<li>Exec into containers</li>
+</ul>
+<h3 id="lab-2-working-with-runtimes">Lab 2: Working with Runtimes</h3>
+<ul>
+<li>Detect your local runtime</li>
+<li>List all running containers</li>
+<li>Execute commands in containers</li>
+</ul>
+<hr />
+<h2 id="module-3-compose-orchestration-40-minutes">Module 3: Compose
+Orchestration (40 minutes)</h2>
+<h3 id="lesson-31-composeorchestrator-interface">Lesson 3.1:
+ComposeOrchestrator Interface</h3>
+<ul>
+<li>Up, Down, Status, Logs</li>
+<li>ComposeProject structure</li>
+<li>Profiles and services</li>
+</ul>
+<h3 id="lesson-32-starting-services">Lesson 3.2: Starting Services</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>project <span class="op">:=</span> compose<span class="op">.</span>ComposeProject<span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    File<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span> <span class="st">&quot;myapp&quot;</span><span class="op">,</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>Up<span class="op">(</span>ctx<span class="op">,</span> project<span class="op">)</span></span></code></pre></div>
+<h3 id="lesson-33-managing-services">Lesson 3.3: Managing Services</h3>
+<ul>
+<li>Checking service status</li>
+<li>Viewing logs</li>
+<li>Stopping services</li>
+</ul>
+<h3 id="lab-3-compose-management">Lab 3: Compose Management</h3>
+<ul>
+<li>Create a compose file</li>
+<li>Start services programmatically</li>
+<li>Monitor and stop services</li>
+</ul>
+<hr />
+<h2 id="module-4-health-checking-30-minutes">Module 4: Health Checking
+(30 minutes)</h2>
+<h3 id="lesson-41-health-check-strategies">Lesson 4.1: Health Check
+Strategies</h3>
+<ul>
+<li>TCP health checks</li>
+<li>HTTP health checks</li>
+<li>gRPC health checks</li>
+<li>Custom health checks</li>
+</ul>
+<h3 id="lesson-42-retry-policies">Lesson 4.2: Retry Policies</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>policy <span class="op">:=</span> health<span class="op">.</span>RetryPolicy<span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    MaxRetries<span class="op">:</span>    <span class="dv">5</span><span class="op">,</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    Delay<span class="op">:</span>         <span class="dv">2</span> <span class="op">*</span> time<span class="op">.</span>Second<span class="op">,</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    BackoffFactor<span class="op">:</span> <span class="fl">1.5</span><span class="op">,</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="lesson-43-integration-with-boot">Lesson 4.3: Integration with
+Boot</h3>
+<ul>
+<li>Required vs optional services</li>
+<li>Health check failures</li>
+<li>Graceful degradation</li>
+</ul>
+<h3 id="lab-4-health-checking">Lab 4: Health Checking</h3>
+<ul>
+<li>Implement TCP health check</li>
+<li>Add retry policy</li>
+<li>Handle failures gracefully</li>
+</ul>
+<hr />
+<h2 id="module-5-boot-manager-40-minutes">Module 5: Boot Manager (40
+minutes)</h2>
+<h3 id="lesson-51-boot-manager-overview">Lesson 5.1: Boot Manager
+Overview</h3>
+<ul>
+<li>High-level orchestration</li>
+<li>Service configuration</li>
+<li>Boot sequence</li>
+</ul>
+<h3 id="lesson-52-service-configuration">Lesson 5.2: Service
+Configuration</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    HealthCheck<span class="op">:</span> boot<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">),</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    Required<span class="op">:</span>    <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<h3 id="lesson-53-boot-sequence">Lesson 5.3: Boot Sequence</h3>
+<ul>
+<li>Discovery phase</li>
+<li>Grouping phase</li>
+<li>Start phase</li>
+<li>Health check phase</li>
+<li>Summary phase</li>
+</ul>
+<h3 id="lab-5-boot-manager">Lab 5: Boot Manager</h3>
+<ul>
+<li>Configure multiple services</li>
+<li>Set up health checks</li>
+<li>Implement graceful shutdown</li>
+</ul>
+<hr />
+<h2 id="module-6-remote-deployment-50-minutes">Module 6: Remote
+Deployment (50 minutes)</h2>
+<h3 id="lesson-61-architecture-overview">Lesson 6.1: Architecture
+Overview</h3>
+<ul>
+<li>Control node vs worker nodes</li>
+<li>SSH communication</li>
+<li>Compose file distribution</li>
+</ul>
+<h3 id="lesson-62-host-configuration">Lesson 6.2: Host
+Configuration</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>host <span class="op">:=</span> remote<span class="op">.</span>RemoteHost<span class="op">{</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>    <span class="st">&quot;production&quot;</span><span class="op">,</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    Address<span class="op">:</span> <span class="st">&quot;prod.example.com&quot;</span><span class="op">,</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    User<span class="op">:</span>    <span class="st">&quot;deploy&quot;</span><span class="op">,</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    Runtime<span class="op">:</span> <span class="st">&quot;podman&quot;</span><span class="op">,</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="lesson-63-ssh-executor">Lesson 6.3: SSH Executor</h3>
+<ul>
+<li>Connection pooling</li>
+<li>ControlMaster optimization</li>
+<li>Key authentication</li>
+</ul>
+<h3 id="lesson-64-compose-detection">Lesson 6.4: Compose Detection</h3>
+<ul>
+<li>Priority order</li>
+<li>Podman-compose vs docker-compose</li>
+<li>Fallback mechanisms</li>
+</ul>
+<h3 id="lesson-65-remote-compose-orchestrator">Lesson 6.5: Remote
+Compose Orchestrator</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> remote<span class="op">.</span>NewRemoteComposeOrchestrator<span class="op">(</span>host<span class="op">,</span> executor<span class="op">,</span> <span class="ot">nil</span><span class="op">)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>Up<span class="op">(</span>ctx<span class="op">,</span> project<span class="op">)</span></span></code></pre></div>
+<h3 id="lab-6-remote-deployment">Lab 6: Remote Deployment</h3>
+<ul>
+<li>Configure remote host</li>
+<li>Deploy compose project remotely</li>
+<li>Monitor remote services</li>
+</ul>
+<hr />
+<h2 id="module-7-scheduling-strategies-30-minutes">Module 7: Scheduling
+Strategies (30 minutes)</h2>
+<h3 id="lesson-71-scheduler-overview">Lesson 7.1: Scheduler
+Overview</h3>
+<ul>
+<li>5 available strategies</li>
+<li>When to use each</li>
+</ul>
+<h3 id="lesson-72-resource-aware-scheduling">Lesson 7.2: Resource-Aware
+Scheduling</h3>
+<ul>
+<li>CPU/Memory/Disk scoring</li>
+<li>Host probing</li>
+<li>Dynamic scoring</li>
+</ul>
+<h3 id="lesson-73-other-strategies">Lesson 7.3: Other Strategies</h3>
+<ul>
+<li>Round Robin</li>
+<li>Affinity (labels)</li>
+<li>Spread</li>
+<li>Bin Pack</li>
+</ul>
+<h3 id="lab-7-multi-host-deployment">Lab 7: Multi-Host Deployment</h3>
+<ul>
+<li>Configure multiple hosts</li>
+<li>Use affinity scheduling</li>
+<li>Distribute workloads</li>
+</ul>
+<hr />
+<h2 id="module-8-advanced-topics-40-minutes">Module 8: Advanced Topics
+(40 minutes)</h2>
+<h3 id="lesson-81-lifecycle-management">Lesson 8.1: Lifecycle
+Management</h3>
+<ul>
+<li>Lazy boot</li>
+<li>Idle shutdown</li>
+<li>Semaphore control</li>
+</ul>
+<h3 id="lesson-82-event-system">Lesson 8.2: Event System</h3>
+<ul>
+<li>EventBus</li>
+<li>Subscribing to events</li>
+<li>Filtering events</li>
+</ul>
+<h3 id="lesson-83-resource-monitoring">Lesson 8.3: Resource
+Monitoring</h3>
+<ul>
+<li>Container metrics</li>
+<li>System metrics</li>
+<li>Threshold alerts</li>
+</ul>
+<h3 id="lesson-84-service-discovery">Lesson 8.4: Service Discovery</h3>
+<ul>
+<li>TCP scanning</li>
+<li>DNS discovery</li>
+<li>mDNS discovery</li>
+</ul>
+<h3 id="lab-8-building-an-operator">Lab 8: Building an Operator</h3>
+<ul>
+<li>Combine all concepts</li>
+<li>Build a complete operator</li>
+<li>Handle all edge cases</li>
+</ul>
+<hr />
+<h2 id="module-9-troubleshooting-20-minutes">Module 9: Troubleshooting
+(20 minutes)</h2>
+<h3 id="lesson-91-common-issues">Lesson 9.1: Common Issues</h3>
+<ul>
+<li>"no compose command found"</li>
+<li>"http+docker" URL scheme error</li>
+<li>Connection refused</li>
+<li>Build context issues</li>
+</ul>
+<h3 id="lesson-92-debug-logging">Lesson 9.2: Debug Logging</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>logger<span class="op">.</span>SetLevel<span class="op">(</span>logging<span class="op">.</span>DebugLevel<span class="op">)</span></span></code></pre></div>
+<h3 id="lesson-93-performance-tuning">Lesson 9.3: Performance
+Tuning</h3>
+<ul>
+<li>ControlMaster settings</li>
+<li>Connection pooling</li>
+<li>Parallel operations</li>
+</ul>
+<hr />
+<h2 id="module-10-best-practices-20-minutes">Module 10: Best Practices
+(20 minutes)</h2>
+<h3 id="lesson-101-production-checklist">Lesson 10.1: Production
+Checklist</h3>
+<ul>
+<li>Health checks for all services</li>
+<li>Required vs optional marking</li>
+<li>Resource labels</li>
+<li>Monitoring setup</li>
+</ul>
+<h3 id="lesson-102-security-considerations">Lesson 10.2: Security
+Considerations</h3>
+<ul>
+<li>SSH key management</li>
+<li>Least privilege</li>
+<li>Network isolation</li>
+</ul>
+<h3 id="lesson-103-scaling-strategies">Lesson 10.3: Scaling
+Strategies</h3>
+<ul>
+<li>Multi-host distribution</li>
+<li>Resource-aware scheduling</li>
+<li>Horizontal scaling</li>
+</ul>
+<hr />
+<h2 id="resources">Resources</h2>
+<h3 id="documentation">Documentation</h3>
+<ul>
+<li><a href="USER_GUIDE.md">USER_GUIDE.md</a></li>
+<li><a href="ARCHITECTURE.md">ARCHITECTURE.md</a></li>
+<li><a href="API_REFERENCE.md">API_REFERENCE.md</a></li>
+<li><a href="REMOTE_DEPLOYMENT.md">REMOTE_DEPLOYMENT.md</a></li>
+</ul>
+<h3 id="code-examples">Code Examples</h3>
+<ul>
+<li><a href="../examples/">examples/</a></li>
+<li><a href="../tests/integration/">tests/integration/</a></li>
+<li><a href="../challenges/">challenges/</a></li>
+</ul>
+<h3 id="community">Community</h3>
+<ul>
+<li>GitHub Issues</li>
+<li>Discussions</li>
+<li>Contributing Guide</li>
+</ul>
+<hr />
+<h2 id="certificate-requirements">Certificate Requirements</h2>
+<p>To earn the course certificate:</p>
+<ol type="1">
+<li>Complete all video lessons</li>
+<li>Pass all lab exercises</li>
+<li>Submit final project:
+<ul>
+<li>Build a container orchestrator</li>
+<li>Support local and remote deployment</li>
+<li>Implement health checking</li>
+<li>Use at least 2 scheduling strategies</li>
+</ul></li>
+</ol>
+<hr />
+<p><em>Last Updated: February 2026</em></p>
+</body>
+</html>

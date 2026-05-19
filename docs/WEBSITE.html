@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>WEBSITE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">WEBSITE</h1>
+</header>
+<h1 id="containers-module---website-content">Containers Module - Website
+Content</h1>
+<hr />
+<h2 id="hero-section">Hero Section</h2>
+<h1 id="generic-container-orchestration-for-go">Generic Container
+Orchestration for Go</h1>
+<p><strong>A unified, runtime-agnostic library for Docker, Podman, and
+Kubernetes</strong></p>
+<ul>
+<li>✅ Multi-runtime support (Docker, Podman, Kubernetes)</li>
+<li>✅ Remote deployment via SSH</li>
+<li>✅ Intelligent compose detection</li>
+<li>✅ Health checking with retries</li>
+<li>✅ Resource-aware scheduling</li>
+<li>✅ 100% test coverage</li>
+</ul>
+<p><a href="#quick-start">Get Started</a> · <a
+href="#documentation">Documentation</a> · <a
+href="https://github.com/vasic-digital/Containers">GitHub</a></p>
+<hr />
+<h2 id="features">Features</h2>
+<h3 id="runtime-agnostic">Runtime Agnostic</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Auto-detect: Docker → Podman → Kubernetes</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>rt<span class="op">,</span> _ <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span></code></pre></div>
+<p>Works seamlessly with Docker, Podman, and Kubernetes. No vendor
+lock-in.</p>
+<h3 id="remote-deployment">Remote Deployment</h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">// Deploy to any remote host via SSH</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> remote<span class="op">.</span>NewRemoteComposeOrchestrator<span class="op">(</span>host<span class="op">,</span> executor<span class="op">,</span> <span class="ot">nil</span><span class="op">)</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>Up<span class="op">(</span>ctx<span class="op">,</span> project<span class="op">)</span></span></code></pre></div>
+<p>Deploy containers to remote hosts with intelligent compose command
+detection.</p>
+<h3 id="health-checking">Health Checking</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// TCP, HTTP, gRPC, or custom checks</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>check <span class="op">:=</span> boot<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">)</span></span></code></pre></div>
+<p>Comprehensive health checking with retry policies and exponential
+backoff.</p>
+<h3 id="resource-aware-scheduling">Resource-Aware Scheduling</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 5 scheduling strategies</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>scheduler<span class="op">.</span>WithStrategy<span class="op">(</span>scheduler<span class="op">.</span>StrategyResourceAware<span class="op">)</span></span></code></pre></div>
+<p>Distribute containers across hosts based on CPU, memory, disk, and
+network.</p>
+<hr />
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="installation">Installation</h3>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get digital.vasic.containers@latest</span></code></pre></div>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/boot&quot;</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/runtime&quot;</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Auto-detect runtime</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    rt<span class="op">,</span> _ <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Create boot manager</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    manager <span class="op">:=</span> boot<span class="op">.</span>NewBootManager<span class="op">(</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithRuntime<span class="op">(</span>rt<span class="op">),</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Add services</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>        ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        HealthCheck<span class="op">:</span> boot<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">),</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        Required<span class="op">:</span>    <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Start all services</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>Start<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="documentation">Documentation</h2>
+<h3 id="user-guides">User Guides</h3>
+<table>
+<thead>
+<tr>
+<th>Guide</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="USER_GUIDE.md">User Guide</a></td>
+<td>Comprehensive usage guide</td>
+</tr>
+<tr>
+<td><a href="REMOTE_DEPLOYMENT.md">Remote Deployment</a></td>
+<td>Deploy to remote hosts</td>
+</tr>
+<tr>
+<td><a href="API_REFERENCE.md">API Reference</a></td>
+<td>Complete API documentation</td>
+</tr>
+<tr>
+<td><a href="ARCHITECTURE.md">Architecture</a></td>
+<td>System architecture</td>
+</tr>
+</tbody>
+</table>
+<h3 id="video-course">Video Course</h3>
+<p><a href="VIDEO_COURSE.md">Mastering Container Orchestration with
+Go</a> - 4-hour comprehensive course</p>
+<h3 id="test-configurations">Test Configurations</h3>
+<table>
+<thead>
+<tr>
+<th>Config</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a
+href="../tests/configs/.env.local"><code>.env.local</code></a></td>
+<td>Local deployment</td>
+</tr>
+<tr>
+<td><a
+href="../tests/configs/.env.remote-single"><code>.env.remote-single</code></a></td>
+<td>Single remote host</td>
+</tr>
+<tr>
+<td><a
+href="../tests/configs/.env.remote-cluster"><code>.env.remote-cluster</code></a></td>
+<td>Multi-host cluster</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="architecture">Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────┐
+│                     Your Application                             │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │                    boot.BootManager                       │    │
+│  └─────────────────────────────────────────────────────────┘    │
+│                              │                                   │
+│           ┌──────────────────┼──────────────────┐               │
+│           │                  │                  │               │
+│           ▼                  ▼                  ▼               │
+│    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐       │
+│    │  compose    │    │   health    │    │   remote    │       │
+│    │             │    │             │    │             │       │
+│    │  Up/Down    │    │  TCP/HTTP   │    │  SSH/SCP    │       │
+│    └─────────────┘    └─────────────┘    └─────────────┘       │
+│           │                                     │               │
+│           ▼                                     ▼               │
+│    ┌─────────────┐                      ┌─────────────┐       │
+│    │   runtime   │                      │   Remote    │       │
+│    │             │                      │    Host     │       │
+│    │ Docker      │                      │  (Podman)   │       │
+│    │ Podman      │                      └─────────────┘       │
+│    │ K8s         │                                            │
+│    └─────────────┘                                            │
+└─────────────────────────────────────────────────────────────────┘</code></pre>
+<hr />
+<h2 id="compose-command-detection">Compose Command Detection</h2>
+<p>The module intelligently detects the best compose command on each
+host:</p>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Command</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>podman-compose</code></td>
+<td>Native Podman (preferred)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>docker compose</code></td>
+<td>Docker v2 plugin</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>podman compose</code></td>
+<td>May delegate to docker-compose v1</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>docker-compose</code></td>
+<td>Legacy v1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why podman-compose is preferred:</strong>
+<code>podman compose</code> often delegates to
+<code>docker-compose</code> v1 which is incompatible with Podman.</p>
+<hr />
+<h2 id="scheduler-strategies">Scheduler Strategies</h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Description</th>
+<th>Use Case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>resource_aware</code></td>
+<td>Score-based by CPU/Memory</td>
+<td>Mixed workloads</td>
+</tr>
+<tr>
+<td><code>round_robin</code></td>
+<td>Even distribution</td>
+<td>Load balancing</td>
+</tr>
+<tr>
+<td><code>affinity</code></td>
+<td>Label matching</td>
+<td>GPU/Storage</td>
+</tr>
+<tr>
+<td><code>spread</code></td>
+<td>Maximize distribution</td>
+<td>High availability</td>
+</tr>
+<tr>
+<td><code>bin_pack</code></td>
+<td>Fill hosts first</td>
+<td>Cost optimization</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="test-coverage">Test Coverage</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Coverage</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit</td>
+<td>100%</td>
+<td>150+</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>Full</td>
+<td>50+</td>
+</tr>
+<tr>
+<td>E2E</td>
+<td>Full</td>
+<td>30+</td>
+</tr>
+<tr>
+<td>Security</td>
+<td>Full</td>
+<td>20+</td>
+</tr>
+<tr>
+<td>Stress</td>
+<td>Full</td>
+<td>15+</td>
+</tr>
+<tr>
+<td>Challenges</td>
+<td>Real-life</td>
+<td>25+</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="comparison">Comparison</h2>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>containers</th>
+<th>docker/cli</th>
+<th>podman/cli</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Multi-runtime</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Remote deployment</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Auto-detection</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Health checking</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Go library</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td>Kubernetes</td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="contributing">Contributing</h2>
+<p>We welcome contributions! See <a
+href="CONTRIBUTING.md">CONTRIBUTING.md</a> for guidelines.</p>
+<h3 id="development-setup">Development Setup</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Clone</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone git@github.com:vasic-digital/Containers.git</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Containers</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Install dependencies</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> mod download</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Run tests</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./...</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Run challenges</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-v</span> ./challenges/...</span></code></pre></div>
+<hr />
+<h2 id="license">License</h2>
+<p>MIT License - See <a href="../LICENSE">LICENSE</a> for details.</p>
+<hr />
+<h2 id="support">Support</h2>
+<ul>
+<li><strong>Documentation:</strong> <a href=".">docs/</a></li>
+<li><strong>Issues:</strong> <a
+href="https://github.com/vasic-digital/Containers/issues">GitHub
+Issues</a></li>
+<li><strong>Examples:</strong> <a href="../examples/">examples/</a></li>
+</ul>
+<hr />
+<p><em>Built with ❤️ for the Go community</em></p>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>behavior-anchors</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">behavior-anchors</h1>
+</header>
+<h1 id="behavior-anchor-manifest--containers">Behavior Anchor Manifest —
+Containers</h1>
+<p>Every row is a user-facing capability and the single anchor test that
+proves it works end-to-end. See CONST-035 in
+<code>CONSTITUTION.md</code>.</p>
+<h2 id="status-legend">Status legend</h2>
+<ul>
+<li><code>active</code> — anchor exists and is callable; capability is
+verified.</li>
+<li><code>pending-anchor</code> — capability declared, anchor test does
+not yet exist. Listed in
+<code>challenges/baselines/bluff-baseline.txt</code> Section 3. Reducing
+this state is the work of campaign sub-project 4.</li>
+<li><code>retired</code> — capability removed; row kept for
+history.</li>
+</ul>
+<h2 id="path-format">Path format</h2>
+<p>For Go tests: <code>&lt;path&gt;.go::&lt;TestFuncName&gt;</code>.
+Verifier greps for <code>func &lt;TestFuncName&gt;\b</code> in the
+file.</p>
+<h2 id="capabilities">Capabilities</h2>
+<table>
+<thead>
+<tr>
+<th>id</th>
+<th>layer</th>
+<th>capability</th>
+<th>anchor_test_path</th>
+<th>verifies</th>
+<th>status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CAP-001</td>
+<td>submodule:Containers</td>
+<td>Boot all registered services via BootManager</td>
+<td>pkg/boot/manager_test.go::TestBootManager_BootAll_BasicSuccess</td>
+<td>BootManager.BootAll() brings up registered endpoints and reports
+success</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-002</td>
+<td>submodule:Containers</td>
+<td>Parse <code>docker compose ps</code> status output into structured
+records</td>
+<td>pkg/compose/orchestrator_test.go::TestParseStatusOutput_ValidLines</td>
+<td>Compose status parser handles valid status table lines
+correctly</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-003</td>
+<td>submodule:Containers</td>
+<td>Discover service via TCP probe</td>
+<td>pkg/discovery/tcp_test.go::TestTCPDiscoverer_Discover_Success</td>
+<td>TCPDiscoverer.Discover() reports the service when port is
+reachable</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-004</td>
+<td>submodule:Containers</td>
+<td>Distribute container locally via DefaultDistributor</td>
+<td>pkg/distribution/distributor_test.go::TestDefaultDistributor_Distribute_Local</td>
+<td>Distributor places container on local host when no remotes are
+eligible</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-005</td>
+<td>submodule:Containers</td>
+<td>Build a service Endpoint with sane defaults</td>
+<td>pkg/endpoint/builder_test.go::TestBuilder_Defaults</td>
+<td>Endpoint builder produces a configured endpoint with default
+port/proto</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-006</td>
+<td>submodule:Containers</td>
+<td>Load remote host registry from environment variables</td>
+<td>pkg/envconfig/parser_test.go::TestLoadFromEnv</td>
+<td>LoadFromEnv parses CONTAINERS_REMOTE_HOST_N_* and registers
+hosts</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-007</td>
+<td>submodule:Containers</td>
+<td>Publish/subscribe lifecycle events on the event bus</td>
+<td>pkg/event/bus_test.go::TestDefaultEventBus_PublishSubscribe</td>
+<td>EventBus.Subscribe() receives events published with Publish()</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-008</td>
+<td>submodule:Containers</td>
+<td>Construct DefaultChecker that registers built-in TCP/HTTP/gRPC
+health checks</td>
+<td>pkg/health/checker_test.go::TestDefaultChecker_Register_OverridesExisting</td>
+<td>DefaultChecker exposes tcp/http/grpc check types out of the box</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-009</td>
+<td>submodule:Containers</td>
+<td>Register a service with the lifecycle manager</td>
+<td>pkg/lifecycle/manager_test.go::TestDefaultManager_Register</td>
+<td>LifecycleManager.Register() returns no error for fresh service
+ID</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-010</td>
+<td>submodule:Containers</td>
+<td>Collect system resource snapshot (CPU/memory/disk)</td>
+<td>pkg/monitor/system_test.go::TestDefaultSystemCollector_Collect</td>
+<td>SystemCollector returns a populated snapshot with non-zero
+values</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-011</td>
+<td>submodule:Containers</td>
+<td>Allocate an unused port</td>
+<td>pkg/network/port_allocator_test.go::TestPortAllocator_Allocate</td>
+<td>PortAllocator returns a free port and tracks it as in-use</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-012</td>
+<td>submodule:Containers</td>
+<td>SSH executor surfaces invalid-host error cleanly</td>
+<td>pkg/remote/ssh_executor_test.go::TestSSHExecutor_Execute_InvalidHost</td>
+<td>SSHExecutor.Execute against unreachable host returns descriptive
+error, not panic</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-013</td>
+<td>submodule:Containers</td>
+<td>Auto-detect available container runtime, preferring Docker</td>
+<td>pkg/runtime/detect_test.go::TestAutoDetectWith_DockerFirst</td>
+<td>runtime.AutoDetect() prefers docker over podman/containerd when all
+are present</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-014</td>
+<td>submodule:Containers</td>
+<td>Schedule containers with resource-aware strategy</td>
+<td>pkg/scheduler/scheduler_test.go::TestDefaultScheduler_Schedule_ResourceAware</td>
+<td>Scheduler places containers on hosts with sufficient CPU/memory
+headroom</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-015</td>
+<td>submodule:Containers</td>
+<td>Failover handler refuses to operate without HostManager +
+Executor</td>
+<td>pkg/distribution/failover_test.go::TestFailoverHandler_NoHostManagerOrExecutor</td>
+<td>FailoverHandler.Failover() returns descriptive error when
+dependencies are nil</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-016</td>
+<td>submodule:Containers</td>
+<td>Distributed build executes across registered remote hosts</td>
+<td>pkg/distribution/distributed_build_test.go::TestDistributedBuildExecution</td>
+<td>Distributed build orchestrator dispatches build steps to multiple
+hosts and aggregates results</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-017</td>
+<td>submodule:Containers</td>
+<td>ctop collector constructs against a real container runtime</td>
+<td>pkg/ctop/ctop_test.go::TestNewCollectorWithExecutor</td>
+<td>NewCollector() returns a usable collector wired to a runtime</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-018</td>
+<td>submodule:Containers</td>
+<td>Event-type constants are defined for every lifecycle stage</td>
+<td>pkg/event/events_test.go::TestEventType_Constants</td>
+<td>EventType has Started/Stopped/Healthy/Unhealthy/etc. constants
+exposed</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-019</td>
+<td>submodule:Containers</td>
+<td>DNS discoverer constructor accepts SRV/A record query config</td>
+<td>pkg/discovery/dns_test.go::TestDNSDiscoverer_Discover_Success</td>
+<td>NewDNSDiscoverer() returns a configured discoverer for SRV-based
+service discovery</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-020</td>
+<td>submodule:Containers</td>
+<td>Build-package planner produces an executable plan</td>
+<td>internal/buildpkg/planner_test.go::TestPlanner_PlanAll</td>
+<td>Planner.PlanAll() produces a non-empty build plan covering supplied
+targets</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-021</td>
+<td>submodule:Containers</td>
+<td>Scheduler labels-match strategy correctly filters hosts</td>
+<td>pkg/scheduler/strategies_test.go::TestLabelsMatch</td>
+<td>LabelsMatch() returns true only when host labels are a superset of
+required labels</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-022</td>
+<td>submodule:Containers</td>
+<td>End-to-end distribution workflow exercises all phases</td>
+<td>tests/integration/distribution_integration_test.go::TestDistributionWorkflow_AllPhases</td>
+<td>Distribution workflow runs schedule → deploy → health-check →
+undistribute and reports per-phase status</td>
+<td>active</td>
+</tr>
+<tr>
+<td>CAP-023</td>
+<td>submodule:Containers</td>
+<td>SSH executor rejects connection to invalid host with descriptive
+error</td>
+<td>tests/security/ssh_security_test.go::TestSSHExecutor_InvalidHost</td>
+<td>SSHExecutor.Execute() against an unresolvable host returns a
+non-empty error string (no panic, no silent success)</td>
+<td>active</td>
+</tr>
+</tbody>
+</table>
+<p>(Manifest now covers core runtime+orchestration+distribution+security
++integration capabilities — 23 active rows. Long-tail: per-strategy
+scheduler tests, individual lifecycle event types, volume mount
+paths.)</p>
+</body>
+</html>

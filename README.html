@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">README</h1>
+</header>
+<h1 id="digitalvasiccontainers">digital.vasic.containers</h1>
+<p>A generic, reusable Go module for container orchestration, health
+checking, lifecycle management, and service discovery. Supports Docker,
+Podman, and Kubernetes runtimes.</p>
+<h2 id="installation">Installation</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get digital.vasic.containers</span></code></pre></div>
+<h2 id="quick-start">Quick Start</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;fmt&quot;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;log&quot;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/boot&quot;</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/endpoint&quot;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/health&quot;</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/logging&quot;</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/runtime&quot;</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Auto-detect container runtime (Docker or Podman)</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    rt<span class="op">,</span> err <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Using runtime: %s</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> rt<span class="op">.</span>Name<span class="op">())</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Define service endpoints</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    endpoints <span class="op">:=</span> <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span>endpoint<span class="op">.</span>ServiceEndpoint<span class="op">{</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;postgres&quot;</span><span class="op">:</span> endpoint<span class="op">.</span>NewEndpoint<span class="op">().</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>            WithHost<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">).</span>WithPort<span class="op">(</span><span class="st">&quot;5432&quot;</span><span class="op">).</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>            WithHealthType<span class="op">(</span><span class="st">&quot;tcp&quot;</span><span class="op">).</span>WithRequired<span class="op">(</span><span class="ot">true</span><span class="op">).</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            WithComposeFile<span class="op">(</span><span class="st">&quot;docker-compose.yml&quot;</span><span class="op">).</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>            WithServiceName<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">).</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            Build<span class="op">(),</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="st">&quot;redis&quot;</span><span class="op">:</span> endpoint<span class="op">.</span>NewEndpoint<span class="op">().</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>            WithHost<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">).</span>WithPort<span class="op">(</span><span class="st">&quot;6379&quot;</span><span class="op">).</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>            WithHealthType<span class="op">(</span><span class="st">&quot;tcp&quot;</span><span class="op">).</span>WithRequired<span class="op">(</span><span class="ot">true</span><span class="op">).</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>            WithComposeFile<span class="op">(</span><span class="st">&quot;docker-compose.yml&quot;</span><span class="op">).</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>            WithServiceName<span class="op">(</span><span class="st">&quot;redis&quot;</span><span class="op">).</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>            Build<span class="op">(),</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Boot all services</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>    mgr <span class="op">:=</span> boot<span class="op">.</span>NewBootManager<span class="op">(</span>endpoints<span class="op">,</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithRuntime<span class="op">(</span>rt<span class="op">),</span></span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithLogger<span class="op">(</span>logging<span class="op">.</span>NewSlogAdapter<span class="op">()),</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">,</span> err <span class="op">:=</span> mgr<span class="op">.</span>BootAll<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatalf<span class="op">(</span><span class="st">&quot;Boot failed: %v&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Started: %d, Failed: %d</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        summary<span class="op">.</span>Started<span class="op">,</span> summary<span class="op">.</span>Failed<span class="op">)</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h2 id="features">Features</h2>
+<ul>
+<li><strong>Multi-runtime support</strong>: Docker, Podman,
+Kubernetes</li>
+<li><strong>Auto-detection</strong>: Automatically finds available
+container runtime</li>
+<li><strong>Health checking</strong>: TCP, HTTP, gRPC, and custom health
+checks with retry</li>
+<li><strong>Compose orchestration</strong>: Batch operations grouped by
+compose file/profile</li>
+<li><strong>Lifecycle management</strong>: Lazy boot, idle shutdown,
+concurrency semaphores</li>
+<li><strong>Resource monitoring</strong>: System and per-container
+CPU/memory/disk, cluster snapshots</li>
+<li><strong>Event system</strong>: Publish/subscribe for 20 lifecycle
+event types</li>
+<li><strong>Service discovery</strong>: TCP port probe and DNS-based
+discovery</li>
+<li><strong>Prometheus metrics</strong>: Built-in metrics
+collection</li>
+<li><strong>Pluggable logging</strong>: Bring your own logger (slog
+adapter included)</li>
+<li><strong>Remote distribution</strong>: Distribute containers across
+multiple hosts via SSH</li>
+<li><strong>Resource-aware scheduling</strong>: 5 strategies
+(resource_aware, round_robin, affinity, spread, bin_pack)</li>
+<li><strong>SSH tunnel management</strong>: Cross-host networking with
+auto port allocation</li>
+<li><strong>Remote volumes</strong>: SSHFS, NFS, and rsync-based volume
+sharing</li>
+<li><strong>Automatic failover</strong>: Detect offline hosts and
+reschedule containers</li>
+<li><strong>Environment configuration</strong>: <code>.env</code> files
+and <code>CONTAINERS_REMOTE_*</code> env vars</li>
+</ul>
+<h2 id="architecture">Architecture</h2>
+<pre><code>boot.BootManager
+├── compose.ComposeOrchestrator  (Docker Compose operations)
+├── health.HealthChecker         (TCP/HTTP/gRPC checks)
+├── discovery.Discoverer         (Service discovery)
+├── distribution.Distributor     (Remote distribution)
+├── event.EventBus               (20 lifecycle event types)
+├── metrics.MetricsCollector     (Prometheus metrics)
+└── logging.Logger               (Pluggable logging)
+
+distribution.Distributor
+├── scheduler.Scheduler          (5 placement strategies)
+├── remote.HostManager           (Host registry + probing)
+├── remote.RemoteExecutor        (SSH command execution)
+├── network.TunnelManager        (SSH tunnels)
+└── volume.VolumeManager         (SSHFS/NFS/rsync)
+
+lifecycle.LifecycleManager
+├── LazyBooter                   (Start on first Acquire)
+├── IdleShutdown                 (Stop after inactivity)
+└── ConcurrencySemaphore         (Limit parallel users)
+
+runtime.ContainerRuntime
+├── DockerRuntime
+├── PodmanRuntime
+├── KubernetesRuntime
+└── remote.RemoteRuntime         (ContainerRuntime over SSH)</code></pre>
+<h2 id="remote-distribution">Remote Distribution</h2>
+<p>Distribute containers across local and remote hosts. See <a
+href="docs/REMOTE_DISTRIBUTION.md">docs/REMOTE_DISTRIBUTION.md</a> for
+the full guide.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/distribution&quot;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/envconfig&quot;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/scheduler&quot;</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Load remote host configuration from .env</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>cfg<span class="op">,</span> _ <span class="op">:=</span> envconfig<span class="op">.</span>LoadFromEnv<span class="op">()</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>hosts <span class="op">:=</span> cfg<span class="op">.</span>ToRemoteHosts<span class="op">()</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">// Create host manager and register hosts</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>hm <span class="op">:=</span> remote<span class="op">.</span>NewDefaultHostManager<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">())</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _<span class="op">,</span> h <span class="op">:=</span> <span class="kw">range</span> hosts <span class="op">{</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    hm<span class="op">.</span>AddHost<span class="op">(</span>h<span class="op">)</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Create distributor</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>dist <span class="op">:=</span> distribution<span class="op">.</span>NewDistributor<span class="op">(</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithScheduler<span class="op">(</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        scheduler<span class="op">.</span>NewDefaultScheduler<span class="op">(</span>hm<span class="op">),</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithHostManager<span class="op">(</span>hm<span class="op">),</span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithExecutor<span class="op">(</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        remote<span class="op">.</span>NewSSHExecutor<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">()),</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="co">// Distribute containers</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>summary<span class="op">,</span> _ <span class="op">:=</span> dist<span class="op">.</span>Distribute<span class="op">(</span>ctx<span class="op">,</span></span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">[]</span>scheduler<span class="op">.</span>ContainerRequirements<span class="op">{</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;web&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;nginx:latest&quot;</span><span class="op">},</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;cache&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;redis:latest&quot;</span><span class="op">},</span></span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Local: %d, Remote: %d</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">.</span>LocalContainers<span class="op">,</span> summary<span class="op">.</span>RemoteContainers<span class="op">)</span></span></code></pre></div>
+<h2 id="service-orchestrator">Service Orchestrator</h2>
+<p>Auto-discover and manage all containerized services with automatic
+remote distribution:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/orchestrator&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/compose&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create orchestrator with local compose and optional remote support</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> orchestrator<span class="op">.</span>New<span class="op">(</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithLocalOrchestrator<span class="op">(</span>composeOrch<span class="op">),</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithRemoteExecutor<span class="op">(</span>remoteExec<span class="op">),</span>  <span class="co">// optional</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithHostManager<span class="op">(</span>hostMgr<span class="op">),</span>         <span class="co">// optional</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithProjectDir<span class="op">(</span><span class="st">&quot;/path/to/project&quot;</span><span class="op">),</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">// Auto-discover all docker-compose files in docker/ directory</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>DiscoverServices<span class="op">(</span><span class="st">&quot;docker&quot;</span><span class="op">)</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Or manually add services</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>AddService<span class="op">(</span>orchestrator<span class="op">.</span>Service<span class="op">{</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>        <span class="st">&quot;mcp&quot;</span><span class="op">,</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    ComposeFile<span class="op">:</span> <span class="st">&quot;docker/mcp/docker-compose.mcp-servers.yml&quot;</span><span class="op">,</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    Description<span class="op">:</span> <span class="st">&quot;MCP servers (32+ servers)&quot;</span><span class="op">,</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">// Start all services (remote if configured, local otherwise)</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartAll<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">// Start a specific service</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartService<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;mcp&quot;</span><span class="op">)</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="co">// List discovered services</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>services <span class="op">:=</span> orch<span class="op">.</span>ListServices<span class="op">()</span></span></code></pre></div>
+<p>When remote distribution is enabled (both <code>RemoteExecutor</code>
+and <code>HostManager</code> provided), all services are automatically
+deployed to the remote host with automatic fallback to local.</p>
+<h2 id="container-monitoring-ctop">Container Monitoring (ctop)</h2>
+<p>Real-time container monitoring with top/htop-style display for local
+and remote containers:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/ctop&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create collector with optional remote host support</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>collector <span class="op">:=</span> ctop<span class="op">.</span>NewCollector<span class="op">(</span><span class="st">&quot;podman&quot;</span><span class="op">,</span> hostManager<span class="op">)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Collect container data</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>list<span class="op">,</span> _ <span class="op">:=</span> collector<span class="op">.</span>Collect<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Containers: %d running, %d stopped</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> list<span class="op">.</span>Running<span class="op">,</span> list<span class="op">.</span>Stopped<span class="op">)</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">// Create interactive display</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>display <span class="op">:=</span> ctop<span class="op">.</span>NewDisplay<span class="op">(</span>collector<span class="op">,</span> ctop<span class="op">.</span>DefaultDisplayConfig<span class="op">())</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">// Run interactive TUI (blocks until quit)</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>display<span class="op">.</span>Run<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get a snapshot</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>snapshot<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderSnapshot<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>snapshot<span class="op">)</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get JSON output</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>json<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderJSON<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>json<span class="op">)</span></span></code></pre></div>
+<h3 id="cli-usage">CLI Usage</h3>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the ctop CLI</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install digital.vasic.containers/cmd/ctop@latest</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run interactive monitoring</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># One-time snapshot</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--once</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># JSON output</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--json</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter by host</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--host</span> thinker</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by memory</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--sort</span> mem</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Show stopped containers</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--all</span></span></code></pre></div>
+<h3 id="display-features">Display Features</h3>
+<ul>
+<li><strong>Color-coded resource usage</strong>: Green (low) → Yellow
+(medium) → Red (high)</li>
+<li><strong>Sorting</strong>: CPU, memory, name, state, uptime, runtime,
+host</li>
+<li><strong>Filtering</strong>: By host name, container name,
+running/stopped state</li>
+<li><strong>Multi-host</strong>: Shows containers from local and remote
+hosts</li>
+<li><strong>Remote support</strong>: Integrates with HostManager for
+distributed monitoring</li>
+</ul>
+<h2 id="license">License</h2>
+<p>MIT</p>
+</body>
+</html>

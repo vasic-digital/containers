@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>API_REFERENCE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">API_REFERENCE</h1>
+</header>
+<h1 id="containers-api-reference">Containers API Reference</h1>
+<h2 id="package-runtime">Package <code>runtime</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/runtime</code></p>
+<p>The <code>runtime</code> package provides a unified interface for
+container operations across Docker, Podman, and Kubernetes. It includes
+auto-detection logic to select the best available runtime.</p>
+<hr />
+<h3 id="interface-containerruntime">Interface
+<code>ContainerRuntime</code></h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ContainerRuntime <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Container lifecycle</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    Start<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    Stop<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">,</span> timeout <span class="op">*</span>time<span class="op">.</span>Duration<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    Restart<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    Remove<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">,</span> force <span class="dt">bool</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Container inspection</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    Inspect<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">)</span> <span class="op">(*</span>ContainerInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    List<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> filters <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span><span class="op">)</span> <span class="op">([]*</span>ContainerInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    Logs<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">,</span> opts LogOptions<span class="op">)</span> <span class="op">(</span>io<span class="op">.</span>ReadCloser<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Image operations</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    PullImage<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> image <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    RemoveImage<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> image <span class="dt">string</span><span class="op">,</span> force <span class="dt">bool</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Network operations</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>    ListNetworks<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">([]*</span>NetworkInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    CreateNetwork<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> name <span class="dt">string</span><span class="op">,</span> opts NetworkOptions<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>    RemoveNetwork<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> networkID <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Runtime information</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>    Version<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(</span><span class="dt">string</span><span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>    Info<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(*</span>RuntimeInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Unified interface for container runtime operations.</p>
+<hr />
+<h3 id="struct-containerinfo">Struct <code>ContainerInfo</code></h3>
+<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ContainerInfo <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    ID          <span class="dt">string</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    Name        <span class="dt">string</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    Image       <span class="dt">string</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    State       ContainerState</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    Status      <span class="dt">string</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    Created     time<span class="op">.</span>Time</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    Started     time<span class="op">.</span>Time</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    Ports       <span class="op">[]</span>PortMapping</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    Networks    <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    Labels      <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    Environment <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    Command     <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Container information structure.</p>
+<p><strong>Fields</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ID</code></td>
+<td><code>string</code></td>
+<td>Unique container identifier</td>
+</tr>
+<tr>
+<td><code>Name</code></td>
+<td><code>string</code></td>
+<td>Human-readable container name</td>
+</tr>
+<tr>
+<td><code>Image</code></td>
+<td><code>string</code></td>
+<td>Container image reference</td>
+</tr>
+<tr>
+<td><code>State</code></td>
+<td><code>ContainerState</code></td>
+<td>Current state (running, stopped, paused, etc.)</td>
+</tr>
+<tr>
+<td><code>Status</code></td>
+<td><code>string</code></td>
+<td>Human-readable status message</td>
+</tr>
+<tr>
+<td><code>Created</code></td>
+<td><code>time.Time</code></td>
+<td>Container creation timestamp</td>
+</tr>
+<tr>
+<td><code>Started</code></td>
+<td><code>time.Time</code></td>
+<td>Container start timestamp (zero if not started)</td>
+</tr>
+<tr>
+<td><code>Ports</code></td>
+<td><code>[]PortMapping</code></td>
+<td>Published port mappings</td>
+</tr>
+<tr>
+<td><code>Networks</code></td>
+<td><code>[]string</code></td>
+<td>Connected network names</td>
+</tr>
+<tr>
+<td><code>Labels</code></td>
+<td><code>map[string]string</code></td>
+<td>Container labels</td>
+</tr>
+<tr>
+<td><code>Environment</code></td>
+<td><code>[]string</code></td>
+<td>Environment variables</td>
+</tr>
+<tr>
+<td><code>Command</code></td>
+<td><code>[]string</code></td>
+<td>Container command</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="type-containerstate">Type <code>ContainerState</code></h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ContainerState <span class="dt">string</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="op">(</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    StateCreated    ContainerState <span class="op">=</span> <span class="st">&quot;created&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    StateRunning    ContainerState <span class="op">=</span> <span class="st">&quot;running&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    StatePaused     ContainerState <span class="op">=</span> <span class="st">&quot;paused&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    StateStopped    ContainerState <span class="op">=</span> <span class="st">&quot;stopped&quot;</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    StateRemoving   ContainerState <span class="op">=</span> <span class="st">&quot;removing&quot;</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    StateExited     ContainerState <span class="op">=</span> <span class="st">&quot;exited&quot;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    StateDead       ContainerState <span class="op">=</span> <span class="st">&quot;dead&quot;</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<p>Represents container state.</p>
+<hr />
+<h3 id="function-autodetect">Function <code>AutoDetect</code></h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> AutoDetect<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span></code></pre></div>
+<p>Automatically detects and returns the best available container
+runtime. Tries Docker first, then Podman, then Kubernetes.</p>
+<p><strong>Returns</strong>:</p>
+<ul>
+<li><code>ContainerRuntime</code> -- The detected runtime instance.</li>
+<li><code>error</code> -- <code>ErrNoRuntimeAvailable</code> if no
+runtime is found.</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>runtime<span class="op">,</span> err <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    log<span class="op">.</span>Fatal<span class="op">(</span><span class="st">&quot;No container runtime available:&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h3 id="function-newdockerruntime">Function
+<code>NewDockerRuntime</code></h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewDockerRuntime<span class="op">(</span>opts <span class="op">...</span>DockerOption<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span></code></pre></div>
+<p>Creates a new Docker client runtime.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>opts</code> -- Functional options for Docker
+configuration.</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>runtime<span class="op">,</span> err <span class="op">:=</span> runtime<span class="op">.</span>NewDockerRuntime<span class="op">(</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    runtime<span class="op">.</span>WithDockerHost<span class="op">(</span><span class="st">&quot;unix:///var/run/docker.sock&quot;</span><span class="op">),</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    runtime<span class="op">.</span>WithDockerAPIVersion<span class="op">(</span><span class="st">&quot;1.43&quot;</span><span class="op">),</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<hr />
+<h3 id="function-newpodmanruntime">Function
+<code>NewPodmanRuntime</code></h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewPodmanRuntime<span class="op">(</span>opts <span class="op">...</span>PodmanOption<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span></code></pre></div>
+<p>Creates a new Podman client runtime.</p>
+<hr />
+<h3 id="function-newkubernetesruntime">Function
+<code>NewKubernetesRuntime</code></h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewKubernetesRuntime<span class="op">(</span>opts <span class="op">...</span>K8sOption<span class="op">)</span> <span class="op">(</span>ContainerRuntime<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span></code></pre></div>
+<p>Creates a new Kubernetes client runtime.</p>
+<hr />
+<h2 id="package-compose">Package <code>compose</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/compose</code></p>
+<p>The <code>compose</code> package provides Docker Compose
+orchestration capabilities with profile support and service
+filtering.</p>
+<hr />
+<h3 id="interface-composeorchestrator">Interface
+<code>ComposeOrchestrator</code></h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ComposeOrchestrator <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    Up<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> opts UpOptions<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    Down<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> opts DownOptions<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    Restart<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> services <span class="op">[]</span><span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    Ps<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">([]*</span>ServiceStatus<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    Logs<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> service <span class="dt">string</span><span class="op">,</span> opts LogOptions<span class="op">)</span> <span class="op">(</span>io<span class="op">.</span>ReadCloser<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Interface for Docker Compose operations.</p>
+<hr />
+<h3 id="struct-upoptions">Struct <code>UpOptions</code></h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> UpOptions <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    ComposeFiles <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    Profiles     <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    Services     <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    Detach       <span class="dt">bool</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    Build        <span class="dt">bool</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    ForceRecreate <span class="dt">bool</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    Environment  <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Options for the <code>Up</code> operation.</p>
+<p><strong>Fields</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ComposeFiles</code></td>
+<td><code>[]string</code></td>
+<td>Compose file paths (default: <code>docker-compose.yml</code>)</td>
+</tr>
+<tr>
+<td><code>Profiles</code></td>
+<td><code>[]string</code></td>
+<td>Profiles to enable</td>
+</tr>
+<tr>
+<td><code>Services</code></td>
+<td><code>[]string</code></td>
+<td>Specific services to start (empty = all)</td>
+</tr>
+<tr>
+<td><code>Detach</code></td>
+<td><code>bool</code></td>
+<td>Run in background</td>
+</tr>
+<tr>
+<td><code>Build</code></td>
+<td><code>bool</code></td>
+<td>Build images before starting</td>
+</tr>
+<tr>
+<td><code>ForceRecreate</code></td>
+<td><code>bool</code></td>
+<td>Recreate containers even if config unchanged</td>
+</tr>
+<tr>
+<td><code>Environment</code></td>
+<td><code>map[string]string</code></td>
+<td>Environment variable overrides</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="function-newdockercomposeorchestrator">Function
+<code>NewDockerComposeOrchestrator</code></h3>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewDockerComposeOrchestrator<span class="op">(</span>runtime runtime<span class="op">.</span>ContainerRuntime<span class="op">)</span> ComposeOrchestrator</span></code></pre></div>
+<p>Creates a new Docker Compose orchestrator using the provided
+runtime.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> compose<span class="op">.</span>NewDockerComposeOrchestrator<span class="op">(</span>runtime<span class="op">)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>Up<span class="op">(</span>ctx<span class="op">,</span> compose<span class="op">.</span>UpOptions<span class="op">{</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    ComposeFiles<span class="op">:</span> <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;docker-compose.yml&quot;</span><span class="op">},</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    Profiles<span class="op">:</span>     <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;production&quot;</span><span class="op">},</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    Detach<span class="op">:</span>       <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<hr />
+<h2 id="package-health">Package <code>health</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/health</code></p>
+<p>The <code>health</code> package provides multi-strategy health
+checking with retry policies.</p>
+<hr />
+<h3 id="interface-healthchecker">Interface
+<code>HealthChecker</code></h3>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> HealthChecker <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    Check<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> endpoint endpoint<span class="op">.</span>Endpoint<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    CheckWithRetry<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> endpoint endpoint<span class="op">.</span>Endpoint<span class="op">,</span> policy RetryPolicy<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Interface for health checking.</p>
+<hr />
+<h3 id="struct-retrypolicy">Struct <code>RetryPolicy</code></h3>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> RetryPolicy <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    MaxAttempts     <span class="dt">int</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    InitialInterval time<span class="op">.</span>Duration</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    MaxInterval     time<span class="op">.</span>Duration</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    Multiplier      <span class="dt">float64</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Configures retry behavior for health checks.</p>
+<p><strong>Fields</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MaxAttempts</code></td>
+<td><code>int</code></td>
+<td><code>3</code></td>
+<td>Maximum retry attempts</td>
+</tr>
+<tr>
+<td><code>InitialInterval</code></td>
+<td><code>time.Duration</code></td>
+<td><code>1s</code></td>
+<td>Initial retry interval</td>
+</tr>
+<tr>
+<td><code>MaxInterval</code></td>
+<td><code>time.Duration</code></td>
+<td><code>30s</code></td>
+<td>Maximum retry interval</td>
+</tr>
+<tr>
+<td><code>Multiplier</code></td>
+<td><code>float64</code></td>
+<td><code>2.0</code></td>
+<td>Exponential backoff multiplier</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="function-newdefaultchecker">Function
+<code>NewDefaultChecker</code></h3>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewDefaultChecker<span class="op">()</span> HealthChecker</span></code></pre></div>
+<p>Creates a health checker supporting TCP, HTTP, gRPC, and custom
+checks.</p>
+<hr />
+<h3 id="function-tcpcheck">Function <code>TCPCheck</code></h3>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> TCPCheck<span class="op">(</span>host <span class="dt">string</span><span class="op">,</span> port <span class="dt">int</span><span class="op">,</span> timeout time<span class="op">.</span>Duration<span class="op">)</span> HealthCheck</span></code></pre></div>
+<p>Creates a TCP health check.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>check <span class="op">:=</span> health<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> checker<span class="op">.</span>Check<span class="op">(</span>ctx<span class="op">,</span> endpoint<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">,</span> <span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">))</span></span></code></pre></div>
+<hr />
+<h3 id="function-httpcheck">Function <code>HTTPCheck</code></h3>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> HTTPCheck<span class="op">(</span>url <span class="dt">string</span><span class="op">,</span> expectedStatus <span class="dt">int</span><span class="op">,</span> timeout time<span class="op">.</span>Duration<span class="op">)</span> HealthCheck</span></code></pre></div>
+<p>Creates an HTTP health check.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>check <span class="op">:=</span> health<span class="op">.</span>HTTPCheck<span class="op">(</span><span class="st">&quot;http://localhost:8080/health&quot;</span><span class="op">,</span> <span class="dv">200</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span></code></pre></div>
+<hr />
+<h3 id="function-grpccheck">Function <code>GRPCCheck</code></h3>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> GRPCCheck<span class="op">(</span>host <span class="dt">string</span><span class="op">,</span> port <span class="dt">int</span><span class="op">,</span> serviceName <span class="dt">string</span><span class="op">,</span> timeout time<span class="op">.</span>Duration<span class="op">)</span> HealthCheck</span></code></pre></div>
+<p>Creates a gRPC health check using the gRPC Health Checking
+Protocol.</p>
+<hr />
+<h3 id="function-customcheck">Function <code>CustomCheck</code></h3>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> CustomCheck<span class="op">(</span>fn <span class="kw">func</span><span class="op">(</span>context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span><span class="op">)</span> HealthCheck</span></code></pre></div>
+<p>Creates a custom health check from a function.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>check <span class="op">:=</span> health<span class="op">.</span>CustomCheck<span class="op">(</span><span class="kw">func</span><span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span> <span class="op">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Custom health check logic</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="op">!</span>isHealthy<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> fmt<span class="op">.</span>Errorf<span class="op">(</span><span class="st">&quot;service unhealthy&quot;</span><span class="op">)</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ot">nil</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<hr />
+<h2 id="package-endpoint">Package <code>endpoint</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/endpoint</code></p>
+<p>The <code>endpoint</code> package provides service endpoint
+configuration with builder pattern.</p>
+<hr />
+<h3 id="struct-endpoint">Struct <code>Endpoint</code></h3>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Endpoint <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>    Name   <span class="dt">string</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    Host   <span class="dt">string</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    Port   <span class="dt">int</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    Path   <span class="dt">string</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    Scheme <span class="dt">string</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Service endpoint configuration.</p>
+<hr />
+<h3 id="function-new">Function <code>New</code></h3>
+<div class="sourceCode" id="cb25"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> New<span class="op">(</span>name<span class="op">,</span> host <span class="dt">string</span><span class="op">,</span> port <span class="dt">int</span><span class="op">)</span> <span class="op">*</span>Endpoint</span></code></pre></div>
+<p>Creates a new endpoint with default scheme (http) and empty path.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>ep <span class="op">:=</span> endpoint<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;postgres&quot;</span><span class="op">,</span> <span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">)</span></span></code></pre></div>
+<hr />
+<h3 id="method-endpointwithpath">Method
+<code>Endpoint.WithPath</code></h3>
+<div class="sourceCode" id="cb27"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>e <span class="op">*</span>Endpoint<span class="op">)</span> WithPath<span class="op">(</span>path <span class="dt">string</span><span class="op">)</span> <span class="op">*</span>Endpoint</span></code></pre></div>
+<p>Sets the path and returns the endpoint for chaining.</p>
+<hr />
+<h3 id="method-endpointwithscheme">Method
+<code>Endpoint.WithScheme</code></h3>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>e <span class="op">*</span>Endpoint<span class="op">)</span> WithScheme<span class="op">(</span>scheme <span class="dt">string</span><span class="op">)</span> <span class="op">*</span>Endpoint</span></code></pre></div>
+<p>Sets the scheme (http, https, tcp, etc.) and returns the endpoint for
+chaining.</p>
+<hr />
+<h3 id="method-endpointurl">Method <code>Endpoint.URL</code></h3>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>e <span class="op">*</span>Endpoint<span class="op">)</span> URL<span class="op">()</span> <span class="dt">string</span></span></code></pre></div>
+<p>Returns the full URL string.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>ep <span class="op">:=</span> endpoint<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;api&quot;</span><span class="op">,</span> <span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">8080</span><span class="op">).</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    WithScheme<span class="op">(</span><span class="st">&quot;https&quot;</span><span class="op">).</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    WithPath<span class="op">(</span><span class="st">&quot;/v1/health&quot;</span><span class="op">)</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>url <span class="op">:=</span> ep<span class="op">.</span>URL<span class="op">()</span>  <span class="co">// &quot;https://localhost:8080/v1/health&quot;</span></span></code></pre></div>
+<hr />
+<h2 id="package-lifecycle">Package <code>lifecycle</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/lifecycle</code></p>
+<p>The <code>lifecycle</code> package provides advanced lifecycle
+management including lazy boot, idle shutdown, and semaphore
+control.</p>
+<hr />
+<h3 id="interface-lifecyclemanager">Interface
+<code>LifecycleManager</code></h3>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> LifecycleManager <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    Start<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> service <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    Stop<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> service <span class="dt">string</span><span class="op">,</span> gracePeriod time<span class="op">.</span>Duration<span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    Restart<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> service <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    GetState<span class="op">(</span>service <span class="dt">string</span><span class="op">)</span> State</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    SetLazyBoot<span class="op">(</span>enabled <span class="dt">bool</span><span class="op">)</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    SetIdleShutdown<span class="op">(</span>enabled <span class="dt">bool</span><span class="op">,</span> idleTimeout time<span class="op">.</span>Duration<span class="op">)</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Interface for service lifecycle management.</p>
+<hr />
+<h3 id="type-state">Type <code>State</code></h3>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> State <span class="dt">string</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="op">(</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    StateUnstarted State <span class="op">=</span> <span class="st">&quot;unstarted&quot;</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    StateStarting  State <span class="op">=</span> <span class="st">&quot;starting&quot;</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    StateStarted   State <span class="op">=</span> <span class="st">&quot;started&quot;</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    StateStopping  State <span class="op">=</span> <span class="st">&quot;stopping&quot;</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    StateStopped   State <span class="op">=</span> <span class="st">&quot;stopped&quot;</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    StateFailed    State <span class="op">=</span> <span class="st">&quot;failed&quot;</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<p>Lifecycle state enumeration.</p>
+<hr />
+<h3 id="function-newlifecyclemanager">Function
+<code>NewLifecycleManager</code></h3>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewLifecycleManager<span class="op">(</span>runtime runtime<span class="op">.</span>ContainerRuntime<span class="op">,</span> opts <span class="op">...</span>Option<span class="op">)</span> LifecycleManager</span></code></pre></div>
+<p>Creates a new lifecycle manager.</p>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>WithLazyBoot(bool)</code> -- Enable lazy boot (on-demand
+startup)</li>
+<li><code>WithIdleShutdown(bool, time.Duration)</code> -- Enable idle
+shutdown</li>
+<li><code>WithSemaphore(int)</code> -- Set max parallel operations</li>
+<li><code>WithEventBus(event.EventBus)</code> -- Attach event bus for
+hooks</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>lm <span class="op">:=</span> lifecycle<span class="op">.</span>NewLifecycleManager<span class="op">(</span>runtime<span class="op">,</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    lifecycle<span class="op">.</span>WithLazyBoot<span class="op">(</span><span class="ot">true</span><span class="op">),</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    lifecycle<span class="op">.</span>WithIdleShutdown<span class="op">(</span><span class="ot">true</span><span class="op">,</span> <span class="dv">30</span><span class="op">*</span>time<span class="op">.</span>Minute<span class="op">),</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    lifecycle<span class="op">.</span>WithSemaphore<span class="op">(</span><span class="dv">5</span><span class="op">),</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<hr />
+<h2 id="package-monitor">Package <code>monitor</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/monitor</code></p>
+<p>The <code>monitor</code> package provides resource monitoring for
+system and per-container metrics.</p>
+<hr />
+<h3 id="interface-resourcemonitor">Interface
+<code>ResourceMonitor</code></h3>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ResourceMonitor <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    GetSystemMetrics<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(*</span>SystemMetrics<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>    GetContainerMetrics<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> containerID <span class="dt">string</span><span class="op">)</span> <span class="op">(*</span>ContainerMetrics<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    MonitorThresholds<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> thresholds Thresholds<span class="op">)</span> <span class="op">&lt;-</span><span class="kw">chan</span> Alert</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Interface for resource monitoring.</p>
+<hr />
+<h3 id="struct-systemmetrics">Struct <code>SystemMetrics</code></h3>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> SystemMetrics <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    CPUPercent    <span class="dt">float64</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    MemoryPercent <span class="dt">float64</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    MemoryUsedGB  <span class="dt">float64</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    MemoryTotalGB <span class="dt">float64</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    DiskPercent   <span class="dt">float64</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>    DiskUsedGB    <span class="dt">float64</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>    DiskTotalGB   <span class="dt">float64</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>    Timestamp     time<span class="op">.</span>Time</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>System-wide resource metrics.</p>
+<hr />
+<h3 id="struct-containermetrics">Struct
+<code>ContainerMetrics</code></h3>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ContainerMetrics <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a>    ContainerID   <span class="dt">string</span></span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    CPUPercent    <span class="dt">float64</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>    MemoryUsedMB  <span class="dt">float64</span></span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    MemoryLimitMB <span class="dt">float64</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    MemoryPercent <span class="dt">float64</span></span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>    NetworkRxMB   <span class="dt">float64</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>    NetworkTxMB   <span class="dt">float64</span></span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>    BlockReadMB   <span class="dt">float64</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>    BlockWriteMB  <span class="dt">float64</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>    Timestamp     time<span class="op">.</span>Time</span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Per-container resource metrics.</p>
+<hr />
+<h3 id="function-newresourcemonitor">Function
+<code>NewResourceMonitor</code></h3>
+<div class="sourceCode" id="cb38"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewResourceMonitor<span class="op">(</span>runtime runtime<span class="op">.</span>ContainerRuntime<span class="op">)</span> ResourceMonitor</span></code></pre></div>
+<p>Creates a new resource monitor.</p>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>monitor <span class="op">:=</span> monitor<span class="op">.</span>NewResourceMonitor<span class="op">(</span>runtime<span class="op">)</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>metrics<span class="op">,</span> err <span class="op">:=</span> monitor<span class="op">.</span>GetContainerMetrics<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;postgres-container&quot;</span><span class="op">)</span></span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> metrics<span class="op">.</span>MemoryPercent <span class="op">&gt;</span> <span class="fl">90.0</span> <span class="op">{</span></span>
+<span id="cb39-4"><a href="#cb39-4" aria-hidden="true" tabindex="-1"></a>    log<span class="op">.</span>Warn<span class="op">(</span><span class="st">&quot;High memory usage:&quot;</span><span class="op">,</span> metrics<span class="op">.</span>MemoryPercent<span class="op">)</span></span>
+<span id="cb39-5"><a href="#cb39-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<h2 id="package-event">Package <code>event</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/event</code></p>
+<p>The <code>event</code> package provides a lifecycle event bus for
+container operations.</p>
+<hr />
+<h3 id="type-eventtype">Type <code>EventType</code></h3>
+<div class="sourceCode" id="cb40"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> EventType <span class="dt">string</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a><span class="kw">const</span> <span class="op">(</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    EventContainerStarting   EventType <span class="op">=</span> <span class="st">&quot;container.starting&quot;</span></span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>    EventContainerStarted    EventType <span class="op">=</span> <span class="st">&quot;container.started&quot;</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>    EventContainerStopping   EventType <span class="op">=</span> <span class="st">&quot;container.stopping&quot;</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    EventContainerStopped    EventType <span class="op">=</span> <span class="st">&quot;container.stopped&quot;</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>    EventContainerFailed     EventType <span class="op">=</span> <span class="st">&quot;container.failed&quot;</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>    EventHealthCheckPassed   EventType <span class="op">=</span> <span class="st">&quot;healthcheck.passed&quot;</span></span>
+<span id="cb40-10"><a href="#cb40-10" aria-hidden="true" tabindex="-1"></a>    EventHealthCheckFailed   EventType <span class="op">=</span> <span class="st">&quot;healthcheck.failed&quot;</span></span>
+<span id="cb40-11"><a href="#cb40-11" aria-hidden="true" tabindex="-1"></a>    EventResourceThreshold   EventType <span class="op">=</span> <span class="st">&quot;resource.threshold&quot;</span></span>
+<span id="cb40-12"><a href="#cb40-12" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<p>Container lifecycle event types.</p>
+<hr />
+<h3 id="interface-eventbus">Interface <code>EventBus</code></h3>
+<div class="sourceCode" id="cb41"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> EventBus <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    Publish<span class="op">(</span>event Event<span class="op">)</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    Subscribe<span class="op">(</span>eventType EventType<span class="op">,</span> handler <span class="kw">func</span><span class="op">(</span>Event<span class="op">))</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    Unsubscribe<span class="op">(</span>eventType EventType<span class="op">,</span> handlerID <span class="dt">string</span><span class="op">)</span> <span class="dt">error</span></span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Event bus for lifecycle events.</p>
+<hr />
+<h3 id="struct-event">Struct <code>Event</code></h3>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Event <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>    ID        <span class="dt">string</span></span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    Type      EventType</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    Timestamp time<span class="op">.</span>Time</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    Container <span class="dt">string</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>    Service   <span class="dt">string</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    Data      <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="kw">interface</span><span class="op">{}</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Container lifecycle event.</p>
+<hr />
+<h2 id="package-discovery">Package <code>discovery</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/discovery</code></p>
+<p>The <code>discovery</code> package provides service discovery using
+multiple strategies.</p>
+<hr />
+<h3 id="interface-discoverer">Interface <code>Discoverer</code></h3>
+<div class="sourceCode" id="cb43"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Discoverer <span class="kw">interface</span> <span class="op">{</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>    Discover<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> opts DiscoveryOptions<span class="op">)</span> <span class="op">([]</span>ServiceInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    DiscoverTCP<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> portRange PortRange<span class="op">)</span> <span class="op">([]</span>ServiceInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    DiscoverDNS<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> domain <span class="dt">string</span><span class="op">)</span> <span class="op">([]</span>ServiceInfo<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Interface for service discovery.</p>
+<hr />
+<h3 id="struct-serviceinfo">Struct <code>ServiceInfo</code></h3>
+<div class="sourceCode" id="cb44"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ServiceInfo <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>    Name     <span class="dt">string</span></span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    Host     <span class="dt">string</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    Port     <span class="dt">int</span></span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    Protocol <span class="dt">string</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>    Metadata <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Discovered service information.</p>
+<hr />
+<h3 id="function-newdiscoverer">Function <code>NewDiscoverer</code></h3>
+<div class="sourceCode" id="cb45"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewDiscoverer<span class="op">(</span>strategies <span class="op">...</span>Strategy<span class="op">)</span> Discoverer</span></code></pre></div>
+<p>Creates a new service discoverer with specified strategies.</p>
+<p><strong>Strategies</strong>:</p>
+<ul>
+<li><code>StrategyTCP</code> -- TCP port scanning</li>
+<li><code>StrategyDNS</code> -- DNS-based discovery</li>
+<li><code>StrategyMDNS</code> -- Multicast DNS</li>
+<li><code>StrategyConsul</code> -- Consul service catalog</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>disc <span class="op">:=</span> discovery<span class="op">.</span>NewDiscoverer<span class="op">(</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>    discovery<span class="op">.</span>StrategyTCP<span class="op">,</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>    discovery<span class="op">.</span>StrategyDNS<span class="op">,</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>services<span class="op">,</span> err <span class="op">:=</span> disc<span class="op">.</span>Discover<span class="op">(</span>ctx<span class="op">,</span> discovery<span class="op">.</span>DiscoveryOptions<span class="op">{</span></span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>    HostPattern<span class="op">:</span> <span class="st">&quot;192.168.1.*&quot;</span><span class="op">,</span></span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>    PortRange<span class="op">:</span>   discovery<span class="op">.</span>PortRange<span class="op">{</span>Start<span class="op">:</span> <span class="dv">5000</span><span class="op">,</span> End<span class="op">:</span> <span class="dv">6000</span><span class="op">},</span></span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<hr />
+<h2 id="package-boot">Package <code>boot</code></h2>
+<p><strong>Import</strong>:
+<code>digital.vasic.containers/pkg/boot</code></p>
+<p>The <code>boot</code> package provides the high-level
+<code>BootManager</code> that orchestrates all container operations.</p>
+<hr />
+<h3 id="struct-bootmanager">Struct <code>BootManager</code></h3>
+<div class="sourceCode" id="cb47"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> BootManager <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Unexported fields</span></span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>High-level orchestration manager composing all container
+packages.</p>
+<hr />
+<h3 id="function-newbootmanager">Function
+<code>NewBootManager</code></h3>
+<div class="sourceCode" id="cb48"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> NewBootManager<span class="op">(</span>opts <span class="op">...</span>Option<span class="op">)</span> <span class="op">*</span>BootManager</span></code></pre></div>
+<p>Creates a new boot manager with functional options.</p>
+<p><strong>Options</strong>:</p>
+<ul>
+<li><code>WithRuntime(runtime.ContainerRuntime)</code> -- Set container
+runtime</li>
+<li><code>WithLogger(logging.Logger)</code> -- Set logger</li>
+<li><code>WithHealthCheckRetries(int)</code> -- Set health check retry
+count</li>
+<li><code>WithParallelStartup(bool)</code> -- Enable parallel service
+startup</li>
+<li><code>WithLazyBoot(bool)</code> -- Enable lazy boot</li>
+<li><code>WithEventBus(event.EventBus)</code> -- Attach event bus</li>
+<li><code>WithMetrics(metrics.MetricsCollector)</code> -- Attach metrics
+collector</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb49"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>manager <span class="op">:=</span> boot<span class="op">.</span>NewBootManager<span class="op">(</span></span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>    boot<span class="op">.</span>WithRuntime<span class="op">(</span>runtime<span class="op">),</span></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>    boot<span class="op">.</span>WithLogger<span class="op">(</span>logger<span class="op">),</span></span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    boot<span class="op">.</span>WithHealthCheckRetries<span class="op">(</span><span class="dv">3</span><span class="op">),</span></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    boot<span class="op">.</span>WithParallelStartup<span class="op">(</span><span class="ot">true</span><span class="op">),</span></span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<hr />
+<h3 id="struct-serviceconfig">Struct <code>ServiceConfig</code></h3>
+<div class="sourceCode" id="cb50"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> ServiceConfig <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>    Name        <span class="dt">string</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>    ComposeFile <span class="dt">string</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>    ServiceName <span class="dt">string</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>    HealthCheck HealthCheck</span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>    Required    <span class="dt">bool</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>    DependsOn   <span class="op">[]</span><span class="dt">string</span></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a>    Env         <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span></span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a>    Labels      <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span></span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Configuration for a managed service.</p>
+<hr />
+<h3 id="method-bootmanageraddservice">Method
+<code>BootManager.AddService</code></h3>
+<div class="sourceCode" id="cb51"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>bm <span class="op">*</span>BootManager<span class="op">)</span> AddService<span class="op">(</span>name <span class="dt">string</span><span class="op">,</span> config ServiceConfig<span class="op">)</span> <span class="dt">error</span></span></code></pre></div>
+<p>Adds a service to be managed.</p>
+<p><strong>Parameters</strong>:</p>
+<ul>
+<li><code>name</code> -- Unique service identifier</li>
+<li><code>config</code> -- Service configuration</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="sourceCode" id="cb52"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;postgresql&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>    ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>    ServiceName<span class="op">:</span> <span class="st">&quot;postgres&quot;</span><span class="op">,</span></span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>    HealthCheck<span class="op">:</span> health<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">),</span></span>
+<span id="cb52-5"><a href="#cb52-5" aria-hidden="true" tabindex="-1"></a>    Required<span class="op">:</span>    <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb52-6"><a href="#cb52-6" aria-hidden="true" tabindex="-1"></a>    DependsOn<span class="op">:</span>   <span class="op">[]</span><span class="dt">string</span><span class="op">{},</span></span>
+<span id="cb52-7"><a href="#cb52-7" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<hr />
+<h3 id="method-bootmanagerstart">Method
+<code>BootManager.Start</code></h3>
+<div class="sourceCode" id="cb53"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>bm <span class="op">*</span>BootManager<span class="op">)</span> Start<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="dt">error</span></span></code></pre></div>
+<p>Starts all managed services in dependency order.</p>
+<p><strong>Returns</strong>: Error if any required service fails to
+start.</p>
+<hr />
+<h3 id="method-bootmanagerstop">Method
+<code>BootManager.Stop</code></h3>
+<div class="sourceCode" id="cb54"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>bm <span class="op">*</span>BootManager<span class="op">)</span> Stop<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> gracePeriod time<span class="op">.</span>Duration<span class="op">)</span> <span class="dt">error</span></span></code></pre></div>
+<p>Stops all managed services in reverse dependency order.</p>
+<hr />
+<h3 id="method-bootmanagerhealthcheck">Method
+<code>BootManager.HealthCheck</code></h3>
+<div class="sourceCode" id="cb55"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>bm <span class="op">*</span>BootManager<span class="op">)</span> HealthCheck<span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">)</span> <span class="op">(</span><span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span>HealthStatus<span class="op">,</span> <span class="dt">error</span><span class="op">)</span></span></code></pre></div>
+<p>Performs health check on all services.</p>
+<p><strong>Returns</strong>: Map of service names to health status.</p>
+<hr />
+<h3 id="method-bootmanagergetstatus">Method
+<code>BootManager.GetStatus</code></h3>
+<div class="sourceCode" id="cb56"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> <span class="op">(</span>bm <span class="op">*</span>BootManager<span class="op">)</span> GetStatus<span class="op">()</span> <span class="op">*</span>Status</span></code></pre></div>
+<p>Returns current status of all managed services.</p>
+<hr />
+<h3 id="struct-status">Struct <code>Status</code></h3>
+<div class="sourceCode" id="cb57"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="kw">type</span> Status <span class="kw">struct</span> <span class="op">{</span></span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>    Services <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span>ServiceStatus</span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    Uptime   time<span class="op">.</span>Duration</span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>    Healthy  <span class="dt">int</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    Unhealthy <span class="dt">int</span></span>
+<span id="cb57-6"><a href="#cb57-6" aria-hidden="true" tabindex="-1"></a>    Total    <span class="dt">int</span></span>
+<span id="cb57-7"><a href="#cb57-7" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Overall boot manager status.</p>
+<hr />
+<h2 id="error-types">Error Types</h2>
+<h3 id="common-errors">Common Errors</h3>
+<div class="sourceCode" id="cb58"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="kw">var</span> <span class="op">(</span></span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>    ErrNoRuntimeAvailable    <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;no container runtime available&quot;</span><span class="op">)</span></span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>    ErrServiceNotFound       <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;service not found&quot;</span><span class="op">)</span></span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>    ErrHealthCheckFailed     <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;health check failed&quot;</span><span class="op">)</span></span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>    ErrServiceDependency     <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;service dependency failed&quot;</span><span class="op">)</span></span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>    ErrInvalidConfiguration  <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;invalid configuration&quot;</span><span class="op">)</span></span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>    ErrTimeout               <span class="op">=</span> errors<span class="op">.</span>New<span class="op">(</span><span class="st">&quot;operation timeout&quot;</span><span class="op">)</span></span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<hr />
+<h2 id="complete-usage-example">Complete Usage Example</h2>
+<div class="sourceCode" id="cb59"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;log&quot;</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;time&quot;</span></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/boot&quot;</span></span>
+<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/runtime&quot;</span></span>
+<span id="cb59-10"><a href="#cb59-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/health&quot;</span></span>
+<span id="cb59-11"><a href="#cb59-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/logging&quot;</span></span>
+<span id="cb59-12"><a href="#cb59-12" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb59-13"><a href="#cb59-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-14"><a href="#cb59-14" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> main<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb59-15"><a href="#cb59-15" aria-hidden="true" tabindex="-1"></a>    ctx <span class="op">:=</span> context<span class="op">.</span>Background<span class="op">()</span></span>
+<span id="cb59-16"><a href="#cb59-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-17"><a href="#cb59-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Auto-detect runtime</span></span>
+<span id="cb59-18"><a href="#cb59-18" aria-hidden="true" tabindex="-1"></a>    rt<span class="op">,</span> err <span class="op">:=</span> runtime<span class="op">.</span>AutoDetect<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb59-19"><a href="#cb59-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb59-20"><a href="#cb59-20" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span><span class="st">&quot;No runtime available:&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
+<span id="cb59-21"><a href="#cb59-21" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb59-22"><a href="#cb59-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-23"><a href="#cb59-23" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Create logger</span></span>
+<span id="cb59-24"><a href="#cb59-24" aria-hidden="true" tabindex="-1"></a>    logger <span class="op">:=</span> logging<span class="op">.</span>NewDefaultLogger<span class="op">()</span></span>
+<span id="cb59-25"><a href="#cb59-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-26"><a href="#cb59-26" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Create boot manager</span></span>
+<span id="cb59-27"><a href="#cb59-27" aria-hidden="true" tabindex="-1"></a>    manager <span class="op">:=</span> boot<span class="op">.</span>NewBootManager<span class="op">(</span></span>
+<span id="cb59-28"><a href="#cb59-28" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithRuntime<span class="op">(</span>rt<span class="op">),</span></span>
+<span id="cb59-29"><a href="#cb59-29" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithLogger<span class="op">(</span>logger<span class="op">),</span></span>
+<span id="cb59-30"><a href="#cb59-30" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithHealthCheckRetries<span class="op">(</span><span class="dv">3</span><span class="op">),</span></span>
+<span id="cb59-31"><a href="#cb59-31" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithParallelStartup<span class="op">(</span><span class="ot">true</span><span class="op">),</span></span>
+<span id="cb59-32"><a href="#cb59-32" aria-hidden="true" tabindex="-1"></a>        boot<span class="op">.</span>WithLazyBoot<span class="op">(</span><span class="ot">false</span><span class="op">),</span></span>
+<span id="cb59-33"><a href="#cb59-33" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb59-34"><a href="#cb59-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-35"><a href="#cb59-35" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Add PostgreSQL</span></span>
+<span id="cb59-36"><a href="#cb59-36" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;postgresql&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb59-37"><a href="#cb59-37" aria-hidden="true" tabindex="-1"></a>        ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb59-38"><a href="#cb59-38" aria-hidden="true" tabindex="-1"></a>        ServiceName<span class="op">:</span> <span class="st">&quot;postgres&quot;</span><span class="op">,</span></span>
+<span id="cb59-39"><a href="#cb59-39" aria-hidden="true" tabindex="-1"></a>        HealthCheck<span class="op">:</span> health<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">5432</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">),</span></span>
+<span id="cb59-40"><a href="#cb59-40" aria-hidden="true" tabindex="-1"></a>        Required<span class="op">:</span>    <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb59-41"><a href="#cb59-41" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb59-42"><a href="#cb59-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-43"><a href="#cb59-43" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Add Redis</span></span>
+<span id="cb59-44"><a href="#cb59-44" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;redis&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb59-45"><a href="#cb59-45" aria-hidden="true" tabindex="-1"></a>        ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb59-46"><a href="#cb59-46" aria-hidden="true" tabindex="-1"></a>        ServiceName<span class="op">:</span> <span class="st">&quot;redis&quot;</span><span class="op">,</span></span>
+<span id="cb59-47"><a href="#cb59-47" aria-hidden="true" tabindex="-1"></a>        HealthCheck<span class="op">:</span> health<span class="op">.</span>TCPCheck<span class="op">(</span><span class="st">&quot;localhost&quot;</span><span class="op">,</span> <span class="dv">6379</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">),</span></span>
+<span id="cb59-48"><a href="#cb59-48" aria-hidden="true" tabindex="-1"></a>        Required<span class="op">:</span>    <span class="ot">true</span><span class="op">,</span></span>
+<span id="cb59-49"><a href="#cb59-49" aria-hidden="true" tabindex="-1"></a>        DependsOn<span class="op">:</span>   <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;postgresql&quot;</span><span class="op">},</span></span>
+<span id="cb59-50"><a href="#cb59-50" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb59-51"><a href="#cb59-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-52"><a href="#cb59-52" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Add API server</span></span>
+<span id="cb59-53"><a href="#cb59-53" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>AddService<span class="op">(</span><span class="st">&quot;api&quot;</span><span class="op">,</span> boot<span class="op">.</span>ServiceConfig<span class="op">{</span></span>
+<span id="cb59-54"><a href="#cb59-54" aria-hidden="true" tabindex="-1"></a>        ComposeFile<span class="op">:</span> <span class="st">&quot;docker-compose.yml&quot;</span><span class="op">,</span></span>
+<span id="cb59-55"><a href="#cb59-55" aria-hidden="true" tabindex="-1"></a>        ServiceName<span class="op">:</span> <span class="st">&quot;api&quot;</span><span class="op">,</span></span>
+<span id="cb59-56"><a href="#cb59-56" aria-hidden="true" tabindex="-1"></a>        HealthCheck<span class="op">:</span> health<span class="op">.</span>HTTPCheck<span class="op">(</span><span class="st">&quot;http://localhost:8080/health&quot;</span><span class="op">,</span> <span class="dv">200</span><span class="op">,</span> <span class="dv">5</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">),</span></span>
+<span id="cb59-57"><a href="#cb59-57" aria-hidden="true" tabindex="-1"></a>        Required<span class="op">:</span>    <span class="ot">false</span><span class="op">,</span></span>
+<span id="cb59-58"><a href="#cb59-58" aria-hidden="true" tabindex="-1"></a>        DependsOn<span class="op">:</span>   <span class="op">[]</span><span class="dt">string</span><span class="op">{</span><span class="st">&quot;postgresql&quot;</span><span class="op">,</span> <span class="st">&quot;redis&quot;</span><span class="op">},</span></span>
+<span id="cb59-59"><a href="#cb59-59" aria-hidden="true" tabindex="-1"></a>    <span class="op">})</span></span>
+<span id="cb59-60"><a href="#cb59-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-61"><a href="#cb59-61" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Start all services</span></span>
+<span id="cb59-62"><a href="#cb59-62" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> err <span class="op">:=</span> manager<span class="op">.</span>Start<span class="op">(</span>ctx<span class="op">);</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb59-63"><a href="#cb59-63" aria-hidden="true" tabindex="-1"></a>        log<span class="op">.</span>Fatal<span class="op">(</span><span class="st">&quot;Failed to start services:&quot;</span><span class="op">,</span> err<span class="op">)</span></span>
+<span id="cb59-64"><a href="#cb59-64" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb59-65"><a href="#cb59-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-66"><a href="#cb59-66" aria-hidden="true" tabindex="-1"></a>    logger<span class="op">.</span>Info<span class="op">(</span><span class="st">&quot;All services started successfully&quot;</span><span class="op">)</span></span>
+<span id="cb59-67"><a href="#cb59-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-68"><a href="#cb59-68" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Health check</span></span>
+<span id="cb59-69"><a href="#cb59-69" aria-hidden="true" tabindex="-1"></a>    statuses<span class="op">,</span> _ <span class="op">:=</span> manager<span class="op">.</span>HealthCheck<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb59-70"><a href="#cb59-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> name<span class="op">,</span> status <span class="op">:=</span> <span class="kw">range</span> statuses <span class="op">{</span></span>
+<span id="cb59-71"><a href="#cb59-71" aria-hidden="true" tabindex="-1"></a>        logger<span class="op">.</span>Infof<span class="op">(</span><span class="st">&quot;%s: %s&quot;</span><span class="op">,</span> name<span class="op">,</span> status<span class="op">)</span></span>
+<span id="cb59-72"><a href="#cb59-72" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb59-73"><a href="#cb59-73" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-74"><a href="#cb59-74" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Wait for interrupt...</span></span>
+<span id="cb59-75"><a href="#cb59-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb59-76"><a href="#cb59-76" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Graceful shutdown</span></span>
+<span id="cb59-77"><a href="#cb59-77" aria-hidden="true" tabindex="-1"></a>    manager<span class="op">.</span>Stop<span class="op">(</span>ctx<span class="op">,</span> <span class="dv">30</span><span class="op">*</span>time<span class="op">.</span>Second<span class="op">)</span></span>
+<span id="cb59-78"><a href="#cb59-78" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<hr />
+<p><strong>Last Updated</strong>: February 10, 2026
+<strong>Version</strong>: 1.0.0 <strong>Total API Methods</strong>: 50+
+<strong>Status</strong>: ✅ Complete</p>
+</body>
+</html>
