@@ -3205,5 +3205,123 @@ no <code>--skip-md-exports</code>, <code>--no-pdf-only</code>,
 href="constitution/Constitution.md"><code>Constitution.md</code></a>
 §11.4.65.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
+<p><strong>§11.4.66 — Blocker-resolution interactive-clarification
+mandate (User mandate, 2026-05-19)</strong></p>
+<p>When any task is blocked (operator decision, hardware access,
+external authorization, ambiguous scope), the agent MUST: (1) research
+what's doable from the agent side without operator input; (2) calculate
+minimum-viable operator input; (3) construct 2–4 mutually-exclusive
+options with one marked "Recommended" and each stating what the agent
+does after that answer; (4) present via the platform's interactive
+question mechanism (<code>AskUserQuestion</code> on Claude Code) — NEVER
+free-text "what would you like?" for closed- set decisions; (5) after
+the answer, resume work without follow-up round-trips. Composes with
+§11.4.6 / §11.4.7 / §11.4.40 / §11.4.41 / §11.4.42 / §11.4.52. No silent
+waiting; no bulk-text questions when interactive options would do.</p>
+<p>Pre-build gate <code>CM-COVENANT-114-66-PROPAGATION</code> enforces
+the anchor literal across the 42-file consumer fleet. Paired meta- test
+mutation strips the literal → gate FAILs. No escape hatch — no
+<code>--skip-ask</code>, <code>--silent-wait</code>,
+<code>--free-form-only</code> flag.</p>
+<p><strong>Canonical authority:</strong> constitution submodule <a
+href="constitution/Constitution.md"><code>Constitution.md</code></a>
+§11.4.66.</p>
+<p>Non-compliance is a release blocker regardless of context.</p>
+<h2
+id="const-062--065--066--067--075--076--077-round-191-supplemental-cascade--anchors-11442-11445-47-11455-57">CONST-062
+/ 065 / 066 / 067 / 075 / 076 / 077: Round-191 supplemental cascade —
+anchors §11.4.42, §11.4.45-47, §11.4.55-57</h2>
+<p>Anchors not covered by the Phase-39.EX cascade are added here for
+completeness per CONST-049 step 6.</p>
+<ul>
+<li><strong>CONST-062 / §11.4.42 — Iteration-discipline
+mandate.</strong> Each fix cycle MUST run pre-build gate +
+post-build/post-flash test + paired §1.1 mutation + post-validation
+§11.4.40 retest. Truncating cycle to ship faster = violation. Subagents
+default to this path.</li>
+<li><strong>CONST-065 / §11.4.45 — Integration-Status-Doc
+Maintenance.</strong> Every <code>Status.md</code> carries the §11.4.44
+header and stays in sync with actual programme state at every commit
+advancing state. Out-of-sync = violation (CONST-044 severity).</li>
+<li><strong>CONST-066 / §11.4.46 — Validate-recent-work before
+post-flash sweep.</strong> Each recent-work item since previous sweep
+MUST have its §11.4.43 RED test run against the live device and report
+GREEN before post-flash full-test sweeps. Skipping = violation.</li>
+<li><strong>CONST-067 / §11.4.47 — Firebase Data Review.</strong> Every
+Firebase finding triaged per §11.4.47 severity table, deduped against
+Issues.md; new stacktrace gets §11.4.43 RED test before fix. Untriaged
+past SLA = violation.</li>
+<li><strong>CONST-075 / §11.4.55 — Reopens-history + per-item
+Reopens.md.</strong> Every Reopened item gets
+<code>docs/reopens/ATM-NNN.md</code> tracking each cycle (date, source
+AI/User, reason from CONST-058 vocabulary, evidence path).
+<code>Reopens_Summary.md</code> regenerated on every reopen.</li>
+<li><strong>CONST-076 / §11.4.56 — Status_Summary parity + two-audience
+format.</strong> <code>Status_Summary.md</code> (+ HTML/PDF exports)
+ships in operator-side + AI-side sections and stays in parity with
+underlying status docs at every commit advancing state.</li>
+<li><strong>CONST-077 / §11.4.57 — README.md doc-link section + revision
+metadata.</strong> Every <code>README.md</code> carries (a) §11.4.44
+revision header below H1, (b) Documentation link section listing
+canonical governance + status + plan docs.</li>
+</ul>
+<p>For full mandate text + verbatim user quotes + gates, see
+constitution submodule <code>Constitution.md</code> §11.4.42,
+§11.4.45-47, §11.4.55-57.</p>
+<h2
+id="round-207-cascade--11459--11460-readme-always-sync--documentation-always-sync-composite-covenant">Round-207
+cascade — §11.4.59 + §11.4.60 (README always-sync + Documentation
+always-sync composite covenant)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-19): <em>"fully review and update our
+main README document. ... Make sure main README is among documents we
+MUST ALWAYS keep updated and in Sync with the projects and other
+documentation! Make sure we always export it (on every update) into PDF
+and HTML."</em> AND (2026-05-19 ~09:00Z): <em>"Double check if all
+documents are properly tied with our root Constitution, CLAUDE.MD and
+AGENTS.MD so they are always up to date, always in sync and exported
+into PDF and HTML! ... Issues, Issues_Summary, Fixed, Fixed_Summary,
+Continuation, Status and Status_Summary for all contexts (areas) — THEY
+ALL MUST BE REGULARLY UPDATED, IN SYNC AND CONSISTENT without giving at
+any moment false picture about the state of the project or particular
+area(s) of it!"</em></p>
+</blockquote>
+<ul>
+<li><strong>§11.4.59 — README always-sync mandate.</strong>
+<code>README.md</code> at the project root is a §11.4.12-class
+always-sync document: kept current with every doc/integration/Status.md
+change, lockstep with <code>docs/CONTINUATION.md</code>, exported to
+<code>.html</code> + <code>.pdf</code> on every update via
+<code>scripts/testing/sync_readme_export.sh</code> (auto-invoked by
+<code>sync_issues_docs.sh</code>), carrying §11.4.44 revision header +
+Documentation Map section linking every Status / Status_Summary / spec /
+plan / guide / script-companion / changelog + the constitution submodule
++ per-audience navigation. Pre-build gate
+<code>CM-README-EXPORT-SYNC</code> enforces mtime parity (README.html +
+README.pdf ≥ README.md). Paired mutation backdates HTML+PDF → gate
+FAILs. No escape hatch — no <code>--skip-readme-sync</code>,
+<code>--no-readme-export</code>, <code>--readme-stale-OK</code>
+flag.</li>
+<li><strong>§11.4.60 — Documentation always-sync composite
+covenant.</strong> Eight doc classes (Issues, Issues_Summary, Fixed,
+Fixed_Summary, CONTINUATION, README, every Status.md, every
+Status_Summary.md) MUST be in sync at all times across <code>.md</code>
++ <code>.html</code> + <code>.pdf</code> artefacts. Per-class anchors
+§11.4.12 / §11.4.44 / §11.4.45 / §11.4.53 / §11.4.56 / §11.4.57 /
+§11.4.59 / §12.10 govern individually; §11.4.60 binds them via single
+composite gate <code>CM-DOCS-COMPOSITE-SYNC</code> that FAILs the build
+if ANY instance's <code>.html</code> or <code>.pdf</code> mtime is older
+than <code>.md</code> mtime. Walks <code>docs/</code> recursively for
+Status fleet. Paired mutation backdates <code>docs/Issues.html</code> →
+gate FAILs. No escape hatch — no <code>--skip-composite-doc-sync</code>,
+<code>--allow-stale-html</code>, <code>--summary-not-applicable</code>
+flag exists.</li>
+</ul>
+<p><strong>Cascade requirement:</strong> These anchors (verbatim or by
+<code>§11.4.59</code> / <code>§11.4.60</code> reference) MUST appear in
+every owned submodule's <code>CONSTITUTION.md</code>,
+<code>CLAUDE.md</code>, and <code>AGENTS.md</code>. See constitution
+submodule <code>Constitution.md</code> §11.4.59 + §11.4.60 for the full
+mandates.</p>
 </body>
 </html>
