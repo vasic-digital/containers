@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"digital.vasic.containers/pkg/i18n"
 	"digital.vasic.containers/pkg/remote"
 )
 
@@ -19,6 +20,11 @@ type BuildExecutor struct {
 	projectDir   string
 	remoteDir    string
 	buildTimeout time.Duration
+	// translator resolves operator-facing message IDs to localised
+	// text per CONST-046. The zero-value NoopTranslator returns the
+	// `containers_buildpkg_*` message ID verbatim — positive runtime
+	// evidence per CONST-035 / §11.9.
+	translator i18n.Translator
 }
 
 func NewBuildExecutor(executor RemoteExecutor, projectDir, remoteDir string) *BuildExecutor {
@@ -27,6 +33,7 @@ func NewBuildExecutor(executor RemoteExecutor, projectDir, remoteDir string) *Bu
 		projectDir:   projectDir,
 		remoteDir:    remoteDir,
 		buildTimeout: 30 * time.Minute,
+		translator:   i18n.NoopTranslator{},
 	}
 }
 
@@ -36,7 +43,20 @@ func (e *BuildExecutor) WithBuildTimeout(d time.Duration) *BuildExecutor {
 		projectDir:   e.projectDir,
 		remoteDir:    e.remoteDir,
 		buildTimeout: d,
+		translator:   e.translator,
 	}
+}
+
+// SetTranslator wires a CONST-046 Translator implementation. Passing
+// nil resets to the NoopTranslator default (verbatim message-ID
+// fallback). The default constructor already installs NoopTranslator
+// so call sites only need this setter to opt into a real bundle
+// implementation.
+func (e *BuildExecutor) SetTranslator(t i18n.Translator) {
+	if t == nil {
+		t = i18n.NoopTranslator{}
+	}
+	e.translator = t
 }
 
 func (e *BuildExecutor) SyncSource(ctx context.Context, host remote.RemoteHost) error {
@@ -82,7 +102,9 @@ func (e *BuildExecutor) LaunchRemoteBuild(ctx context.Context, host remote.Remot
 			Host:      host.Name,
 			Status:    BuildStatusFailed,
 			Duration:  0,
-			Error:     fmt.Sprintf("build execution failed: %v", err),
+			Error: e.translator.T(ctx, "containers_buildpkg_execution_failed", map[string]any{
+				"err": err.Error(),
+			}),
 		}, err
 	}
 
@@ -92,7 +114,10 @@ func (e *BuildExecutor) LaunchRemoteBuild(ctx context.Context, host remote.Remot
 			Host:      host.Name,
 			Status:    BuildStatusFailed,
 			Duration:  result.Duration,
-			Error:     fmt.Sprintf("exit code %d: %s", result.ExitCode, truncateString(result.Stderr, 500)),
+			Error: e.translator.T(ctx, "containers_buildpkg_exit_code_failed", map[string]any{
+				"code":   fmt.Sprintf("%d", result.ExitCode),
+				"stderr": truncateString(result.Stderr, 500),
+			}),
 		}, nil
 	}
 

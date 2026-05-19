@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ARCHITECTURE</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">ARCHITECTURE</h1>
+</header>
+<h1 id="containers-module---architecture">Containers Module -
+Architecture</h1>
+<p><strong>Version:</strong> 2.0.0<br />
+<strong>Last Updated:</strong> February 2026</p>
+<hr />
+<h2 id="design-philosophy">Design Philosophy</h2>
+<p>The Containers module provides a <strong>generic,
+runtime-agnostic</strong> abstraction for container orchestration. It is
+designed to:</p>
+<ol type="1">
+<li><strong>Be reusable</strong> - No dependencies on specific
+applications</li>
+<li><strong>Support multiple runtimes</strong> - Docker, Podman,
+Kubernetes</li>
+<li><strong>Enable remote distribution</strong> - Deploy to multiple
+hosts via SSH</li>
+<li><strong>Be observable</strong> - Health checks, metrics, events</li>
+<li><strong>Be safe</strong> - Thread-safe, proper cleanup, graceful
+shutdown</li>
+</ol>
+<hr />
+<h2 id="high-level-architecture">High-Level Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Application Layer                               │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         boot.BootManager                              │    │
+│  │                    (High-Level Orchestration)                         │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+└──────────────────────────────────────┼──────────────────────────────────────┘
+                                       │
+           ┌───────────────────────────┼───────────────────────────┐
+           │                           │                           │
+           ▼                           ▼                           ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  compose.        │     │  health.         │     │  lifecycle.      │
+│  Orchestrator    │     │  HealthChecker   │     │  LifecycleManager│
+│                  │     │                  │     │                  │
+│  - Up/Down       │     │  - TCP           │     │  - Lazy Boot     │
+│  - Status        │     │  - HTTP          │     │  - Idle Shutdown │
+│  - Logs          │     │  - gRPC          │     │  - Semaphores    │
+└──────────────────┘     │  - Custom        │     └──────────────────┘
+           │              └──────────────────┘              │
+           │                           │                    │
+           ▼                           │                    ▼
+┌──────────────────┐                   │     ┌──────────────────┐
+│  runtime.        │◄──────────────────┘     │  event.          │
+│  ContainerRuntime│                         │  EventBus        │
+│                  │                         │                  │
+│  - Docker        │                         │  - Subscribe     │
+│  - Podman        │                         │  - Publish       │
+│  - Kubernetes    │                         │  - Filter        │
+└──────────────────┘                         └──────────────────┘</code></pre>
+<hr />
+<h2 id="remote-distribution-architecture">Remote Distribution
+Architecture</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Control Node                                    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       distribution.Distributor                        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       scheduler.Scheduler                             │    │
+│  │            (resource_aware | round_robin | affinity | spread)        │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       remote.HostManager                              │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       remote.SSHExecutor                              │    │
+│  │           (ControlMaster pooling, key auth, bootstrap)               │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+└──────────────────────────────────────┼──────────────────────────────────────┘
+                                       │ SSH
+           ┌───────────────────────────┼───────────────────────────┐
+           │                           │                           │
+           ▼                           ▼                           ▼
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  remote.         │     │  remote.         │     │  remote.         │
+│  RemoteRuntime   │     │  RemoteRuntime   │     │  RemoteRuntime   │
+│                  │     │                  │     │                  │
+│  Host 1          │     │  Host 2          │     │  Host N          │
+│  (Podman)        │     │  (Docker)        │     │  (Podman)        │
+│                  │     │                  │     │                  │
+│  ┌────────────┐  │     │  ┌────────────┐  │     │  ┌────────────┐  │
+│  │ Compose    │  │     │  │ Compose    │  │     │  │ Compose    │  │
+│  │ Detector   │  │     │  │ Detector   │  │     │  │ Detector   │  │
+│  └────────────┘  │     │  └────────────┘  │     │  └────────────┘  │
+│                  │     │                  │     │                  │
+│  ┌────────────┐  │     │  ┌────────────┐  │     │  ┌────────────┐  │
+│  │ Containers │  │     │  │ Containers │  │     │  │ Containers │  │
+│  │ ┌────────┐ │  │     │  │ ┌────────┐ │  │     │  │ ┌────────┐ │  │
+│  │ │  App   │ │  │     │  │ │  DB    │ │  │     │  │ │ Cache  │ │  │
+│  │ └────────┘ │  │     │  │ └────────┘ │  │     │  │ └────────┘ │  │
+│  └────────────┘  │     │  └────────────┘  │     │  └────────────┘  │
+└──────────────────┘     └──────────────────┘     └──────────────────┘</code></pre>
+<hr />
+<h2 id="package-dependency-graph">Package Dependency Graph</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Integration Layer                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   boot ────────────► orchestrator ──────────► distribution                  │
+│                         │                         │                         │
+│                         ▼                         ▼                         │
+│                    compose ◄────────────────► remote                        │
+│                         │                         │                         │
+│                         ▼                         ▼                         │
+│                      runtime ◄────────────────► network                     │
+│                         │                         │                         │
+│                         ▼                         ▼                         │
+│                      health ◄────────────────► volume                       │
+│                         │                         │                         │
+│                         ▼                         ▼                         │
+│                    discovery ◄───────────────► scheduler                    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              Foundation Layer                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   logging ◄──────────── event ◄───────────── metrics                        │
+│                                                                              │
+│   endpoint ◄─────────── envconfig                                           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘</code></pre>
+<h3 id="dependency-rules">Dependency Rules</h3>
+<ol type="1">
+<li><strong>No circular dependencies</strong> - The graph is strictly
+acyclic</li>
+<li><strong>Foundation packages have no internal
+dependencies</strong></li>
+<li><strong>Integration packages may depend on multiple foundation
+packages</strong></li>
+<li><strong>boot is the top-level integrator</strong></li>
+</ol>
+<hr />
+<h2 id="compose-detection-flow">Compose Detection Flow</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Compose Command Detection                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+                        ┌────────────────────────┐
+                        │   Try: podman-compose  │
+                        │   version --short      │
+                        └────────────────────────┘
+                                     │
+                          ┌──────────┴──────────┐
+                          │                     │
+                     Success               Failure
+                          │                     │
+                          ▼                     ▼
+                 ┌─────────────┐    ┌────────────────────────┐
+                 │   RETURN    │    │   Try: docker compose  │
+                 │ podman-     │    │   version --short      │
+                 │ compose     │    └────────────────────────┘
+                 └─────────────┘                 │
+                                       ┌──────────┴──────────┐
+                                       │                     │
+                                  Success               Failure
+                                       │                     │
+                                       ▼                     ▼
+                              ┌─────────────┐    ┌────────────────────────┐
+                              │   RETURN    │    │   Try: podman compose  │
+                              │ docker      │    │   version --short      │
+                              │ compose     │    └────────────────────────┘
+                              └─────────────┘                 │
+                                                    ┌──────────┴──────────┐
+                                                    │                     │
+                                               Success               Failure
+                                                    │                     │
+                                                    ▼                     ▼
+                                           ┌─────────────┐    ┌────────────────────────┐
+                                           │   RETURN    │    │   Try: docker-compose  │
+                                           │ podman      │    │   version --short      │
+                                           │ compose     │    └────────────────────────┘
+                                           └─────────────┘                 │
+                                                                 ┌──────────┴──────────┐
+                                                                 │                     │
+                                                            Success               Failure
+                                                                 │                     │
+                                                                 ▼                     ▼
+                                                        ┌─────────────┐    ┌─────────────┐
+                                                        │   RETURN    │    │   ERROR     │
+                                                        │ docker-     │    │ No compose  │
+                                                        │ compose     │    │ found       │
+                                                        └─────────────┘    └─────────────┘</code></pre>
+<h3 id="why-podman-compose-is-preferred">Why podman-compose is
+Preferred</h3>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Issue</th>
+<th>Solution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>podman compose</code></td>
+<td>Delegates to <code>docker-compose</code> v1</td>
+<td>Use <code>podman-compose</code> instead</td>
+</tr>
+<tr>
+<td><code>docker-compose</code> v1</td>
+<td>Incompatible with Podman (http+docker error)</td>
+<td>Install Docker Compose v2 or podman-compose</td>
+</tr>
+<tr>
+<td><code>podman-compose</code></td>
+<td>✅ Native Podman support</td>
+<td>Preferred for Podman hosts</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="scheduler-strategy-flow">Scheduler Strategy Flow</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Scheduler Strategy Selection                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  RESOURCE_AWARE (Default)                                                   │
+│                                                                              │
+│  1. Probe each host&#39;s CPU, Memory, Disk, Network                            │
+│  2. Calculate score: CPU(40%) + Memory(40%) + Disk(10%) + Network(10%)     │
+│  3. Select host with highest available resources                            │
+│                                                                              │
+│  Use Case: Mixed workloads, optimal resource utilization                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ROUND_ROBIN                                                                │
+│                                                                              │
+│  1. Maintain index of last used host                                        │
+│  2. Select next host in rotation                                            │
+│  3. Wrap around when reaching end                                           │
+│                                                                              │
+│  Use Case: Simple load balancing, equal distribution                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  AFFINITY                                                                   │
+│                                                                              │
+│  1. Match container labels with host labels                                 │
+│  2. Prefer hosts with matching labels                                       │
+│  3. Fall back to other hosts if no match                                    │
+│                                                                              │
+│  Use Case: GPU workloads, storage requirements, architecture matching       │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  SPREAD                                                                     │
+│                                                                              │
+│  1. Count containers on each host                                           │
+│  2. Select host with fewest containers                                      │
+│  3. Maximize distribution across hosts                                      │
+│                                                                              │
+│  Use Case: High availability, fault tolerance                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  BIN_PACK                                                                   │
+│                                                                              │
+│  1. Sort hosts by available resources (descending)                          │
+│  2. Fill hosts in order                                                     │
+│  3. Move to next host when current is &quot;full&quot;                                │
+│                                                                              │
+│  Use Case: Resource optimization, minimize active hosts                     │
+└─────────────────────────────────────────────────────────────────────────────┘</code></pre>
+<hr />
+<h2 id="health-check-flow">Health Check Flow</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Health Check Sequence                                │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+                        ┌────────────────────────┐
+                        │   Get Service Config   │
+                        │   (host, port, type)   │
+                        └────────────────────────┘
+                                     │
+                                     ▼
+              ┌──────────────────────┼──────────────────────┐
+              │                      │                      │
+              ▼                      ▼                      ▼
+        ┌──────────┐          ┌──────────┐          ┌──────────┐
+        │   TCP    │          │   HTTP   │          │   gRPC   │
+        │  Check   │          │  Check   │          │  Check   │
+        └──────────┘          └──────────┘          └──────────┘
+              │                      │                      │
+              │                      │                      │
+              └──────────────────────┼──────────────────────┘
+                                     │
+                                     ▼
+                        ┌────────────────────────┐
+                        │   Apply Retry Policy   │
+                        │   (if configured)      │
+                        └────────────────────────┘
+                                     │
+                          ┌──────────┴──────────┐
+                          │                     │
+                     Success               Failure
+                          │                     │
+                          ▼                     ▼
+                 ┌─────────────┐    ┌────────────────────┐
+                 │   Healthy   │    │   Wait &amp; Retry     │
+                 │   = true    │    │   (backoff)        │
+                 └─────────────┘    └────────────────────┘
+                                                 │
+                                                 ▼
+                                      ┌────────────────────┐
+                                      │   Max retries?     │
+                                      └────────────────────┘
+                                                 │
+                                      ┌──────────┴──────────┐
+                                      │                     │
+                                     No                    Yes
+                                      │                     │
+                                      ▼                     ▼
+                             ┌─────────────┐    ┌─────────────┐
+                             │   Retry     │    │   Healthy   │
+                             │   Again     │    │   = false   │
+                             └─────────────┘    └─────────────┘</code></pre>
+<hr />
+<h2 id="thread-safety-model">Thread Safety Model</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Thread Safety Guarantees                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Package            │ Mechanism              │ Scope
+───────────────────┼────────────────────────┼─────────────────────────────────
+boot.BootManager   │ sync.RWMutex           │ Service registry, state
+runtime.*Runtime   │ sync.Mutex per client  │ API calls
+compose.*Orchestr. │ Stateless              │ None needed
+health.*Checker    │ Stateless              │ None needed
+remote.HostManager │ sync.RWMutex           │ Host registry
+remote.SSHExecutor │ sync.Pool + ControlMstr│ Connection pooling
+scheduler.*        │ sync.RWMutex           │ Host scores
+event.*EventBus    │ Channel-based          │ Event delivery
+monitor.*Monitor   │ sync.RWMutex           │ Metrics snapshot
+lifecycle.*Manager │ sync.Mutex + semaphore │ Lifecycle state
+distribution.*     │ sync.RWMutex           │ Workflow state</code></pre>
+<hr />
+<h2 id="design-patterns-used">Design Patterns Used</h2>
+<h3 id="strategy-pattern">Strategy Pattern</h3>
+<ul>
+<li><code>ContainerRuntime</code> interface with Docker/Podman/K8s
+implementations</li>
+<li><code>HealthChecker</code> with TCP/HTTP/gRPC/Custom check
+strategies</li>
+<li><code>Scheduler</code> with 5 scheduling strategies</li>
+</ul>
+<h3 id="observer-pattern">Observer Pattern</h3>
+<ul>
+<li><code>EventBus</code> publishes lifecycle events (started, stopped,
+health changed)</li>
+<li>Subscribers filter by event type or source</li>
+</ul>
+<h3 id="factory-pattern">Factory Pattern</h3>
+<ul>
+<li><code>runtime.AutoDetect()</code> creates the appropriate
+runtime</li>
+<li><code>health.NewDefaultChecker()</code> creates a checker with all
+strategies</li>
+</ul>
+<h3 id="builder-pattern">Builder Pattern</h3>
+<ul>
+<li><code>endpoint.NewEndpoint().WithHost().WithPort().Build()</code></li>
+<li>Fluent API for constructing ServiceEndpoint configurations</li>
+</ul>
+<h3 id="decorator-pattern">Decorator Pattern</h3>
+<ul>
+<li><code>health.RetryPolicy</code> wraps any health check with retry
+logic</li>
+<li>Logging wrappers can be applied to any interface</li>
+</ul>
+<h3 id="functional-options">Functional Options</h3>
+<ul>
+<li><code>boot.NewBootManager(WithRuntime(), WithLogger(), ...)</code></li>
+<li>Extensible configuration without breaking changes</li>
+</ul>
+<h3 id="proxy-pattern">Proxy Pattern</h3>
+<ul>
+<li><code>remote.RemoteRuntime</code> implements
+<code>ContainerRuntime</code> over SSH</li>
+<li><code>remote.RemoteComposeOrchestrator</code> implements compose
+over SSH</li>
+</ul>
+<hr />
+<h2 id="boot-sequence">Boot Sequence</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                           Boot Sequence                                      │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+1. DISCOVERY PHASE
+   ├── Probe endpoints with discovery enabled
+   └── Mark discovered services (skip compose start)
+
+2. GROUPING PHASE
+   ├── Group services by compose file + profile
+   └── Separate local vs remote services
+
+3. START PHASE (Local)
+   ├── For each compose group:
+   │   ├── Execute: docker compose -f &lt;file&gt; --profile &lt;p&gt; up -d
+   │   └── Wait for command completion
+   └── Collect started services
+
+4. DEPLOY PHASE (Remote)
+   ├── For each remote compose group:
+   │   ├── Copy compose file to remote host
+   │   ├── Detect compose command on remote
+   │   ├── Execute: podman-compose -f &lt;file&gt; up -d
+   │   └── Collect deployed services
+   └── Handle failures with fallback
+
+5. HEALTH CHECK PHASE
+   ├── For each enabled service:
+   │   ├── Execute health check (TCP/HTTP/gRPC)
+   │   ├── Apply retry policy if configured
+   │   └── Record result
+   └── Aggregate results
+
+6. SUMMARY PHASE
+   ├── Count: started, failed, skipped, remote
+   ├── Fail if required services are unhealthy
+   └── Return BootSummary</code></pre>
+<hr />
+<h2 id="error-handling-strategy">Error Handling Strategy</h2>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Error Handling Strategy                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Error Type          │ Action              │ Recovery
+────────────────────┼─────────────────────┼─────────────────────────────────
+Runtime unavailable │ Warn, continue      │ Fall back to compose commands
+Compose fail        │ Log error, continue │ Mark service as failed
+Health check fail   │ Retry with backoff  │ Mark unhealthy after max retries
+SSH connection fail │ Retry with backoff  │ Mark host offline, try next host
+Scheduler fail      │ Log, use first host │ Fall back to round-robin
+Volume mount fail   │ Log warning         │ Continue without volume
+Tunnel fail         │ Log, use direct     │ Fall back to direct connection</code></pre>
+<hr />
+<h2 id="performance-considerations">Performance Considerations</h2>
+<h3 id="ssh-connection-pooling">SSH Connection Pooling</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                    ControlMaster Connection Pool                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Without ControlMaster:
+  Command 1: TCP connect + SSH handshake + exec (~500ms)
+  Command 2: TCP connect + SSH handshake + exec (~500ms)
+  Command 3: TCP connect + SSH handshake + exec (~500ms)
+  Total: ~1500ms
+
+With ControlMaster:
+  Command 1: TCP connect + SSH handshake + exec (~500ms)
+  Command 2: Reuse connection + exec (~50ms)
+  Command 3: Reuse connection + exec (~50ms)
+  Total: ~600ms (60% faster)</code></pre>
+<h3 id="resource-monitoring">Resource Monitoring</h3>
+<pre><code>┌─────────────────────────────────────────────────────────────────────────────┐
+│                      Resource Monitoring Overhead                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+Operation           │ Frequency  │ Overhead
+────────────────────┼────────────┼──────────────────
+Container list      │ 10s        │ ~5ms (local)
+Container inspect   │ 10s        │ ~2ms per container
+System metrics      │ 10s        │ ~1ms
+Remote probe        │ 60s        │ ~50ms (SSH)</code></pre>
+<hr />
+<p><em>Last Updated: February 2026</em></p>
+</body>
+</html>

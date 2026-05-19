@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>REMOTE_DISTRIBUTION</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">REMOTE_DISTRIBUTION</h1>
+</header>
+<h1 id="remote-distribution-guide">Remote Distribution Guide</h1>
+<h2 id="overview">Overview</h2>
+<p>The Containers module supports distributing containers across local
+and remote hosts via SSH. This guide covers configuration, scheduling
+strategies, networking, volume sharing, and failover.</p>
+<h2 id="architecture">Architecture</h2>
+<pre><code>                    +-----------------+
+                    |   Distributor   |
+                    +--------+--------+
+                             |
+          +------------------+------------------+
+          |          |          |         |      |
+    +---------+ +--------+ +-------+ +------+ +-------+
+    |Scheduler| |Executor| |Tunnel | |Volume| | Event |
+    +---------+ +--------+ |Manager| |Manager| | Bus  |
+          |          |      +-------+ +------+ +-------+
+    +---------+ +--------+
+    |  Scorer | | SSH    |
+    +---------+ | Pool   |
+                +--------+</code></pre>
+<p>The <code>Distributor</code> composes:</p>
+<ul>
+<li><strong>Scheduler</strong> — selects hosts using resource-aware
+scoring</li>
+<li><strong>RemoteExecutor</strong> — executes commands via SSH with
+ControlMaster pooling</li>
+<li><strong>TunnelManager</strong> — creates SSH tunnels for cross-host
+networking</li>
+<li><strong>VolumeManager</strong> — mounts local volumes on remote
+hosts</li>
+<li><strong>HostManager</strong> — registry of remote hosts with
+resource probing</li>
+</ul>
+<h2 id="quick-start">Quick Start</h2>
+<h3 id="1-configure-remote-hosts">1. Configure Remote Hosts</h3>
+<p>Copy <code>.env.example</code> to <code>.env</code> and define your
+remote hosts:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_ENABLED</span><span class="op">=</span>true</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_SCHEDULER</span><span class="op">=</span>resource_aware</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_NAME</span><span class="op">=</span>gpu-server</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_ADDRESS</span><span class="op">=</span>192.168.1.100</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_PORT</span><span class="op">=</span>22</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_USER</span><span class="op">=</span>deploy</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_KEY</span><span class="op">=</span>~/.ssh/gpu_key</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_RUNTIME</span><span class="op">=</span>docker</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_LABELS</span><span class="op">=</span>gpu=true,arch=amd64</span></code></pre></div>
+<h3 id="2-load-configuration">2. Load Configuration</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>cfg<span class="op">,</span> err <span class="op">:=</span> envconfig<span class="op">.</span>LoadFromEnv<span class="op">()</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    log<span class="op">.</span>Fatal<span class="op">(</span>err<span class="op">)</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>hosts <span class="op">:=</span> cfg<span class="op">.</span>ToRemoteHosts<span class="op">()</span></span></code></pre></div>
+<h3 id="3-create-components">3. Create Components</h3>
+<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>opts <span class="op">:=</span> remote<span class="op">.</span>DefaultOptions<span class="op">()</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>executor <span class="op">:=</span> remote<span class="op">.</span>NewSSHExecutor<span class="op">(</span>opts<span class="op">)</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>hm <span class="op">:=</span> remote<span class="op">.</span>NewDefaultHostManager<span class="op">(</span>opts<span class="op">)</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _<span class="op">,</span> h <span class="op">:=</span> <span class="kw">range</span> hosts <span class="op">{</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    hm<span class="op">.</span>AddHost<span class="op">(</span>h<span class="op">)</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>sched <span class="op">:=</span> scheduler<span class="op">.</span>NewDefaultScheduler<span class="op">(</span>hm<span class="op">,</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    scheduler<span class="op">.</span>WithStrategy<span class="op">(</span>scheduler<span class="op">.</span>StrategyResourceAware<span class="op">),</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>dist <span class="op">:=</span> distribution<span class="op">.</span>NewDistributor<span class="op">(</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithScheduler<span class="op">(</span>sched<span class="op">),</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithHostManager<span class="op">(</span>hm<span class="op">),</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithExecutor<span class="op">(</span>executor<span class="op">),</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<h3 id="4-distribute-containers">4. Distribute Containers</h3>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>summary<span class="op">,</span> err <span class="op">:=</span> dist<span class="op">.</span>Distribute<span class="op">(</span>ctx<span class="op">,</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">[]</span>scheduler<span class="op">.</span>ContainerRequirements<span class="op">{</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;web&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;nginx:latest&quot;</span><span class="op">,</span> CPUCores<span class="op">:</span> <span class="dv">2</span><span class="op">,</span> MemoryMB<span class="op">:</span> <span class="dv">512</span><span class="op">},</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;api&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;myapp:latest&quot;</span><span class="op">,</span> CPUCores<span class="op">:</span> <span class="dv">4</span><span class="op">,</span> MemoryMB<span class="op">:</span> <span class="dv">1024</span><span class="op">},</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;cache&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;redis:latest&quot;</span><span class="op">,</span> CPUCores<span class="op">:</span> <span class="dv">1</span><span class="op">,</span> MemoryMB<span class="op">:</span> <span class="dv">256</span><span class="op">},</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<h2 id="scheduling-strategies">Scheduling Strategies</h2>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>Description</th>
+<th>Best For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>resource_aware</code></td>
+<td>Scores hosts by weighted CPU/memory/disk/network availability</td>
+<td>General use (default)</td>
+</tr>
+<tr>
+<td><code>round_robin</code></td>
+<td>Distributes evenly across hosts in order</td>
+<td>Uniform workloads</td>
+</tr>
+<tr>
+<td><code>affinity</code></td>
+<td>Prefers hosts matching container labels</td>
+<td>GPU/specialized hardware</td>
+</tr>
+<tr>
+<td><code>spread</code></td>
+<td>Minimizes per-host container density</td>
+<td>High availability</td>
+</tr>
+<tr>
+<td><code>bin_pack</code></td>
+<td>Fills most-utilized hosts first</td>
+<td>Cost optimization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="scoring-weights-resource_aware">Scoring Weights
+(resource_aware)</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Weight</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPU</td>
+<td>40%</td>
+<td>Available CPU percentage</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>40%</td>
+<td>Available memory percentage</td>
+</tr>
+<tr>
+<td>Disk</td>
+<td>10%</td>
+<td>Available disk percentage</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>10%</td>
+<td>Available network bandwidth</td>
+</tr>
+</tbody>
+</table>
+<p>Configurable via <code>scheduler.WithCPUWeight()</code>,
+<code>WithMemoryWeight()</code>, etc.</p>
+<h3 id="resource-reserve">Resource Reserve</h3>
+<p>By default, 10% of each host's resources are reserved (not allocated
+to containers). Configure with
+<code>scheduler.WithReservePercent()</code>.</p>
+<h2 id="ssh-connection-pooling">SSH Connection Pooling</h2>
+<p>The <code>SSHExecutor</code> uses SSH ControlMaster sockets for
+connection multiplexing:</p>
+<ul>
+<li>First connection to a host establishes a ControlMaster socket</li>
+<li>Subsequent commands reuse the socket (no SSH handshake
+overhead)</li>
+<li>Connections auto-close after <code>ControlPersist</code> seconds of
+inactivity</li>
+<li>Thread-safe with reference counting</li>
+</ul>
+<p>Configure via:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>opts <span class="op">:=</span> remote<span class="op">.</span>WithControlMasterEnabled<span class="op">(</span><span class="ot">true</span><span class="op">)</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>opts <span class="op">=</span> remote<span class="op">.</span>WithControlPersist<span class="op">(</span><span class="dv">300</span><span class="op">)</span> <span class="co">// 5 minutes</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>opts <span class="op">=</span> remote<span class="op">.</span>WithMaxConnections<span class="op">(</span><span class="dv">10</span><span class="op">)</span></span></code></pre></div>
+<h2 id="ssh-tunnels">SSH Tunnels</h2>
+<p>Create local port forwarding (remote container ports appear
+local):</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>tm <span class="op">:=</span> network<span class="op">.</span>NewDefaultTunnelManager<span class="op">(</span>hm<span class="op">,</span> executor<span class="op">)</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>info<span class="op">,</span> err <span class="op">:=</span> tm<span class="op">.</span>CreateTunnel<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;gpu-server&quot;</span><span class="op">,</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    network<span class="op">.</span>TunnelSpec<span class="op">{</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>        Direction<span class="op">:</span>  network<span class="op">.</span>TunnelLocal<span class="op">,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>        RemoteHost<span class="op">:</span> <span class="st">&quot;localhost&quot;</span><span class="op">,</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>        RemotePort<span class="op">:</span> <span class="st">&quot;8080&quot;</span><span class="op">,</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Access remote container at localhost:{info.LocalPort}</span></span></code></pre></div>
+<p>Create reverse forwarding (local services accessible from
+remote):</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>info<span class="op">,</span> err <span class="op">:=</span> tm<span class="op">.</span>CreateTunnel<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;gpu-server&quot;</span><span class="op">,</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    network<span class="op">.</span>TunnelSpec<span class="op">{</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>        Direction<span class="op">:</span>  network<span class="op">.</span>TunnelRemote<span class="op">,</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>        LocalPort<span class="op">:</span>  <span class="st">&quot;5432&quot;</span><span class="op">,</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>        RemoteHost<span class="op">:</span> <span class="st">&quot;localhost&quot;</span><span class="op">,</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>        RemotePort<span class="op">:</span> <span class="st">&quot;5432&quot;</span><span class="op">,</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">// Remote containers can access local PostgreSQL at localhost:5432</span></span></code></pre></div>
+<h2 id="volume-sharing">Volume Sharing</h2>
+<h3 id="sshfs-real-time-bidirectional">SSHFS (Real-time,
+bidirectional)</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>vm <span class="op">:=</span> volume<span class="op">.</span>NewDefaultVolumeManager<span class="op">(</span>executor<span class="op">)</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> vm<span class="op">.</span>Mount<span class="op">(</span>ctx<span class="op">,</span> volume<span class="op">.</span>VolumeMount<span class="op">{</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>       <span class="st">&quot;app-data&quot;</span><span class="op">,</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    HostName<span class="op">:</span>   <span class="st">&quot;gpu-server&quot;</span><span class="op">,</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    LocalPath<span class="op">:</span>  <span class="st">&quot;/data/app&quot;</span><span class="op">,</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    RemotePath<span class="op">:</span> <span class="st">&quot;/mnt/app-data&quot;</span><span class="op">,</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    Type<span class="op">:</span>       volume<span class="op">.</span>MountSSHFS<span class="op">,</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<h3 id="nfs-high-performance-read-heavy">NFS (High performance,
+read-heavy)</h3>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> vm<span class="op">.</span>Mount<span class="op">(</span>ctx<span class="op">,</span> volume<span class="op">.</span>VolumeMount<span class="op">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>       <span class="st">&quot;shared-models&quot;</span><span class="op">,</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    HostName<span class="op">:</span>   <span class="st">&quot;gpu-server&quot;</span><span class="op">,</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    LocalPath<span class="op">:</span>  <span class="st">&quot;/data/models&quot;</span><span class="op">,</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    RemotePath<span class="op">:</span> <span class="st">&quot;/mnt/models&quot;</span><span class="op">,</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    Type<span class="op">:</span>       volume<span class="op">.</span>MountNFS<span class="op">,</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span></code></pre></div>
+<h3 id="rsync-periodic-sync-one-way">rsync (Periodic sync, one-way)</h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> vm<span class="op">.</span>Mount<span class="op">(</span>ctx<span class="op">,</span> volume<span class="op">.</span>VolumeMount<span class="op">{</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>       <span class="st">&quot;config-sync&quot;</span><span class="op">,</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    HostName<span class="op">:</span>   <span class="st">&quot;gpu-server&quot;</span><span class="op">,</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    LocalPath<span class="op">:</span>  <span class="st">&quot;/etc/myapp&quot;</span><span class="op">,</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    RemotePath<span class="op">:</span> <span class="st">&quot;/etc/myapp&quot;</span><span class="op">,</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    Type<span class="op">:</span>       volume<span class="op">.</span>MountRsync<span class="op">,</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Trigger manual sync</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>err <span class="op">=</span> vm<span class="op">.</span>Sync<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;config-sync&quot;</span><span class="op">)</span></span></code></pre></div>
+<h2 id="failover">Failover</h2>
+<p>The <code>FailoverHandler</code> automatically detects offline hosts
+and reschedules containers:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>fh <span class="op">:=</span> distribution<span class="op">.</span>NewFailoverHandler<span class="op">(</span>dist<span class="op">)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>actions<span class="op">,</span> err <span class="op">:=</span> fh<span class="op">.</span>CheckAndFailover<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _<span class="op">,</span> action <span class="op">:=</span> <span class="kw">range</span> actions <span class="op">{</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Container %s: %s -&gt; %s (reason: %s)</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>        action<span class="op">.</span>ContainerName<span class="op">,</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>        action<span class="op">.</span>OriginalHost<span class="op">,</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        action<span class="op">.</span>NewHost<span class="op">,</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        action<span class="op">.</span>Reason<span class="op">,</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>    <span class="op">)</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="degraded-host-detection">Degraded Host Detection</h3>
+<p>Identify hosts that are reachable but resource-constrained:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>snapshots <span class="op">:=</span> hm<span class="op">.</span>ProbeAll<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>degraded <span class="op">:=</span> distribution<span class="op">.</span>DetectDegradedHosts<span class="op">(</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    snapshots<span class="op">,</span> <span class="fl">90.0</span><span class="op">,</span> <span class="fl">90.0</span><span class="op">,</span> <span class="co">// CPU and memory thresholds</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<h2 id="cluster-monitoring">Cluster Monitoring</h2>
+<p>Aggregate resource snapshots from all hosts:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>localSnapshot <span class="op">:=</span> localMonitor<span class="op">.</span>Snapshot<span class="op">()</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>remoteSnapshots <span class="op">:=</span> hm<span class="op">.</span>ProbeAll<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>cluster <span class="op">:=</span> monitor<span class="op">.</span>NewClusterSnapshot<span class="op">(</span>localSnapshot<span class="op">,</span> remoteSnapshots<span class="op">)</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Cluster: %d hosts, %d CPU cores, %d MB RAM</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    cluster<span class="op">.</span>HostCount<span class="op">,</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    cluster<span class="op">.</span>TotalCPUCores<span class="op">,</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    cluster<span class="op">.</span>TotalMemoryMB<span class="op">,</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span></code></pre></div>
+<h2 id="event-types">Event Types</h2>
+<p>The distribution system emits 12 event types via the EventBus:</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>remote.host.online</code></td>
+<td>Remote host came online</td>
+</tr>
+<tr>
+<td><code>remote.host.offline</code></td>
+<td>Remote host went offline</td>
+</tr>
+<tr>
+<td><code>remote.host.degraded</code></td>
+<td>Remote host is resource-constrained</td>
+</tr>
+<tr>
+<td><code>distribution.scheduled</code></td>
+<td>Containers scheduled for placement</td>
+</tr>
+<tr>
+<td><code>distribution.deployed</code></td>
+<td>Container deployed to host</td>
+</tr>
+<tr>
+<td><code>distribution.migrated</code></td>
+<td>Container migrated between hosts</td>
+</tr>
+<tr>
+<td><code>distribution.started</code></td>
+<td>Distribution workflow began</td>
+</tr>
+<tr>
+<td><code>distribution.completed</code></td>
+<td>Distribution workflow finished</td>
+</tr>
+<tr>
+<td><code>tunnel.created</code></td>
+<td>SSH tunnel established</td>
+</tr>
+<tr>
+<td><code>tunnel.closed</code></td>
+<td>SSH tunnel closed</td>
+</tr>
+<tr>
+<td><code>tunnel.failed</code></td>
+<td>SSH tunnel creation failed</td>
+</tr>
+<tr>
+<td><code>volume.mounted</code></td>
+<td>Remote volume mounted</td>
+</tr>
+<tr>
+<td><code>volume.unmounted</code></td>
+<td>Remote volume unmounted</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-phase-distribution-workflow">7-Phase Distribution
+Workflow</h2>
+<ol type="1">
+<li><strong>Probe</strong> — Probe remote hosts for resource
+availability</li>
+<li><strong>Schedule</strong> — Run scheduler to determine container
+placement</li>
+<li><strong>Volumes</strong> — Mount required volumes on remote
+hosts</li>
+<li><strong>Deploy</strong> — Deploy containers (local via runtime,
+remote via SSH)</li>
+<li><strong>Tunnels</strong> — Create SSH tunnels for cross-host
+networking</li>
+<li><strong>Health</strong> — Run health checks on all deployed
+containers</li>
+<li><strong>Events</strong> — Emit distribution events</li>
+</ol>
+<h2 id="password-auth-bootstrap">Password Auth Bootstrap</h2>
+<p>When SSH key auth isn't pre-configured on a remote host, the module
+can automatically bootstrap it using password authentication:</p>
+<ol type="1">
+<li>Connects via Go-native SSH (<code>golang.org/x/crypto/ssh</code>)
+with the configured password</li>
+<li>Reads the local public key (e.g.,
+<code>~/.ssh/id_ed25519.pub</code>)</li>
+<li>Appends it to the remote <code>~/.ssh/authorized_keys</code></li>
+<li>Verifies key auth works via the CLI SSH executor</li>
+</ol>
+<p>This happens automatically when:</p>
+<ul>
+<li><code>Password</code> is set in the host config</li>
+<li><code>KeyPath</code> is set</li>
+<li>CLI SSH key auth fails</li>
+</ul>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> executor<span class="op">.</span>NeedsBootstrap<span class="op">(</span>ctx<span class="op">,</span> host<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    err <span class="op">:=</span> executor<span class="op">.</span>BootstrapKeyAuth<span class="op">(</span>ctx<span class="op">,</span> host<span class="op">)</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>Configure via environment:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_DEFAULT_SSH_PASSWORD</span><span class="op">=</span>your-password</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_PASSWORD</span><span class="op">=</span>host-specific-password</span></code></pre></div>
+<h2 id="real-deployment-example-thinkerlocal">Real Deployment Example:
+thinker.local</h2>
+<p>A complete example deploying all HelixAgent infrastructure containers
+to a local network host.</p>
+<h3 id="containersenv">Containers/.env</h3>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_ENABLED</span><span class="op">=</span>true</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_DEFAULT_SSH_USER</span><span class="op">=</span>milosvasic</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_DEFAULT_SSH_KEY</span><span class="op">=</span>~/.ssh/id_ed25519</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_DEFAULT_SSH_PASSWORD</span><span class="op">=&lt;</span>password<span class="op">&gt;</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_DEFAULT_RUNTIME</span><span class="op">=</span>docker</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_SCHEDULER</span><span class="op">=</span>resource_aware</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_PORT_RANGE_START</span><span class="op">=</span>20000</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_PORT_RANGE_END</span><span class="op">=</span>30000</span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_VOLUME_TYPE</span><span class="op">=</span>rsync</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_CONNECT_TIMEOUT</span><span class="op">=</span>10</span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_COMMAND_TIMEOUT</span><span class="op">=</span>120</span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_SSH_CONTROL_MASTER</span><span class="op">=</span>true</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_SSH_CONTROL_PERSIST</span><span class="op">=</span>300</span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_SSH_MAX_CONNECTIONS</span><span class="op">=</span>10</span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_NAME</span><span class="op">=</span>thinker</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_ADDRESS</span><span class="op">=</span>thinker.local</span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_PORT</span><span class="op">=</span>22</span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_USER</span><span class="op">=</span>milosvasic</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_KEY</span><span class="op">=</span>~/.ssh/id_ed25519</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_PASSWORD</span><span class="op">=&lt;</span>password<span class="op">&gt;</span></span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_RUNTIME</span><span class="op">=</span>docker</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="va">CONTAINERS_REMOTE_HOST_1_LABELS</span><span class="op">=</span>role=infrastructure,env=development</span></code></pre></div>
+<h3 id="helixagent-env">HelixAgent .env</h3>
+<p>Add <code>SVC_*</code> overrides pointing services to the remote
+host:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="va">DB_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="va">REDIS_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_POSTGRESQL_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_POSTGRESQL_REMOTE</span><span class="op">=</span>true</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_REDIS_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_REDIS_REMOTE</span><span class="op">=</span>true</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_CHROMADB_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_CHROMADB_REMOTE</span><span class="op">=</span>true</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_QDRANT_HOST</span><span class="op">=</span>thinker.local</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="va">SVC_QDRANT_REMOTE</span><span class="op">=</span>true</span></code></pre></div>
+<p>Also duplicate the <code>CONTAINERS_REMOTE_*</code> vars so they're
+available at HelixAgent startup.</p>
+<h3 id="what-happens-on-startup">What Happens on Startup</h3>
+<ol type="1">
+<li><code>NewAdapterFromConfig()</code> loads
+<code>Containers/.env</code></li>
+<li>Detects <code>CONTAINERS_REMOTE_ENABLED=true</code></li>
+<li>For each host, checks if key auth works
+(<code>NeedsBootstrap</code>)</li>
+<li>If not, bootstraps key auth using the configured password</li>
+<li>Registers hosts in the HostManager</li>
+<li>Infrastructure functions (<code>ensureLSPServers</code>,
+<code>ensureRAGServices</code>, <code>ensureMCPServers</code>,
+<code>ensureRequiredContainersWithConfig</code>) detect
+<code>RemoteEnabled()</code> and call <code>RemoteComposeUp()</code>
+instead of local <code>ComposeUp()</code></li>
+<li>Compose files are copied to <code>/opt/helixagent/</code> on the
+remote host</li>
+<li><code>docker compose up -d</code> is run remotely via SSH</li>
+</ol>
+<h3 id="verification">Verification</h3>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> milosvasic@thinker.local echo ok</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> milosvasic@thinker.local docker ps</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> http://localhost:7061/health</span></code></pre></div>
+<h2 id="environment-variables">Environment Variables</h2>
+<p>See <code>.env.example</code> for the complete reference. Key
+variables:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CONTAINERS_REMOTE_ENABLED</code></td>
+<td><code>false</code></td>
+<td>Enable remote distribution</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_SCHEDULER</code></td>
+<td><code>resource_aware</code></td>
+<td>Scheduling strategy</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_SSH_USER</code></td>
+<td>—</td>
+<td>Default SSH user</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_SSH_KEY</code></td>
+<td>—</td>
+<td>Default SSH key path</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_SSH_PASSWORD</code></td>
+<td>—</td>
+<td>Default SSH password (bootstrap)</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_RUNTIME</code></td>
+<td><code>docker</code></td>
+<td>Default container runtime</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_PORT_RANGE_START</code></td>
+<td><code>20000</code></td>
+<td>Tunnel port range start</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_PORT_RANGE_END</code></td>
+<td><code>30000</code></td>
+<td>Tunnel port range end</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_VOLUME_TYPE</code></td>
+<td><code>sshfs</code></td>
+<td>Default volume type</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_CONNECT_TIMEOUT</code></td>
+<td><code>10</code></td>
+<td>SSH connect timeout (seconds)</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_COMMAND_TIMEOUT</code></td>
+<td><code>120</code></td>
+<td>SSH command timeout (seconds)</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_SSH_CONTROL_MASTER</code></td>
+<td><code>true</code></td>
+<td>Enable ControlMaster pooling</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_SSH_CONTROL_PERSIST</code></td>
+<td><code>300</code></td>
+<td>ControlMaster persist (seconds)</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_SSH_MAX_CONNECTIONS</code></td>
+<td><code>10</code></td>
+<td>Max concurrent SSH connections</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_NAME</code></td>
+<td>—</td>
+<td>Host N name</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_ADDRESS</code></td>
+<td>—</td>
+<td>Host N address</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_PORT</code></td>
+<td><code>22</code></td>
+<td>Host N SSH port</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_USER</code></td>
+<td>—</td>
+<td>Host N SSH user</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_KEY</code></td>
+<td>—</td>
+<td>Host N SSH key path</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_PASSWORD</code></td>
+<td>—</td>
+<td>Host N SSH password</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_RUNTIME</code></td>
+<td>—</td>
+<td>Host N container runtime</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_LABELS</code></td>
+<td>—</td>
+<td>Host N labels (key=value,key=value)</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>
