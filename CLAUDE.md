@@ -1579,3 +1579,18 @@ Project-specific implementation reference:
 [`docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md`](docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md).
 
 Non-compliance is a release blocker regardless of context.
+
+
+## CONST-062 / 065 / 066 / 067 / 075 / 076 / 077: Round-191 supplemental cascade — anchors §11.4.42, §11.4.45-47, §11.4.55-57
+
+Anchors not covered by the Phase-39.EX cascade are added here for completeness per CONST-049 step 6.
+
+- **CONST-062 / §11.4.42 — Iteration-discipline mandate.** Each fix cycle MUST run pre-build gate + post-build/post-flash test + paired §1.1 mutation + post-validation §11.4.40 retest. Truncating cycle to ship faster = violation. Subagents default to this path.
+- **CONST-065 / §11.4.45 — Integration-Status-Doc Maintenance.** Every `Status.md` carries the §11.4.44 header and stays in sync with actual programme state at every commit advancing state. Out-of-sync = violation (CONST-044 severity).
+- **CONST-066 / §11.4.46 — Validate-recent-work before post-flash sweep.** Each recent-work item since previous sweep MUST have its §11.4.43 RED test run against the live device and report GREEN before post-flash full-test sweeps. Skipping = violation.
+- **CONST-067 / §11.4.47 — Firebase Data Review.** Every Firebase finding triaged per §11.4.47 severity table, deduped against Issues.md; new stacktrace gets §11.4.43 RED test before fix. Untriaged past SLA = violation.
+- **CONST-075 / §11.4.55 — Reopens-history + per-item Reopens.md.** Every Reopened item gets `docs/reopens/ATM-NNN.md` tracking each cycle (date, source AI/User, reason from CONST-058 vocabulary, evidence path). `Reopens_Summary.md` regenerated on every reopen.
+- **CONST-076 / §11.4.56 — Status_Summary parity + two-audience format.** `Status_Summary.md` (+ HTML/PDF exports) ships in operator-side + AI-side sections and stays in parity with underlying status docs at every commit advancing state.
+- **CONST-077 / §11.4.57 — README.md doc-link section + revision metadata.** Every `README.md` carries (a) §11.4.44 revision header below H1, (b) Documentation link section listing canonical governance + status + plan docs.
+
+For full mandate text + verbatim user quotes + gates, see constitution submodule `Constitution.md` §11.4.42, §11.4.45-47, §11.4.55-57.
