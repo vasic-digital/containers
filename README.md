@@ -1,5 +1,15 @@
 # digital.vasic.containers
 
+| Field | Value |
+|---|---|
+| Revision | 2 |
+| Created | 2026-04-30 |
+| Last modified | 2026-05-19 |
+| Status | active |
+| Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
+| Issues | docs/Issues.md (when present) |
+| Continuation | docs/CONTINUATION.md (when present) |
+
 A generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. Supports Docker, Podman, and Kubernetes runtimes.
 
 ## Installation
@@ -267,6 +277,65 @@ ctop --all
 - **Filtering**: By host name, container name, running/stopped state
 - **Multi-host**: Shows containers from local and remote hosts
 - **Remote support**: Integrates with HostManager for distributed monitoring
+
+## Anti-Bluff Guarantees (CONST-035, §11.4, round-299)
+
+> Verbatim 2026-05-19 operator mandate (CONST-049 §11.4.17): *"all existing
+> tests and Challenges do work in anti-bluff manner - they MUST confirm that
+> all tested codebase really works as expected! We had been in position that
+> all tests do execute with success and all Challenges as well, but in
+> reality the most of the features does not work and can't be used! This
+> MUST NOT be the case and execution of tests and Challenges MUST guarantee
+> the quality, the completition and full usability by end users of the
+> product!"*
+
+This repository's PASS bar is "users can use the feature," NOT "tests pass."
+Every passing test or challenge MUST carry positive runtime evidence captured
+during execution; metadata-only / configuration-only / absence-of-error /
+grep-without-runtime PASS is a §11.4 critical defect regardless of how
+green the summary line looks.
+
+- **CONST-050(B) — 100% test-type coverage.** Unit (mocks allowed only in
+  `*_test.go`), integration (real Docker/Podman), e2e (real SSH targets),
+  security, stress, benchmark, plus 12 challenges under
+  [challenges/scripts/](challenges/scripts/). Per-symbol ledger lives at
+  [docs/test-coverage.md](docs/test-coverage.md).
+- **Paired-mutation discipline (§1.1).** Every gate has a paired mutation
+  that deliberately breaks the production code path and asserts the gate
+  fails. A gate that survives mutation is a bluff gate. The round-299
+  paired-mutation script
+  [`challenges/scripts/containers_describe_challenge.sh`](challenges/scripts/containers_describe_challenge.sh)
+  ships with both `--mutate` mode (exit 99 = mutation witnessed) and a
+  normal mode (exit 0 = all five conditions PASS).
+- **Remote distribution — CONST-045 .env-driven only.** Host configuration
+  lives exclusively in `.env` via `CONTAINERS_REMOTE_HOST_N_*` env vars
+  (loaded by `pkg/envconfig`). NO hostname / IP / SSH user / key path is
+  hardcoded in any source / test / challenge. When
+  `CONTAINERS_REMOTE_ENABLED=false`, remote-touching tests emit `SKIP-OK:`
+  markers per CONST-045 and exit 0 (skip is not failure, but skip is loud).
+- **No-fakes-beyond-unit-tests (CONST-050(A)).** Production code under
+  `pkg/`, `cmd/`, `internal/buildpkg/` MUST NOT import from any
+  `internal/mocks/` path. Mocks / stubs / `TODO` / `FIXME` / "for now" /
+  "in production this would" patterns exist ONLY inside `*_test.go`.
+- **i18n / CONST-046 — no hardcoded human-readable strings.** User-facing
+  text is loaded from `pkg/i18n/bundles/active.<locale>.yaml`. Round-299
+  added 5 locales beyond English (fr / de / ja / sr / zh); the
+  paired-mutation challenge asserts all 6 bundles present + non-empty and
+  exits 99 when any bundle is removed.
+
+### Run the round-299 challenge locally
+
+```bash
+# Normal mode — must exit 0; emits PASS for every condition
+bash challenges/scripts/containers_describe_challenge.sh
+
+# Paired-mutation mode — must exit 99; restores the working tree on EXIT trap
+bash challenges/scripts/containers_describe_challenge.sh --mutate
+```
+
+The challenge respects the host-power-management hard ban (CONST-033 / §12),
+performs no sudo / suspend / hibernate / poweroff calls, never echoes secrets
+(§11.4.10), and runs in O(seconds) without any container start.
 
 ## License
 

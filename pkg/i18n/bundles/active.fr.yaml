@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Milos Vasic
+#
+# Containers active French bundle (round-299, 2026-05-19).
+# CONST-046 (no-hardcoded-content) + round-299 5-locale fixture mandate.
+# Placeholders use `{{.name}}` style — identical to active.en.yaml.
+containers_workflow_phase_probe: "Sondage des hôtes distants pour la disponibilité des ressources."
+containers_workflow_phase_schedule: "Planification des conteneurs sur les hôtes."
+containers_workflow_phase_volumes: "Montage des volumes sur les hôtes distants."
+containers_workflow_phase_deploy: "Déploiement des conteneurs."
+containers_workflow_phase_tunnels: "Création de tunnels SSH pour la mise en réseau."
+containers_workflow_phase_health: "Exécution des contrôles de santé."
+containers_workflow_phase_events: "Émission des événements de distribution."
+containers_workflow_phase_unknown: "Phase de workflow de distribution inconnue."
+containers_buildpkg_execution_failed: "Échec de l'exécution de la construction : {{.err}}."
+containers_buildpkg_exit_code_failed: "La construction s'est terminée avec le code {{.code}} : {{.stderr}}."

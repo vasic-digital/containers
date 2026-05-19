@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Milos Vasic
+#
+# Containers active Serbian (Cyrillic) bundle (round-299, 2026-05-19).
+# CONST-046 (no-hardcoded-content) + round-299 5-locale fixture mandate.
+containers_workflow_phase_probe: "Испитивање удаљених домаћина за доступност ресурса."
+containers_workflow_phase_schedule: "Распоређивање контејнера по домаћинима."
+containers_workflow_phase_volumes: "Монтирање волумена на удаљеним домаћинима."
+containers_workflow_phase_deploy: "Распоређивање контејнера."
+containers_workflow_phase_tunnels: "Креирање SSH тунела за умрежавање."
+containers_workflow_phase_health: "Извршавање провера здравља."
+containers_workflow_phase_events: "Емитовање догађаја дистрибуције."
+containers_workflow_phase_unknown: "Непозната фаза тока дистрибуције."
+containers_buildpkg_execution_failed: "Извршавање градње није успело: {{.err}}."
+containers_buildpkg_exit_code_failed: "Градња завршена са кодом {{.code}}: {{.stderr}}."
