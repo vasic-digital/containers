@@ -196,3 +196,26 @@ func ResolveRunner(requested, goos string) (RunnerKind, error) {
 		)
 	}
 }
+
+// GateEligibleForOS reports whether the given runner is the OS-correct,
+// hardware-accelerated, gate-eligible runner for the given runtime.GOOS.
+//
+// It is true exactly when runner == AccelProfileForOS(goos).Runner:
+//
+//   - host-direct on darwin  → true  (HVF is reachable only by a native
+//     macOS process; host-direct IS the accelerated gate runner there).
+//   - host-direct on windows → true  (WHPX is reachable only by a native
+//     Windows process; host-direct IS the accelerated gate runner there).
+//   - containerized on linux → true  (`/dev/kvm` is grantable to a Linux
+//     container; containerized IS the accelerated gate runner there).
+//   - host-direct on linux   → false (skips KVM-in-container; the
+//     OS-correct runner on Linux is containerized — host-direct there is
+//     a workstation-iteration choice, not a gate run).
+//   - containerized on darwin/windows → false (the container cannot
+//     reach the host-only HVF/WHPX accelerator).
+//
+// The function is pure and deterministic: it consults no host state and
+// derives its answer solely from AccelProfileForOS.
+func GateEligibleForOS(runner RunnerKind, goos string) bool {
+	return runner == AccelProfileForOS(goos).Runner
+}

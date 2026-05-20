@@ -215,7 +215,18 @@ func main() {
 			*flagContainerImage, *flagContainerRuntime)
 	} else {
 		emu = emulator.NewAndroidEmulator(*flagSdkRoot)
-		fmt.Println("[§6.X] runner=host-direct (workstation iteration mode; §6.X-debt gate runs require containerized)")
+		// host-direct is OS-correct on macOS (HVF) and Windows (WHPX) —
+		// there it IS the accelerated, gate-eligible runner, not a
+		// workstation-iteration fallback. It is a workstation-iteration
+		// choice only on an OS whose OS-correct runner is containerized
+		// (Linux — picking host-direct there skips KVM-in-container).
+		if emulator.GateEligibleForOS(resolvedRunner, runtime.GOOS) {
+			profile := emulator.AccelProfileForOS(runtime.GOOS)
+			fmt.Printf("[§6.X] runner=host-direct is the OS-correct accelerated gate runner for %s (accel=%s)\n",
+				runtime.GOOS, profile.Accel)
+		} else {
+			fmt.Println("[§6.X] runner=host-direct (workstation iteration mode; not gate-eligible on this OS — §6.X gate runs require containerized)")
+		}
 	}
 	runner := emulator.NewAndroidMatrixRunner(emu)
 	result, err := runner.RunMatrix(ctx, emulator.MatrixConfig{

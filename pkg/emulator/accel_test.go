@@ -162,3 +162,99 @@ func TestResolveRunner(t *testing.T) {
 		})
 	}
 }
+
+// TestGateEligibleForOS asserts the (runner, goos) → gate-eligibility
+// truth table. The function is the basis of cmd/emulator-matrix's
+// OS-aware [§6.X] print line, so a mis-classification here would let
+// the matrix runner print "workstation iteration mode" for an
+// OS-correct accelerated gate run (or vice versa).
+//
+// Falsifiability rehearsal (Sixth Law clause 2 / §6.N anti-bluff):
+//
+//	Mutation: in accel.go GateEligibleForOS, replace the body with
+//	          `return true` — claim every runner is gate-eligible on
+//	          every OS.
+//	Run:      GOMAXPROCS=2 go test ./pkg/emulator/ -run 'Gate' -count=1
+//	Observed-Failure: the two host-direct-on-linux and
+//	          containerized-on-darwin/windows subtests fail — the
+//	          assertion reports got true want false.
+//	Reverted: yes — post-revert all subtests pass again.
+func TestGateEligibleForOS(t *testing.T) {
+	cases := []struct {
+		name   string
+		runner RunnerKind
+		goos   string
+		want   bool
+	}{
+		// Each OS's OS-correct runner IS gate-eligible.
+		{
+			name:   "host-direct on darwin is gate-eligible (HVF)",
+			runner: RunnerHostDirect,
+			goos:   "darwin",
+			want:   true,
+		},
+		{
+			name:   "host-direct on windows is gate-eligible (WHPX)",
+			runner: RunnerHostDirect,
+			goos:   "windows",
+			want:   true,
+		},
+		{
+			name:   "containerized on linux is gate-eligible (KVM)",
+			runner: RunnerContainerized,
+			goos:   "linux",
+			want:   true,
+		},
+		// host-direct on linux skips KVM-in-container — NOT gate-eligible.
+		{
+			name:   "host-direct on linux is not gate-eligible",
+			runner: RunnerHostDirect,
+			goos:   "linux",
+			want:   false,
+		},
+		// containerized on macOS/Windows cannot reach the host-only
+		// accelerator — NOT gate-eligible.
+		{
+			name:   "containerized on darwin is not gate-eligible",
+			runner: RunnerContainerized,
+			goos:   "darwin",
+			want:   false,
+		},
+		{
+			name:   "containerized on windows is not gate-eligible",
+			runner: RunnerContainerized,
+			goos:   "windows",
+			want:   false,
+		},
+		// On an unknown OS the OS-correct runner is host-direct.
+		{
+			name:   "host-direct on unknown OS is gate-eligible",
+			runner: RunnerHostDirect,
+			goos:   "plan9",
+			want:   true,
+		},
+		{
+			name:   "containerized on unknown OS is not gate-eligible",
+			runner: RunnerContainerized,
+			goos:   "plan9",
+			want:   false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := GateEligibleForOS(tc.runner, tc.goos)
+			if got != tc.want {
+				t.Errorf("GateEligibleForOS(%q, %q): got %v want %v",
+					tc.runner, tc.goos, got, tc.want)
+			}
+			// Cross-check: gate-eligibility MUST agree with the
+			// OS-correct runner from AccelProfileForOS. A drift between
+			// the two would itself be a bug.
+			wantByProfile := tc.runner == AccelProfileForOS(tc.goos).Runner
+			if got != wantByProfile {
+				t.Errorf("GateEligibleForOS(%q, %q)=%v disagrees with AccelProfileForOS().Runner cross-check %v",
+					tc.runner, tc.goos, got, wantByProfile)
+			}
+		})
+	}
+}
