@@ -37,6 +37,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -119,11 +120,18 @@ func main() {
 	// podman/docker container for gate runs. Until §6.X-debt closes
 	// fully (Android-emulator container image baked + tested on Linux
 	// x86_64), the CLI accepts the runner choice as a parameter and
-	// records it in the attestation. The default is "host-direct"
-	// because clause 6.X explicitly permits host-direct for workstation
-	// iteration; release-tagging gates require "containerized".
+	// records it in the attestation.
+	//
+	// "auto" resolves the OS-correct runner via emulator.ResolveRunner:
+	// Linux→containerized (uses /dev/kvm in-container), macOS→host-direct
+	// (Apple HVF is a host-only API a Linux container cannot reach),
+	// Windows→host-direct (WHPX is likewise host-only). See accel.go.
+	//
+	// The literal default stays "host-direct" so existing callers that
+	// do not pass --runner keep their pre-2026-05 behavior unchanged;
+	// "auto" is opt-in.
 	flagRunner := flag.String("runner", "host-direct",
-		"Emulator runner: host-direct|containerized. §6.X gate runs require containerized; workstation iteration permits host-direct.")
+		"Emulator runner: auto|host-direct|containerized. 'auto' picks the OS-correct runner (Linux→containerized, macOS/Windows→host-direct). §6.X gate runs require containerized; workstation iteration permits host-direct.")
 	flagContainerImage := flag.String("container-image", "",
 		"Container image for the Android emulator. Required when --runner=containerized.")
 	flagContainerRuntime := flag.String("container-runtime", "podman",
@@ -168,19 +176,32 @@ func main() {
 	// §6.X runner selection. host-direct preserves the pre-2026-05-13
 	// behavior (used by workstation iteration). containerized routes
 	// every emulator boot through the Containerized impl, which boots
-	// inside a podman/docker container per §6.X clause 1.
-	if *flagRunner != "host-direct" && *flagRunner != "containerized" {
-		fmt.Fprintf(os.Stderr, "ERROR: --runner must be 'host-direct' or 'containerized' (got: %q)\n", *flagRunner)
+	// inside a podman/docker container per §6.X clause 1. "auto"
+	// resolves the OS-correct runner from runtime.GOOS — Linux uses
+	// the in-container /dev/kvm path, macOS/Windows use host-direct
+	// because their accelerators (HVF / WHPX) are host-only APIs a
+	// Linux container cannot reach (see pkg/emulator/accel.go).
+	resolvedRunner, rerr := emulator.ResolveRunner(*flagRunner, runtime.GOOS)
+	if rerr != nil {
+		fmt.Fprintf(os.Stderr, "ERROR: %v\n", rerr)
 		os.Exit(2)
 	}
-	if *flagRunner == "containerized" && *flagContainerImage == "" {
-		fmt.Fprintln(os.Stderr, "ERROR: --container-image is required when --runner=containerized")
+	if *flagRunner == "auto" {
+		profile := emulator.AccelProfileForOS(runtime.GOOS)
+		fmt.Printf("[§6.X] runner=auto resolved to %s (accel=%s, goos=%s)\n",
+			resolvedRunner, profile.Accel, runtime.GOOS)
+	}
+	// --container-image is required ONLY when the RESOLVED runner is
+	// containerized — an "auto" resolution to host-direct (macOS,
+	// Windows) does not need an image.
+	if resolvedRunner == emulator.RunnerContainerized && *flagContainerImage == "" {
+		fmt.Fprintln(os.Stderr, "ERROR: --container-image is required when the resolved runner is containerized")
 		os.Exit(2)
 	}
 
 	ctx := context.Background()
 	var emu emulator.Emulator
-	if *flagRunner == "containerized" {
+	if resolvedRunner == emulator.RunnerContainerized {
 		c, ferr := emulator.NewContainerized(emulator.ContainerizedConfig{
 			RuntimeBinary: *flagContainerRuntime,
 			Image:         *flagContainerImage,
