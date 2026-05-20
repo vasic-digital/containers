@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Milos Vasic
+#
+# Containers active Chinese (Simplified) bundle (round-299, 2026-05-19).
+# CONST-046 (no-hardcoded-content) + round-299 5-locale fixture mandate.
+containers_workflow_phase_probe: "正在探测远程主机的资源可用性。"
+containers_workflow_phase_schedule: "正在跨主机调度容器。"
+containers_workflow_phase_volumes: "正在远程主机上挂载卷。"
+containers_workflow_phase_deploy: "正在部署容器。"
+containers_workflow_phase_tunnels: "正在创建用于网络连接的SSH隧道。"
+containers_workflow_phase_health: "正在运行健康检查。"
+containers_workflow_phase_events: "正在发送分发事件。"
+containers_workflow_phase_unknown: "未知的分发工作流阶段。"
+containers_buildpkg_execution_failed: "构建执行失败: {{.err}}。"
+containers_buildpkg_exit_code_failed: "构建以代码 {{.code}} 退出: {{.stderr}}。"
