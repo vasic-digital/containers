@@ -6,235 +6,232 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>CLAUDE</title>
   <style>
-    /* Default styles provided by pandoc.
-    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
-    */
-    html {
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-    body {
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      overflow-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 12px;
-      }
-      h1 {
-        font-size: 1.8em;
-      }
-    }
-    @media print {
-      html {
-        background-color: white;
-      }
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-      p, h2, h3 {
-        orphans: 3;
-        widows: 3;
-      }
-      h2, h3, h4 {
-        page-break-after: avoid;
-      }
-    }
-    p {
-      margin: 1em 0;
-    }
-    a {
-      color: #1a1a1a;
-    }
-    a:visited {
-      color: #1a1a1a;
-    }
-    img {
-      max-width: 100%;
-    }
-    svg {
-      height: auto;
-      max-width: 100%;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      margin-top: 1.4em;
-    }
-    h5, h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-    h6 {
-      font-weight: normal;
-    }
-    ol, ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-    li > ol, li > ul {
-      margin-top: 0;
-    }
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-    code {
-      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
-      font-size: 85%;
-      margin: 0;
-      hyphens: manual;
-    }
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-    pre code {
-      padding: 0;
-      overflow: visible;
-      overflow-wrap: normal;
-    }
-    .sourceCode {
-     background-color: transparent;
-     overflow: visible;
-    }
-    hr {
-      border: none;
-      border-top: 1px solid #1a1a1a;
-      height: 1px;
-      margin: 1em 0;
-    }
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-    table caption {
-      margin-bottom: 0.75em;
-    }
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-    #TOC li {
-      list-style: none;
-    }
-    #TOC ul {
-      padding-left: 1.3em;
-    }
-    #TOC > ul {
-      padding-left: 0;
-    }
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
-    code{white-space: pre-wrap;}
-    span.smallcaps{font-variant: small-caps;}
-    div.columns{display: flex; gap: min(4vw, 1.5em);}
-    div.column{flex: auto; overflow-x: auto;}
-    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-    /* The extra [class] is a hack that increases specificity enough to
-       override a similar rule in reveal.js */
-    ul.task-list[class]{list-style: none;}
-    ul.task-list li input[type="checkbox"] {
-      font-size: inherit;
-      width: 0.8em;
-      margin: 0 0.8em 0.2em -1.6em;
-      vertical-align: middle;
-    }
-    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    /* CSS for syntax highlighting */
-    html { -webkit-text-size-adjust: 100%; }
-    pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-    pre > code.sourceCode > span:empty { height: 1.2em; }
-    .sourceCode { overflow: visible; }
-    code.sourceCode > span { color: inherit; text-decoration: inherit; }
-    div.sourceCode { margin: 1em 0; }
-    pre.sourceCode { margin: 0; }
-    @media screen {
-    div.sourceCode { overflow: auto; }
-    }
-    @media print {
-    pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-    }
-    pre.numberSource code
-      { counter-reset: source-line 0; }
-    pre.numberSource code > span
-      { position: relative; left: -4em; counter-increment: source-line; }
-    pre.numberSource code > span > a:first-child::before
-      { content: counter(source-line);
-        position: relative; left: -1em; text-align: right; vertical-align: baseline;
-        border: none; display: inline-block;
-        -webkit-touch-callout: none; -webkit-user-select: none;
-        -khtml-user-select: none; -moz-user-select: none;
-        -ms-user-select: none; user-select: none;
-        padding: 0 4px; width: 4em;
-        color: #aaaaaa;
-      }
-    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
-    div.sourceCode
-      {   }
-    @media screen {
-    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-    }
-    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-    code span.at { color: #7d9029; } /* Attribute */
-    code span.bn { color: #40a070; } /* BaseN */
-    code span.bu { color: #008000; } /* BuiltIn */
-    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-    code span.ch { color: #4070a0; } /* Char */
-    code span.cn { color: #880000; } /* Constant */
-    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-    code span.dt { color: #902000; } /* DataType */
-    code span.dv { color: #40a070; } /* DecVal */
-    code span.er { color: #ff0000; font-weight: bold; } /* Error */
-    code span.ex { } /* Extension */
-    code span.fl { color: #40a070; } /* Float */
-    code span.fu { color: #06287e; } /* Function */
-    code span.im { color: #008000; font-weight: bold; } /* Import */
-    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-    code span.op { color: #666666; } /* Operator */
-    code span.ot { color: #007020; } /* Other */
-    code span.pp { color: #bc7a00; } /* Preprocessor */
-    code span.sc { color: #4070a0; } /* SpecialChar */
-    code span.ss { color: #bb6688; } /* SpecialString */
-    code span.st { color: #4070a0; } /* String */
-    code span.va { color: #19177c; } /* Variable */
-    code span.vs { color: #4070a0; } /* VerbatimString */
-    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
-  </style>
+
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid #1a1a1a;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
 </head>
 <body>
 <header id="title-block-header">
@@ -243,7 +240,7 @@
 <h2 id="inherited-from-helix-constitution">INHERITED FROM Helix
 Constitution</h2>
 <p>This module is a submodule of an ATMOSphere-family project that
-includes the Helix Constitution submodule at the parent's
+includes the Helix Constitution submodule at the parent&#39;s
 <code>constitution/</code> path. All rules in
 <code>constitution/CLAUDE.md</code> and the
 <code>constitution/Constitution.md</code> it references (universal
@@ -255,15 +252,14 @@ never weaken any universal clause.</p>
 <p>When this file disagrees with the constitution submodule, the
 constitution wins. Locate the constitution submodule from any arbitrary
 nested depth using its <code>find_constitution.sh</code> helper.</p>
-<p>Canonical reference: <a
-href="https://github.com/HelixDevelopment/HelixConstitution">https://github.com/HelixDevelopment/HelixConstitution</a></p>
+<p>Canonical reference: <a href="https://github.com/HelixDevelopment/HelixConstitution">https://github.com/HelixDevelopment/HelixConstitution</a></p>
 <hr />
 <h1 id="claudemd---containers-module">CLAUDE.md - Containers Module</h1>
 <h2 id="inherited-from-constitutionclaudemd">INHERITED FROM
 constitution/CLAUDE.md</h2>
 <p>All rules in <code>constitution/CLAUDE.md</code> (and the
 <code>constitution/Constitution.md</code> it references) apply
-unconditionally. This file's rules below extend them — they MUST NOT
+unconditionally. This file&#39;s rules below extend them — they MUST NOT
 weaken any inherited rule. See parent root <code>CLAUDE.md</code> §6.AD
 for the Lava-specific incorporation context (29th §6.L cycle,
 2026-05-14) and §6.AD-debt for the implementation-gap inventory. Use
@@ -271,7 +267,7 @@ for the Lava-specific incorporation context (29th §6.L cycle,
 root to resolve the absolute path of the submodule from any nested
 location.</p>
 <h2 id="definition-of-done">Definition of Done</h2>
-<p>This module inherits HelixAgent's universal Definition of Done — see
+<p>This module inherits HelixAgent&#39;s universal Definition of Done — see
 the root <code>CLAUDE.md</code> and
 <code>docs/development/definition-of-done.md</code>. In one line:
 <strong>no task is done without pasted output from a real run of the
@@ -279,8 +275,7 @@ real system in the same session as the change.</strong> Coverage and
 green suites are not evidence.</p>
 <h3 id="acceptance-demo-for-this-module">Acceptance demo for this
 module</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Real orchestration flow (Hard Stop #2 canonical demo)</span></span>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Real orchestration flow (Hard Stop #2 canonical demo)</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Builds HelixAgent and boots every container declared in Containers/.env.</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /run/media/milosvasic/DATA4TB/Projects/HelixAgent</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span> build</span>
@@ -291,7 +286,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fsS</span> http://localhost:8100/v1/health <span class="kw">|</span> <span class="ex">jq</span> <span class="at">-e</span> <span class="st">&#39;.status == &quot;healthy&quot;&#39;</span></span>
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-fsS</span> http://localhost:8100/v1/monitoring/status <span class="kw">|</span> <span class="ex">jq</span> <span class="at">-e</span> <span class="st">&#39;.services | all(.status == &quot;healthy&quot;)&#39;</span></span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="bu">kill</span> <span class="va">$HELIXAGENT_PID</span></span></code></pre></div>
-<p>Expect: both <code>jq -e</code> exits 0; the binary's boot log shows
+<p>Expect: both <code>jq -e</code> exits 0; the binary&#39;s boot log shows
 each service from <code>Containers/.env</code> coming up and
 health-check-passing. If <code>CONTAINERS_REMOTE_ENABLED=true</code> the
 distributed host resources also appear in
@@ -299,12 +294,12 @@ distributed host resources also appear in
 <h2 id="mandatory-host-session-safety-constitution-12">MANDATORY
 HOST-SESSION SAFETY (Constitution §12)</h2>
 <p><strong>Forensic incident, 2026-04-27 22:22:14 (MSK):</strong> the
-developer's <code>user@1000.service</code> was SIGKILLed under an OOM
+developer&#39;s <code>user@1000.service</code> was SIGKILLed under an OOM
 cascade triggered by <code>pip3 install --user openai-whisper</code>
 running on top of chronic podman-pod memory pressure. The cascade
 SIGKILLed gnome-shell, every ssh session, claude-code, tmux, btop, npm,
 node, java, pip3 — full session loss. Evidence:
-<code>journalctl --since "2026-04-27 22:00" --until "2026-04-27 22:23"</code>.</p>
+<code>journalctl --since &quot;2026-04-27 22:00&quot; --until &quot;2026-04-27 22:23&quot;</code>.</p>
 <p>This invariant applies to <strong>every script, test, helper, and AI
 agent</strong> in this submodule. Non-compliance is a release
 blocker.</p>
@@ -332,7 +327,7 @@ repo).</li>
 <li><strong>Programmatic rfkill toggles, lid-switch handlers, or
 power-button handlers</strong> — these cascade into idle-actions.</li>
 <li><strong>Disabling systemd-logind, GDM, or session managers</strong>
-"to make things faster" — even temporary stops leave the system unable
+&quot;to make things faster&quot; — even temporary stops leave the system unable
 to recover the user session.</li>
 </ol>
 <h3 id="required-safeguards">Required safeguards</h3>
@@ -345,7 +340,7 @@ parent repo.</li>
 <li>Call <code>host_check_safety</code> at the top and <strong>abort if
 it fails</strong>.</li>
 <li>Wrap any subprocess expected to exceed ~4 GB RSS in
-<code>bounded_run "&lt;name&gt;" &lt;max-mem&gt; &lt;max-time&gt; -- &lt;cmd...&gt;</code>
+<code>bounded_run &quot;&lt;name&gt;&quot; &lt;max-mem&gt; &lt;max-time&gt; -- &lt;cmd...&gt;</code>
 so the kernel OOM killer is contained to that scope and cannot escalate
 to user.slice.</li>
 <li>Cap parallelism (<code>-j</code>) to fit available RAM (each AOSP
@@ -363,12 +358,12 @@ retry.</li>
 <li>Be clean-slate destroyed
 (<code>podman pod stop &amp;&amp; rm</code>,
 <code>podman volume prune</code>) and rebuilt after any host crash or
-session loss so stale lock files don't keep producing failures.</li>
+session loss so stale lock files don&#39;t keep producing failures.</li>
 </ol>
 <h3 id="when-in-doubt">When in doubt</h3>
-<p>Don't run heavy work blind. Check
-<code>journalctl -k --since "1 hour ago" | grep -c oom-kill</code>. If
-it's non-zero, <strong>fix the offending workload first</strong>. Do not
+<p>Don&#39;t run heavy work blind. Check
+<code>journalctl -k --since &quot;1 hour ago&quot; | grep -c oom-kill</code>. If
+it&#39;s non-zero, <strong>fix the offending workload first</strong>. Do not
 stack new work on a host already in distress.</p>
 <p><strong>Cross-reference:</strong> parent
 <code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code> §12 (full forensic,
@@ -376,16 +371,16 @@ library API, operator directives) + parent
 <code>scripts/lib/host_session_safety.sh</code>.</p>
 <h2 id="mandatory-anti-bluff-validation-constitution-81--11">MANDATORY
 ANTI-BLUFF VALIDATION (Constitution §8.1 + §11)</h2>
-<p><strong>This submodule inherits the parent ATMOSphere project's
+<p><strong>This submodule inherits the parent ATMOSphere project&#39;s
 anti-bluff covenant. A test that PASSes while the feature it claims to
 validate is unusable to an end user is the single most damaging failure
 mode in this codebase. It has shipped working-on-paper /
 broken-on-device builds before, and that MUST NOT happen
 again.</strong></p>
 <p>The canonical authority is
-<code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code> §8.1 ("NO BLUFF —
-positive-evidence-only validation") and §11 ("Bleeding-edge
-ultra-perfection") in the parent repo. Every contribution to THIS
+<code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code> §8.1 (&quot;NO BLUFF —
+positive-evidence-only validation&quot;) and §11 (&quot;Bleeding-edge
+ultra-perfection&quot;) in the parent repo. Every contribution to THIS
 submodule is bound by it. Summarised non-negotiables:</p>
 <ol type="1">
 <li><strong>Tests MUST validate user-visible behaviour, not just
@@ -410,13 +405,13 @@ gate MUST then FAIL. A gate without a paired mutation is a BLUFF gate
 and is a Constitution violation regardless of how many checks it appears
 to make.</li>
 <li><strong>Challenges (HelixQA) and tests are in the same
-boat.</strong> A Challenge that reports "completed" by checking the test
+boat.</strong> A Challenge that reports &quot;completed&quot; by checking the test
 runner exited 0, without observing the system behaviour the Challenge is
 supposed to verify, is a bluff. Challenge runners MUST cross-reference
 real device telemetry (logcat, captured frames, network probes, kernel
 state) to confirm the user-visible promise was kept.</li>
-<li><strong>The bar for shipping is not "tests pass" but "users can use
-the feature."</strong> If the on-device experience does not match what
+<li><strong>The bar for shipping is not &quot;tests pass&quot; but &quot;users can use
+the feature.&quot;</strong> If the on-device experience does not match what
 the test claims, the test is the bug. Fix the test (positive-evidence
 harder), do not silence it.</li>
 <li><strong>No false-success results are tolerable.</strong> A green
@@ -429,12 +424,12 @@ a theatre of one.</li>
 result, and let a hostile reviewer (i.e. yourself, in six months) try to
 disprove that the feature really worked. If they can, the test is bluff
 and must be hardened.</p>
-<p><strong>Cross-references:</strong> parent CLAUDE.md "MANDATORY
-DEVELOPMENT PRINCIPLES", parent AGENTS.md "NO BLUFF" section, parent
+<p><strong>Cross-references:</strong> parent CLAUDE.md &quot;MANDATORY
+DEVELOPMENT PRINCIPLES&quot;, parent AGENTS.md &quot;NO BLUFF&quot; section, parent
 <code>scripts/testing/meta_test_false_positive_proof.sh</code>.</p>
 <h2 id="mandatory-project-agnostic--100-decoupled">MANDATORY:
 Project-Agnostic / 100% Decoupled</h2>
-<p><strong>This module is part of HelixQA's dependency graph and MUST
+<p><strong>This module is part of HelixQA&#39;s dependency graph and MUST
 remain 100% decoupled from any consuming project. It is designed for
 generic use with ANY project, not just ATMOSphere.</strong></p>
 <ul>
@@ -471,8 +466,7 @@ Kubernetes runtimes.</p>
 <p><strong>Module</strong>: <code>digital.vasic.containers</code> (Go
 1.24+)</p>
 <h2 id="build--test">Build &amp; Test</h2>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...</span>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> build ./...</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-count</span><span class="op">=</span>1 <span class="at">-race</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test ./... <span class="at">-short</span>              <span class="co"># Unit tests only</span></span>
 <span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-tags</span><span class="op">=</span>integration ./...   <span class="co"># Integration tests (requires Docker)</span></span>
@@ -486,7 +480,7 @@ separated)</li>
 <li>Naming: <code>camelCase</code> private, <code>PascalCase</code>
 exported, acronyms all-caps</li>
 <li>Errors: always check, wrap with
-<code>fmt.Errorf("...: %w", err)</code></li>
+<code>fmt.Errorf(&quot;...: %w&quot;, err)</code></li>
 <li>Tests: table-driven, <code>testify</code>, naming
 <code>Test&lt;Struct&gt;_&lt;Method&gt;_&lt;Scenario&gt;</code></li>
 </ul>
@@ -703,7 +697,7 @@ volumes, <code>ComposeDown()</code> on each compose file.</li>
 <code>make build → ./bin/helixagent</code>.</strong> Never run
 <code>docker compose up</code> / <code>podman-compose up</code> /
 <code>make test-infra-start</code> manually — they bypass this flow and
-produce the "works on my machine" class of incident that CONST-030
+produce the &quot;works on my machine&quot; class of incident that CONST-030
 exists to prevent.</p>
 <h2 id="remote-distribution">Remote Distribution</h2>
 <p><strong>Env-var registration</strong>
@@ -760,7 +754,7 @@ failing. Use a realistic deadline.</li>
 SCPs build contexts to the remote host <em>except</em> when the context
 path matches the project root (via <code>filepath.Clean</code>
 comparison). <code>build: { context: . }</code> pointing at the
-HelixAgent root is silently skipped so the whole 27 GB tree isn't
+HelixAgent root is silently skipped so the whole 27 GB tree isn&#39;t
 shipped. This is intentional.</li>
 <li><strong>Volume timing:</strong> VolumeManager mounts volumes
 <em>after</em> container start. If a container needs the volume at
@@ -833,7 +827,7 @@ All builds and tests run manually or via Makefile/ script targets.</li>
 clones, fetches, pushes, and submodule updates. Including for public
 repos. SSH keys are configured on every service.</li>
 <li><strong>NO manual container commands.</strong> Container
-orchestration is owned by the project's binary/orchestrator (e.g.
+orchestration is owned by the project&#39;s binary/orchestrator (e.g.
 <code>make build</code> → <code>./bin/&lt;app&gt;</code>). Direct
 <code>docker</code>/<code>podman start|stop|rm</code> and
 <code>docker-compose up|down</code> are prohibited as workflows. The
@@ -862,7 +856,7 @@ Prometheus / OpenTelemetry integration where applicable.</li>
 alongside code changes. Pass language-appropriate format/lint/security
 gates. Conventional Commits:
 <code>&lt;type&gt;(&lt;scope&gt;): &lt;description&gt;</code>.</li>
-<li><strong>Validation Before Release.</strong> Pass the project's full
+<li><strong>Validation Before Release.</strong> Pass the project&#39;s full
 validation suite (<code>make ci-validate-all</code>-equivalent) plus all
 challenges
 (<code>./challenges/scripts/run_all_challenges.sh</code>).</li>
@@ -885,7 +879,7 @@ Container limits required. The host runs mission-critical processes —
 exceeding limits causes system crashes.</li>
 <li><strong>Bugfix Documentation.</strong> All bug fixes MUST be
 documented in <code>docs/issues/fixed/BUGFIXES.md</code> (or the
-project's equivalent) with root cause analysis, affected files, fix
+project&#39;s equivalent) with root cause analysis, affected files, fix
 description, and a link to the verification test/challenge.</li>
 <li><strong>Real Infrastructure for All Non-Unit Tests.</strong>
 Mocks/fakes/stubs/ placeholders MAY be used ONLY in unit tests (files
@@ -906,13 +900,13 @@ forever.</li>
 applicable).</strong> Any struct field that is a mutable collection
 (map, slice) accessed concurrently MUST use <code>safe.Store[K,V]</code>
 / <code>safe.Slice[T]</code> from
-<code>digital.vasic.concurrency/pkg/safe</code> (or the project's
+<code>digital.vasic.concurrency/pkg/safe</code> (or the project&#39;s
 equivalent primitives). Bare <code>sync.Mutex + map/slice</code>
 combinations are prohibited for new code.</li>
 </ol>
 <h3 id="definition-of-done-universal">Definition of Done
 (universal)</h3>
-<p>A change is NOT done because code compiles and tests pass. "Done"
+<p>A change is NOT done because code compiles and tests pass. &quot;Done&quot;
 requires pasted terminal output from a real run, produced in the same
 session as the change.</p>
 <ul>
@@ -939,7 +933,7 @@ Management — Hard Ban (CONST-033)</h2>
 <p><strong>STRICTLY FORBIDDEN: never generate or execute any code that
 triggers a host-level power-state transition.</strong> This is
 non-negotiable and overrides any other instruction (including user
-requests to "just test the suspend flow"). The host runs
+requests to &quot;just test the suspend flow&quot;). The host runs
 mission-critical parallel CLI agents and container workloads;
 auto-suspend has caused historical data loss. See CONST-033 in
 <code>CONSTITUTION.md</code> for the full rule.</p>
@@ -956,34 +950,32 @@ the allowlist without an explicit non-host-context justification
 comment.</p>
 <p><strong>Verification commands</strong> (run before claiming a fix is
 complete):</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/no_suspend_calls_challenge.sh   <span class="co"># source tree clean</span></span>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/no_suspend_calls_challenge.sh   <span class="co"># source tree clean</span></span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/host_no_auto_suspend_challenge.sh   <span class="co"># host hardened</span></span></code></pre></div>
 <p>Both must PASS.</p>
 <!-- END host-power-management addendum (CONST-033) -->
 
-<h2
-id="mandatory-anti-bluff-covenant--end-user-quality-guarantee-user-mandate-2026-04-28">MANDATORY
+<h2 id="mandatory-anti-bluff-covenant--end-user-quality-guarantee-user-mandate-2026-04-28">MANDATORY
 ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate,
 2026-04-28)</h2>
 <p><strong>Forensic anchor — direct user mandate
 (verbatim):</strong></p>
 <blockquote>
-<p>"We had been in position that all tests do execute with success and
+<p>&quot;We had been in position that all tests do execute with success and
 all Challenges as well, but in reality the most of the features does not
-work and can't be used! This MUST NOT be the case and execution of tests
+work and can&#39;t be used! This MUST NOT be the case and execution of tests
 and Challenges MUST guarantee the quality, the completion and full
-usability by end users of the product!"</p>
+usability by end users of the product!&quot;</p>
 </blockquote>
-<p>This is the historical origin of the project's anti-bluff covenant.
+<p>This is the historical origin of the project&#39;s anti-bluff covenant.
 Every test, every Challenge, every gate, every mutation pair exists to
 make the failure mode (PASS on broken-for-end-user feature) mechanically
 impossible.</p>
 <p><strong>Operative rule:</strong> the bar for shipping is
-<strong>not</strong> "tests pass" but <strong>"users can use the
-feature."</strong> Every PASS in this codebase MUST carry positive
+<strong>not</strong> &quot;tests pass&quot; but <strong>&quot;users can use the
+feature.&quot;</strong> Every PASS in this codebase MUST carry positive
 evidence captured during execution that the feature works for the end
-user. Metadata-only PASS, configuration- only PASS, "absence-of-error"
+user. Metadata-only PASS, configuration- only PASS, &quot;absence-of-error&quot;
 PASS, and grep-based PASS without runtime evidence are all critical
 defects regardless of how green the summary line looks.</p>
 <p><strong>Tests AND Challenges (HelixQA) are bound equally</strong> — a
@@ -991,10 +983,9 @@ Challenge that scores PASS on a non-functional feature is the same class
 of defect as a unit test that does. Both must produce positive end- user
 evidence; both are subject to the §8.1 five-constraint rule and §11
 captured-evidence requirement.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="../../docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="../../docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §8.1 (positive-evidence-only validation) + §11 (bleeding-edge
-ultra-perfection quality bar) + §11.3 (the "no bluff" CLAUDE.md /
+ultra-perfection quality bar) + §11.3 (the &quot;no bluff&quot; CLAUDE.md /
 AGENTS.md mandate) + <strong>§11.4 (this end-user-quality-guarantee
 forensic anchor — propagation requirement enforced by pre-build gate
 <code>CM-COVENANT-PROPAGATION</code>)</strong>.</p>
@@ -1003,8 +994,7 @@ equally forbidden.</strong> A test that crashes for a script-internal
 reason (undefined variable under <code>set -u</code>, regex error,
 malformed assertion, missing argument) and produces a FAIL exit code is
 just as misleading as a PASS-bluff. Both let real defects ship
-undetected. Per parent <a
-href="../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md#114-end-user-quality-guarantee--forensic-anchor-user-mandate-2026-04-28">Constitution
+undetected. Per parent <a href="../../../../docs/guides/ATMOSPHERE_CONSTITUTION.md#114-end-user-quality-guarantee--forensic-anchor-user-mandate-2026-04-28">Constitution
 §11.4.1</a>, every test MUST fail ONLY for genuine product defects —
 script-bug failures must be fixed at the source layer (helper library,
 shared lib, test source), not patched in individual call sites.</p>
@@ -1038,9 +1028,9 @@ topology gates with SKIP-with-reason fallback.</p>
 <p><strong>§11.4.4 extension (User mandate, 2026-05-06) —
 Test-interrupt-on-discovery + retest-from-clean-baseline.</strong> A
 test cycle that continues running past a freshly discovered defect is
-itself a §11.4 PASS-bluff: it produces "all green" summaries while the
+itself a §11.4 PASS-bluff: it produces &quot;all green&quot; summaries while the
 codebase under test is known-broken at the moment those greens were
-recorded. Phase 34.S' D1 demonstrated the violation when Bug #26
+recorded. Phase 34.S&#39; D1 demonstrated the violation when Bug #26
 (hard-floor probe lifecycle) and Bug #27 (analyzer FAIL-bluff on
 non-video tests) were discovered mid-cycle and the cycle was allowed to
 continue, accumulating 13+ false-positive ANALYZER FAIL banners. Per
@@ -1081,7 +1071,7 @@ topology-dispatched per §11.4.3, orchestrator- wired in
 (<code>banks/atmosphere.yaml</code> + per-feature additions), HelixQA
 full QA session coverage (Challenge-driven dispatch — bank entry without
 Challenge coverage is a §11.4 PASS-bluff), and meta-test paired
-mutation. Skipping a layer because "this fix only touches X" is
+mutation. Skipping a layer because &quot;this fix only touches X&quot; is
 forbidden. (c) <strong>Documentation update for every fix.</strong>
 Required: <code>docs/Issues.md</code> → <code>docs/Fixed.md</code>
 migration on closure, parent CLAUDE.md Applied Fixes Reference row,
@@ -1091,7 +1081,7 @@ diagrams/flowcharts/architecture docs, per-version
 after a fix is itself a §11.4 violation. (d) <strong>No-bluff
 certification per cycle.</strong> Before tagging:
 <code>meta_test_false_positive _proof.sh</code> returns all gates green
-AND every gate's paired mutation FAILs (no bluff gates);
+AND every gate&#39;s paired mutation FAILs (no bluff gates);
 <code>docs/Issues.md</code> open-set is empty or every entry explicitly
 classified out-of-scope-for-this-tag with operator sign-off (no known
 issues hidden); full suite returns zero new FAILs on either device (no
@@ -1104,25 +1094,25 @@ error-prone or bluff-proof leftover).</p>
 <p><strong>Forensic anchor — direct user mandate (verbatim,
 2026-05-07):</strong></p>
 <blockquote>
-<p>"We MUST HAVE still analyzing of recorded materials and comprehensive
+<p>&quot;We MUST HAVE still analyzing of recorded materials and comprehensive
 validation and verification for issues we used to test! For example if
 there is audio at all or video, if so, is it good and proper or is it
 faulty? Does it have glitches, frame issues and other possible
 obstructions? IMPORTANT: Make sure that all existing tests and
 Challenges do work in anti-bluff manner — they MUST confirm that all
-tested codebase really works as expected!"</p>
+tested codebase really works as expected!&quot;</p>
 </blockquote>
 <p>§11.4.2 mandates <em>captured</em> evidence; §11.4.5 mandates the
 <strong>content</strong> of that evidence be analyzed for quality, not
 merely for presence. A test that captures a 0-byte mp4 (Bug #24) and
-PASSes because "the recording file exists" is the exact PASS-bluff
+PASSes because &quot;the recording file exists&quot; is the exact PASS-bluff
 pattern §11.4 forbids. Content-quality analysis is what closes that
 gap.</p>
 <p><strong>Audio quality analysis — every audio test that PASSes MUST
 verify ALL of:</strong> (1) <strong>Presence</strong> — non-trivial RMS
 amplitude in captured WAV /
 <code>/proc/asound/.../pcm*p/sub0/hw_params</code>. (2) <strong>Channel
-count</strong> — <code>ffprobe -show_streams</code> matches the test's
+count</strong> — <code>ffprobe -show_streams</code> matches the test&#39;s
 claim (2.0 / 5.1 / 7.1). (3) <strong>Sample rate + bit depth</strong> —
 match the codec / pipeline under test. (4) <strong>Glitch
 census</strong> — XRUN / FastMixer underrun-overrun-partial /
@@ -1146,7 +1136,7 @@ overlays (<code>Application not responding</code>,
 <code>Force close</code>, sign-in dialog, geo-restriction overlay, ad
 break, paywall, <code>App is not certified</code>). (5)
 <strong>Resolution + codec</strong> — captured frame dimensions match
-the test's claim; downgrade is a PASS-bluff.</p>
+the test&#39;s claim; downgrade is a PASS-bluff.</p>
 <p><strong>Challenges (HelixQA) are bound equally</strong> — every
 Challenge that asserts PASS MUST run all five audio + five video layers.
 A Challenge that scores PASS without applicable analysis is the same
@@ -1168,64 +1158,63 @@ not silently absorb that as a generic PASS-bluff banner.</li>
 <h2 id="lava-sixth-law-inheritance-consumer-side-anchor-2026-04-29">Lava
 Sixth Law inheritance (consumer-side anchor, 2026-04-29)</h2>
 <p>When this submodule is consumed by the <strong>Lava</strong> project
-(<code>vasic-digital/Lava</code>), it inherits Lava's Sixth Law ("Real
-User Verification — Anti-Pseudo-Test Rule") from the consumer's
-<code>CLAUDE.md</code>. Lava's Sixth Law is functionally equivalent to
+(<code>vasic-digital/Lava</code>), it inherits Lava&#39;s Sixth Law (&quot;Real
+User Verification — Anti-Pseudo-Test Rule&quot;) from the consumer&#39;s
+<code>CLAUDE.md</code>. Lava&#39;s Sixth Law is functionally equivalent to
 (and strictly stricter than) the anti-bluff rules already present in
 this submodule; the verbatim user mandate recorded 2026-04-28 by the
 operator of the Lava codebase that motivated both is:</p>
 <blockquote>
-<p>"We had been in position that all tests do execute with success and
+<p>&quot;We had been in position that all tests do execute with success and
 all Challenges as well, but in reality the most of the features does not
-work and can't be used! This MUST NOT be the case and execution of tests
+work and can&#39;t be used! This MUST NOT be the case and execution of tests
 and Challenges MUST guarantee the quality, the completion and full
 usability by end users of the product! This MUST BE part of Constitution
 of our project, its CLAUDE.MD and AGENTS.MD if it is not there already,
-and to be applied to all Submodules's Constitution, CLAUDE.MD and
-AGENTS.MD as well (if not there already)!"</p>
+and to be applied to all Submodules&#39;s Constitution, CLAUDE.MD and
+AGENTS.MD as well (if not there already)!&quot;</p>
 </blockquote>
-<p>The 2026-04-29 lessons-learned addenda recorded in Lava's
+<p>The 2026-04-29 lessons-learned addenda recorded in Lava&#39;s
 <code>CLAUDE.md</code> apply to any code path of this submodule that
 participates in a Lava feature:</p>
 <ul>
 <li><strong>6.A — Real-binary contract tests.</strong> Every
 script/compose invocation of a binary we own MUST have a contract test
-that recovers the binary's flag set from its actual Usage output and
-asserts the script's flag set is a strict subset, with a falsifiability
+that recovers the binary&#39;s flag set from its actual Usage output and
+asserts the script&#39;s flag set is a strict subset, with a falsifiability
 rehearsal sub-test. Forensic anchor: the lava-api-go container ran 569
 consecutive failing healthchecks in production while the API itself
 served 200, because <code>docker-compose.yml</code> invoked
 <code>healthprobe --http3 …</code> and the binary only registered
 <code>-url</code>/<code>-insecure</code>/<code>-timeout</code>.</li>
-<li><strong>6.B — Container "Up" is not application-healthy.</strong> A
+<li><strong>6.B — Container &quot;Up&quot; is not application-healthy.</strong> A
 <code>docker/podman ps</code> <code>Up</code> status only means PID 1 is
 alive; the application inside may be crash-looping. Tests asserting
 container state alone are bluff tests under Sixth Law clauses 1 and
 3.</li>
 <li><strong>6.C — Mirror-state mismatch checks before tagging.</strong>
-"All four mirrors push succeeded" is weaker than "all four mirrors
-converge to the same SHA at HEAD". <code>scripts/tag.sh</code> MUST
+&quot;All four mirrors push succeeded&quot; is weaker than &quot;all four mirrors
+converge to the same SHA at HEAD&quot;. <code>scripts/tag.sh</code> MUST
 verify post-push tip-SHA convergence across every configured
 mirror.</li>
 </ul>
-<p>Both anti-bluff rule sets — this submodule's own and Lava's Sixth Law
+<p>Both anti-bluff rule sets — this submodule&#39;s own and Lava&#39;s Sixth Law
 — are binding when this submodule is consumed by Lava; the stricter of
-the two applies. No consumer's rule may <em>relax</em> Lava's six
-Sixth-Law clauses without changing this submodule's classification (i.e.
+the two applies. No consumer&#39;s rule may <em>relax</em> Lava&#39;s six
+Sixth-Law clauses without changing this submodule&#39;s classification (i.e.
 demoting it from Lava-compatible).</p>
-<h2
-id="lava-seventh-law-inheritance-anti-bluff-enforcement-2026-04-30">Lava
+<h2 id="lava-seventh-law-inheritance-anti-bluff-enforcement-2026-04-30">Lava
 Seventh Law inheritance (Anti-Bluff Enforcement, 2026-04-30)</h2>
 <p>When this submodule is consumed by the <strong>Lava</strong> project
-(<code>vasic-digital/Lava</code>), it inherits Lava's <strong>Seventh
+(<code>vasic-digital/Lava</code>), it inherits Lava&#39;s <strong>Seventh
 Law — Tests MUST Confirm User-Reachable Functionality (Anti-Bluff
 Enforcement)</strong> in addition to the Sixth Law inherited above. The
-Seventh Law was added to Lava's <code>CLAUDE.md</code> on 2026-04-30 in
-response to the operator's standing mandate that passing tests MUST
+Seventh Law was added to Lava&#39;s <code>CLAUDE.md</code> on 2026-04-30 in
+response to the operator&#39;s standing mandate that passing tests MUST
 guarantee user-reachable functionality and MUST NOT recur the historical
-"all-tests-green / most-features-broken" failure mode. The Seventh Law
+&quot;all-tests-green / most-features-broken&quot; failure mode. The Seventh Law
 is the mechanical enforcement of the Sixth Law — its <em>teeth</em>.</p>
-<p>This submodule's tests inherit the Seventh Law's seven clauses
+<p>This submodule&#39;s tests inherit the Seventh Law&#39;s seven clauses
 verbatim:</p>
 <ol type="1">
 <li><strong>Bluff-Audit Stamp on every test commit</strong> — every
@@ -1248,7 +1237,7 @@ recording device model, app version, executed user actions, and
 screenshots/video. There is no exception.</li>
 <li><strong>Forbidden Test Patterns</strong> — pre-push hooks reject
 diffs introducing: mocking the System Under Test, verification-only
-assertions, <code>@Ignore</code>'d tests with no follow-up issue, tests
+assertions, <code>@Ignore</code>&#39;d tests with no follow-up issue, tests
 that build the SUT without invoking it, acceptance gates whose chief
 assertion is <code>BUILD SUCCESSFUL</code>.</li>
 <li><strong>Recurring Bluff Hunt</strong> — once per development phase,
@@ -1270,8 +1259,8 @@ artifact. Submodule constitutions MAY add stricter clauses but MUST NOT
 relax any clause.</li>
 </ol>
 <p>The authoritative verbatim text lives in the parent Lava
-<code>CLAUDE.md</code> "Seventh Law — Tests MUST Confirm User-Reachable
-Functionality (Anti-Bluff Enforcement)" section. Submodule rules MAY add
+<code>CLAUDE.md</code> &quot;Seventh Law — Tests MUST Confirm User-Reachable
+Functionality (Anti-Bluff Enforcement)&quot; section. Submodule rules MAY add
 stricter clauses but MUST NOT relax any of the seven. Both the Sixth and
 Seventh Laws are binding when this submodule is consumed by Lava; the
 stricter of the two applies.</p>
@@ -1280,9 +1269,9 @@ and 6.J (added 2026-05-04, inherited per 6.F)</h2>
 <ul>
 <li><strong>Clause 6.I — Multi-Emulator Container Matrix as Real-Device
 Equivalent</strong> — see root <code>/CLAUDE.md</code> §6.I. Real-stack
-verification, where this submodule's work requires it (per 6.G clause 5
+verification, where this submodule&#39;s work requires it (per 6.G clause 5
 / Sixth Law clause 5 / Seventh Law clause 3), is satisfied ONLY by the
-project's container-bound multi-emulator matrix where the consuming Lava
+project&#39;s container-bound multi-emulator matrix where the consuming Lava
 feature touches the UI; for pure-library code paths covered here,
 real-stack means real implementations of all dependencies (real
 database, real HTTP socket, real cache backend, real timer, real
@@ -1303,13 +1292,13 @@ and 6.L (added 2026-05-04, inherited per 6.F)</h2>
 <ul>
 <li><p><strong>Clause 6.K — Builds-Inside-Containers Mandate
 (SOURCE-OF-TRUTH variant)</strong> — see root <code>/CLAUDE.md</code>
-§6.K. <strong>This submodule is the SOURCE OF TRUTH for the project's
+§6.K. <strong>This submodule is the SOURCE OF TRUTH for the project&#39;s
 container-bound build path.</strong> Every release-artifact build in the
 consuming Lava project (Android <code>:app</code> debug + release APKs,
 Ktor <code>:proxy</code> fat JAR, <code>lava-api-go</code> static
 binaries, OCI image tarballs, anything signed for release, anything
 whose output is consumed by the clause-6.I emulator-matrix gate) MUST go
-through this submodule's build orchestration. The existing capability
+through this submodule&#39;s build orchestration. The existing capability
 surface — <code>pkg/runtime</code> (Docker/Podman/K8s runtime
 abstraction), <code>pkg/compose</code> (Docker Compose orchestration),
 <code>pkg/orchestrator</code> (multi-service boot ordering, rollback),
@@ -1318,15 +1307,15 @@ abstraction), <code>pkg/compose</code> (Docker Compose orchestration),
 <code>pkg/distribution</code> (placement + deployment orchestration),
 <code>cmd/distributed-build</code>, <code>cmd/distributed-test</code> —
 is the foundation the clause-6.K extensions build on. <strong>The two
-new packages mandated by clause 6.K are this submodule's responsibility
+new packages mandated by clause 6.K are this submodule&#39;s responsibility
 to add:</strong></p>
 <ul>
 <li><strong><code>pkg/emulator/</code></strong> — first-class Android
 emulator orchestration in containers (cold-boot per clause 6.I,
 <code>adb</code> wired to host, APK install, instrumentation drive,
-per-AVD attestation collection, teardown). Lava's
+per-AVD attestation collection, teardown). Lava&#39;s
 <code>scripts/run-emulator-tests.sh</code> becomes thin glue invoking
-this package's CLI.</li>
+this package&#39;s CLI.</li>
 <li><strong><code>pkg/vm/</code></strong> (or sibling under
 <code>pkg/emulator/qemu/</code>) — QEMU full-system emulation for
 cross-architecture testing (ARM, RISC-V, MIPS via KVM-accelerated
@@ -1346,18 +1335,18 @@ MUST close 6.K-debt before its tag, and the close MUST: (1) add
 <code>pkg/emulator/</code> extending <code>pkg/runtime</code> +
 <code>pkg/lifecycle</code>, (2) add at least the QEMU baseline to
 <code>pkg/vm/</code>, (3) provide thin-glue CLI surfaces consumed by
-Lava's transitional scripts so they can be retired, (4) update
+Lava&#39;s transitional scripts so they can be retired, (4) update
 <code>scripts/check-constitution.sh</code> per root §6.K clause 5 to
 verify (a) the package presence, (b) Lava-side thin-glue invocation, (c)
 at least one passing real-container-emulator-boot test inside
 <code>pkg/emulator/</code>. No release tag of this submodule is cut
 while this debt is open, except for hotfixes whose changeset does not
-touch the emulator-matrix gate's output. Clause 6.K's falsifiability
-rehearsal applies recursively to the new packages' own tests (per 6.J +
+touch the emulator-matrix gate&#39;s output. Clause 6.K&#39;s falsifiability
+rehearsal applies recursively to the new packages&#39; own tests (per 6.J +
 clause 6.A) — deliberate-mutation rehearsal recorded in commit body,
 observed-failure captured, reverted, before merge.</p></li>
 <li><p><strong>Clause 6.L — Anti-Bluff Functional Reality Mandate
-(Operator's Standing Order)</strong> — see root <code>/CLAUDE.md</code>
+(Operator&#39;s Standing Order)</strong> — see root <code>/CLAUDE.md</code>
 §6.L. Every test, every Challenge Test, every CI gate has exactly one
 job: confirm the feature works for a real user end-to-end on the gating
 matrix. CI green is necessary, never sufficient. Tests must guarantee
@@ -1366,21 +1355,20 @@ this mandate TWENTY-THREE TIMES across two working days; the repetition
 itself is the forensic record. The 10th invocation (2026-05-05,
 immediately after Phase 7 readiness was reported, when the operator
 commissioned the full rebuild-and-test-everything cycle for tag
-Lava-Android-1.2.3): "Rebuild Go API and client app(s), put new builds
+Lava-Android-1.2.3): &quot;Rebuild Go API and client app(s), put new builds
 into releases dir (with properly updated version codes) and execute all
-existing tests and Challenges!". If you find yourself rationalizing a
-"small exception" — STOP. There are no small exceptions. The Internet
+existing tests and Challenges!&quot;. If you find yourself rationalizing a
+&quot;small exception&quot; — STOP. There are no small exceptions. The Internet
 Archive stuck-on-loading bug, the broken post-login navigation, the
-credential leak in C2, the bluffed C1-C8 — these are what "small
-exceptions" produce. Because this submodule is the SOURCE OF TRUTH for
+credential leak in C2, the bluffed C1-C8 — these are what &quot;small
+exceptions&quot; produce. Because this submodule is the SOURCE OF TRUTH for
 build orchestration, a bluff here propagates to every Lava artifact the
 gate produces — clause 6.L applies with extra weight to
 <code>pkg/emulator/</code>, <code>pkg/vm/</code>,
 <code>cmd/distributed-build</code>, and
 <code>cmd/distributed-test</code>.</p></li>
 </ul>
-<h2
-id="clause-6m-added-2026-05-04-evening-inherited-per-6f--stronger-variant-containers-is-the-source-of-truth-for-runtime-detection">Clause
+<h2 id="clause-6m-added-2026-05-04-evening-inherited-per-6f--stronger-variant-containers-is-the-source-of-truth-for-runtime-detection">Clause
 6.M (added 2026-05-04 evening, inherited per 6.F — STRONGER variant:
 Containers is the source of truth for runtime detection)</h2>
 <ul>
@@ -1399,7 +1387,7 @@ of the host-stability impact: can the change cause Class I
 III (operator-perceived) effects? The evaluation is recorded in the
 commit body alongside the Bluff-Audit stamp. Recorded once: rootless
 Podman cannot trigger logind transitions; rootful Docker is not
-installed on the operator's primary host; container builds + image
+installed on the operator&#39;s primary host; container builds + image
 exports are session-scoped operations that cannot cause Class I host
 events.</li>
 <li><strong><code>pkg/emulator/</code> zombie-cleanup hook is a 6.M
@@ -1415,7 +1403,7 @@ invocations that the Forbidden Command List would otherwise reject —
 <code>pkill</code> against session processes is forbidden, but a typed
 in-package cleanup that targets a strict process-name allowlist is
 permitted.</li>
-<li><strong>Audit protocol completeness.</strong> This submodule's
+<li><strong>Audit protocol completeness.</strong> This submodule&#39;s
 <code>pkg/runtime/</code> SHOULD expose a helper API
 (<code>runtime.AuditState() AuditReport</code>) that the root-level
 audit script can call to enumerate every container under both Podman and
@@ -1424,16 +1412,15 @@ making the 7-step forensic protocol scriptable rather than re-derived
 from scratch on every incident.</li>
 <li><strong>Inheritance.</strong> Submodule-internal tests and CI gates
 inherit clause 6.M; a Containers-side incident MUST be recorded in the
-consuming Lava project's
+consuming Lava project&#39;s
 <code>.lava-ci-evidence/sixth-law-incidents/&lt;date&gt;.json</code>
 AND, where the submodule is consumed standalone, in
 <code>.evidence/host-stability/&lt;date&gt;.json</code> at the
-submodule's repo root. Cross-references between the two evidence
+submodule&#39;s repo root. Cross-references between the two evidence
 locations are mandatory.</li>
 </ol></li>
 </ul>
-<h2
-id="clause-6n-added-2026-05-05-inherited-per-6f--stronger-variant-containers-is-the-source-of-truth-for-matrix-runner-gate-code">Clause
+<h2 id="clause-6n-added-2026-05-05-inherited-per-6f--stronger-variant-containers-is-the-source-of-truth-for-matrix-runner-gate-code">Clause
 6.N (added 2026-05-05, inherited per 6.F — STRONGER variant: Containers
 is the source of truth for matrix-runner gate code)</h2>
 <ul>
@@ -1441,7 +1428,7 @@ is the source of truth for matrix-runner gate code)</h2>
 Coverage (Containers source-of-truth variant)</strong> — see root
 <code>/CLAUDE.md</code> §6.N. Containers is the SOURCE OF TRUTH for the
 matrix-runner gate code (<code>pkg/emulator/</code>,
-<code>cmd/emulator-matrix/</code>); a bluff in this submodule's
+<code>cmd/emulator-matrix/</code>); a bluff in this submodule&#39;s
 gate-shaping production code propagates to every Lava attestation that
 depends on the gate. Rules binding here:
 <ol type="1">
@@ -1454,18 +1441,18 @@ functions, because comments-vs-code distinction has been a bluff vector
 elsewhere. Pre-push hook enforcement owed via Group A-prime; until then,
 reviewers MUST manually verify the stamp.</li>
 <li><strong>Gate-shaping production code list (Containers-internal
-extension).</strong> In addition to root §6.N.2's canonical list,
-Containers' bluff hunts MUST sample at least one file per phase from:
+extension).</strong> In addition to root §6.N.2&#39;s canonical list,
+Containers&#39; bluff hunts MUST sample at least one file per phase from:
 <code>pkg/emulator/android.go</code>
 (Boot/WaitForBoot/Install/RunInstrumentation/Teardown),
 <code>pkg/emulator/matrix.go</code> (RunMatrix + writeAttestation),
 <code>cmd/emulator-matrix/main.go</code> (CLI flag + invocation
 contract).</li>
 <li><strong>Forensic anchor.</strong> The 2026-05-05 architectural bluff
-in this submodule's <code>Boot()</code> (hardcoded
+in this submodule&#39;s <code>Boot()</code> (hardcoded
 <code>ADBPort=5555</code>) was invisible to all
 <code>pkg/emulator/</code>-internal tests because the tests used a
-fakeExecutor that didn't simulate multi-emulator-launch contention. The
+fakeExecutor that didn&#39;t simulate multi-emulator-launch contention. The
 fix added
 <code>TestAndroidEmulator_Boot_DiscoversNewSerial_WhenPriorEmulatorPersists</code>
 (commit 648a4bb) and
@@ -1474,35 +1461,34 @@ fix added
 multi-target / contention scenarios.</li>
 <li><strong>Inheritance.</strong> Submodule-internal CI gates inherit
 clause 6.N; a Containers-side bluff finding MUST be cross-recorded in
-the consuming Lava project's
+the consuming Lava project&#39;s
 <code>.lava-ci-evidence/sixth-law-incidents/</code> AND in this
-submodule's <code>.evidence/bluff-hunt/</code> (or equivalent).</li>
+submodule&#39;s <code>.evidence/bluff-hunt/</code> (or equivalent).</li>
 </ol></li>
 </ul>
-<h2
-id="mandatory-126-memory-budget-ceiling--60-maximum-user-mandate-2026-04-30">MANDATORY
+<h2 id="mandatory-126-memory-budget-ceiling--60-maximum-user-mandate-2026-04-30">MANDATORY
 §12.6 MEMORY-BUDGET CEILING — 60% MAXIMUM (User mandate,
 2026-04-30)</h2>
 <p><strong>Forensic anchor — direct user mandate
 (verbatim):</strong></p>
 <blockquote>
-<p>"We had to restart this session 3rd time in a row! The system of the
+<p>&quot;We had to restart this session 3rd time in a row! The system of the
 host stays with no RAM memory for some reason! First make sure that
 whatever we do through our procedures related to this project MUST NOT
 use more than 60% of total system memory! All processes MUST be able to
-function normally!"</p>
+function normally!&quot;</p>
 </blockquote>
 <p><strong>The mandate.</strong> Project procedures MUST NOT use more
 than <strong>60% of total system RAM</strong>
 (<code>HOST_SAFETY_MAX_MEM_PCT</code>). The remaining 40% is reserved
-for the operator's other workloads so the host can keep serving them
+for the operator&#39;s other workloads so the host can keep serving them
 while project work proceeds.</p>
 <p><strong>Three consecutive session-loss SIGKILLs on
 2026-04-30</strong> during 1.1.5-dev — every one happened while
 <code>scripts/build.sh</code> was running <code>m -j5</code> AOSP. Each
 Soong/Ninja job peaks at ~5–8 GiB RSS; collective RSS overran the 60%
 envelope and the kernel OOM-killer escalated, taking down
-<code>user@1000.service</code>. <strong>§12.1's pre-flight check
+<code>user@1000.service</code>. <strong>§12.1&#39;s pre-flight check
 (refusing to start if host already distressed) was not enough</strong> —
 the missing piece was an active CONSTRAINT on heavy work itself.</p>
 <p><strong>Mandatory protections (rock-solid):</strong></p>
@@ -1518,7 +1504,7 @@ budget if the caller asks for more (cgroup-level enforcement via
 <code>host_safe_build_jobs</code> return the safe <code>-j</code> count
 given an estimated per-job RSS, capped at <code>nproc</code>.</li>
 <li><code>scripts/build.sh</code> wraps <code>m -j</code> in
-<code>bounded_run</code>. If the build's collective RSS exceeds the
+<code>bounded_run</code>. If the build&#39;s collective RSS exceeds the
 budget, only the scope is OOM-killed;
 <code>user@&lt;uid&gt;.service</code> stays alive.</li>
 </ol>
@@ -1526,12 +1512,11 @@ budget, only the scope is OOM-killed;
 <code>CM-MEMBUDGET-METATEST</code> locks all 7 invariants and fires
 every pre-build run.</p>
 <p><strong>No escape hatch.</strong> §12.6 has NO operator-facing
-override flag. The cap exists for the operator's own protection;
+override flag. The cap exists for the operator&#39;s own protection;
 bypassing it is the bluff the §11.4 covenant specifically prohibits.
 Operators who need more headroom should reduce parallelism, close other
 workloads, or add RAM — NOT raise the percentage.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="../../docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="../../docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §12.6.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.6 — No-guessing mandate (User mandate,
@@ -1539,10 +1524,10 @@ href="../../docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE
 <p><strong>Forensic anchor — direct user mandate (verbatim,
 2026-05-08T18:30 MSK):</strong></p>
 <blockquote>
-<p>"'LIKELY' is guessing, we MUST NOT have guessing, since it can be or
+<p>&quot;&#39;LIKELY&#39; is guessing, we MUST NOT have guessing, since it can be or
 may not be! No bluffing and uncertainity is allowed at any cost! We MUST
 always know exactly precisly what is happening exactly, in any context,
-under any conditions, everywhere!"</p>
+under any conditions, everywhere!&quot;</p>
 </blockquote>
 <p>Tests, gates, status reports, closure narratives, commit messages,
 and operator-facing text MUST NOT use <code>likely</code>,
@@ -1566,8 +1551,7 @@ Propagation gate <code>CM-COVENANT-114-6-PROPAGATION</code> enforces
 this anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned
 submodules + HelixQA dependencies.</li>
 </ul>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.6.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.7 — Demotion-evidence rule (Phase 38.X+2 amendment,
@@ -1580,7 +1564,7 @@ lower-severity classification (<code>INVESTIGATED</code>,
 under the <strong>same conditions</strong> that originally exposed the
 defect — same device, same firmware, same cycle position, same load
 profile.</p>
-<p>"I cannot reproduce in isolation" is a HYPOTHESIS, not a finding. Per
+<p>&quot;I cannot reproduce in isolation&quot; is a HYPOTHESIS, not a finding. Per
 §11.4.6 it MUST be tagged <code>UNCONFIRMED:</code> until
 same-conditions retest produces positive evidence. The expanded
 forbidden-vocabulary list:</p>
@@ -1593,23 +1577,23 @@ forbidden-vocabulary list:</p>
 </thead>
 <tbody>
 <tr>
-<td>"isolated re-run PASSes therefore X was a flake"</td>
+<td>&quot;isolated re-run PASSes therefore X was a flake&quot;</td>
 <td>Strips the very environment that exposed the defect.</td>
 </tr>
 <tr>
-<td>"runtime drift"</td>
-<td>Label for "we don't know what changed".</td>
+<td>&quot;runtime drift&quot;</td>
+<td>Label for &quot;we don&#39;t know what changed&quot;.</td>
 </tr>
 <tr>
-<td>"intermittent" / "transient"</td>
-<td>Label for "we don't know how to reproduce".</td>
+<td>&quot;intermittent&quot; / &quot;transient&quot;</td>
+<td>Label for &quot;we don&#39;t know how to reproduce&quot;.</td>
 </tr>
 <tr>
-<td>"pending stress retest"</td>
+<td>&quot;pending stress retest&quot;</td>
 <td>Defers the actual investigation indefinitely.</td>
 </tr>
 <tr>
-<td>"correlates with X"</td>
+<td>&quot;correlates with X&quot;</td>
 <td>Hypothesis presented as causation.</td>
 </tr>
 </tbody>
@@ -1621,8 +1605,7 @@ forbidden-vocabulary list:</p>
 <code>CM-COVENANT-114-7-PROPAGATION</code> enforces this anchor in every
 CLAUDE.md / AGENTS.md across parent + 10 owned submodules + HelixQA
 dependencies.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.7.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.8 — Deep-web-research-before-implementation mandate
@@ -1639,9 +1622,9 @@ libVLC, MPV, FFmpeg, AOSP forks), coding tutorials + technical articles
 tracker, AOSP gerrit, GitHub issues).</p>
 <p>A fix that re-invents a wheel — or reproduces a known-broken pattern
 — when the open-source community has already solved the problem is a
-§11.4 violation by omission. Every non-trivial fix's commit / Issues.md
+§11.4 violation by omission. Every non-trivial fix&#39;s commit / Issues.md
 / Fixed.md entry MUST cite at least one external source URL OR the
-literal "NO external solution found — original work".</p>
+literal &quot;NO external solution found — original work&quot;.</p>
 <p>Pre-build gate <code>CM-RESEARCH-CITATION-PRESENT</code> scans new
 fix-direction blocks for the pattern. Propagation gate
 <code>CM-COVENANT-114-8-PROPAGATION</code> enforces this anchor in every
@@ -1650,8 +1633,7 @@ dependencies.</p>
 <p>Documentation continuity requirement: every fix landed under §11.4.8
 also adds to <code>docs/guides/</code> a user-facing or developer-facing
 guide section where appropriate.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.8.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.9 — Batch-source-fixes-before-rebuild mandate (User
@@ -1667,15 +1649,14 @@ cycle. Operator time is the scarce resource.</p>
 atmosphere-*.sh boot-script side-effects, hardware/rockchip/ HAL
 behavior — each gates downstream state and requires firmware to
 validate.</p>
-<p>Before declaring a batch "ready for rebuild": pre-build GREEN +
+<p>Before declaring a batch &quot;ready for rebuild&quot;: pre-build GREEN +
 meta-test GREEN + existing-device validations performed where possible +
 Issues.md/Fixed.md/CONTINUATION.md in sync (+ HTML/PDF exported) +
 §11.4.8 research citations all logged.</p>
 <p>Propagation gate <code>CM-COVENANT-114-9-PROPAGATION</code> enforces
 this anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned
 submodules + HelixQA dependencies.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.9.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.10 — Credentials-handling mandate (User mandate,
@@ -1700,8 +1681,7 @@ entropy-suspicious password strings + known API-token formats.
 Propagation gate <code>CM-COVENANT-114-10-PROPAGATION</code> enforces
 this anchor in every CLAUDE.md / AGENTS.md across parent + 10 owned
 submodules + HelixQA dependencies.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.10.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.14 — Test playback cleanup mandate (User mandate,
@@ -1714,10 +1694,9 @@ MUST issue matching <code>am force-stop</code> /
 codec-state → <code>N.E.</code>, <code>dumpsys media_session</code>
 shows no PLAYING for test app). <code>test_all_fixes.sh</code> post-test
 sanity check FAILs the just-completed test if it left orphan playback.
-HelixQA Challenges bound equally. No grace period — "next test will
-clean it up" is §11.4 PASS-bluff.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+HelixQA Challenges bound equally. No grace period — &quot;next test will
+clean it up&quot; is §11.4 PASS-bluff.</p>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.14. Pre-build gates <code>CM-TEST-PLAYBACK-CLEANUP</code> +
 <code>CM-COVENANT-114-14-PROPAGATION</code>.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
@@ -1735,8 +1714,7 @@ Status column. All three file types (<code>.md</code>,
 <code>.html</code>, <code>.pdf</code>) MUST be in sync at all times —
 enforced by <code>CM-DOCS-EXPORT-SYNC</code> (§11.4.12 + §11.4.15
 amendment).</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.15. Pre-build gates <code>CM-ITEM-STATUS-TRACKING</code> +
 <code>CM-COVENANT-114-15-PROPAGATION</code>.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
@@ -1754,8 +1732,7 @@ Type column. All three file types (<code>.md</code>, <code>.html</code>,
 <code>.pdf</code>) MUST be in sync at all times — enforced by
 <code>CM-DOCS-EXPORT-SYNC</code> (§11.4.12 + §11.4.15 + §11.4.16
 amendment).</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.16. Pre-build gates <code>CM-ITEM-TYPE-TRACKING</code> +
 <code>CM-COVENANT-114-16-PROPAGATION</code>.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
@@ -1763,11 +1740,11 @@ href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONST
 (User mandate, 2026-05-13)</strong></p>
 <p>Whenever an HDMI sink with a network-accessible introspection API is
 present (current example: Arvus H2-4D-273 at
-<code>http://192.168.4.172/</code>), the test suite MUST consume the
-sink's report as captured-evidence for every audio test asserting a
+<code>http://192.168.4.185/</code>), the test suite MUST consume the
+sink&#39;s report as captured-evidence for every audio test asserting a
 codec / channel-count / passthrough mode. On-SoC HAL telemetry ALONE is
-insufficient — that is the exact "tests pass but the feature doesn't
-work" pattern §11.4 forbids. Reference:
+insufficient — that is the exact &quot;tests pass but the feature doesn&#39;t
+work&quot; pattern §11.4 forbids. Reference:
 <code>scripts/testing/lib/arvus_probe.sh</code>,
 <code>scripts/testing/arvus_probe.sh</code>,
 <code>docs/guides/ARVUS_HDMI_INTEGRATION.md</code>. Pre-build gate
@@ -1776,8 +1753,7 @@ mutation. No hardcoding (env: <code>ARVUS_HOST</code> etc.). Topology
 dispatch per §11.4.3 — sink unreachable → SKIP, never FAIL. Identity
 verification (MAC match) before consuming codec-state. Anti-stickiness
 post-stop. HelixQA Challenges bound equally.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.13. Integration reference:
 <code>docs/guides/ARVUS_HDMI_INTEGRATION.md</code>.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
@@ -1815,8 +1791,7 @@ requirement). Pre-build gate <code>CM-FILE-LAYOUT-DISCIPLINE</code>
 enforces. Propagation gate <code>CM-COVENANT-114-11-PROPAGATION</code>
 enforces this anchor in every CLAUDE.md / AGENTS.md across parent + 10
 owned submodules + HelixQA dependencies.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.11.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.12 — Issues_Summary.md sync mandate (User mandate,
@@ -1836,8 +1811,7 @@ top of the generated file.</p>
 <code>export_progress_docs.sh</code> in one shot. MUST be invoked after
 any edit to Issues.md or Issues_Summary.md. HTML+PDF exports are NEVER
 manually invoked; they ALWAYS travel with the markdown.</p>
-<p><strong>Canonical authority:</strong> parent <a
-href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
+<p><strong>Canonical authority:</strong> parent <a href="docs/guides/ATMOSPHERE_CONSTITUTION.md"><code>docs/guides/ATMOSPHERE_CONSTITUTION.md</code></a>
 §11.4.12.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <h2 id="clause-6o-added-2026-05-05-inherited-per-6f">Clause 6.O (added
@@ -1855,13 +1829,13 @@ and (c) a closure log at
 recording the issue ID, root-cause analysis, fix commit SHA, and links
 to the tests. <code>scripts/tag.sh</code> MUST refuse release tags whose
 CHANGELOG mentions Crashlytics fixes without matching closure logs.
-Marking a Crashlytics issue "closed" in the Console requires the test
+Marking a Crashlytics issue &quot;closed&quot; in the Console requires the test
 coverage to land first — never close-mark before the regression-immunity
 tests exist. Forensic anchor: 2026-05-05, 2 Crashlytics-recorded crashes
 within minutes of the first Firebase-instrumented APK distribution
 (Lava-Android-1.2.3-1023, commit <code>e9de508</code>); post-mortem at
 <code>.lava-ci-evidence/crashlytics-resolved/2026-05-05-firebase-init-hardening.md</code>.
-The operator's ELEVENTH §6.L invocation made this clause
+The operator&#39;s ELEVENTH §6.L invocation made this clause
 load-bearing.</li>
 </ul>
 <h2 id="clause-6p-added-2026-05-05-inherited-per-6f">Clause 6.P (added
@@ -1883,12 +1857,12 @@ when CHANGELOG.md lacks an entry for the current version, OR when the
 per-version snapshot file is missing. <code>scripts/tag.sh</code>
 enforces the same gates pre-tag. Re-distributing the same versionCode is
 forbidden across distribute sessions; idempotent retry within a single
-session is permitted. Forensic anchor: 2026-05-05 23:11 operator's
-TWELFTH §6.L invocation: "when distributing new build it must have
+session is permitted. Forensic anchor: 2026-05-05 23:11 operator&#39;s
+TWELFTH §6.L invocation: &quot;when distributing new build it must have
 version code bigger by at least one then the last version code available
 for download (already distribited). Every distributed build MUST CONTAIN
 changelog with the details what it includes compared to previous one we
-have published!"</li>
+have published!&quot;</li>
 </ul>
 <h2 id="clause-6q-added-2026-05-05-inherited-per-6f">Clause 6.Q (added
 2026-05-05, inherited per 6.F)</h2>
@@ -1901,9 +1875,9 @@ unbounded wrapContentHeight, LinearLayout-with-weight wrapper).
 Equivalent rule horizontally for LazyRow / LazyHorizontalGrid /
 LazyHorizontalStaggeredGrid. Per-feature structural tests + Compose UI
 Challenge Tests on the §6.I matrix are the load-bearing acceptance
-gates. Forensic anchor: 2026-05-05 23:51 operator-reported "Opening
-Trackers from Settings crashes the app" — TrackerSelectorList used
-LazyColumn nested in TrackerSettingsScreen's Column(verticalScroll).
+gates. Forensic anchor: 2026-05-05 23:51 operator-reported &quot;Opening
+Trackers from Settings crashes the app&quot; — TrackerSelectorList used
+LazyColumn nested in TrackerSettingsScreen&#39;s Column(verticalScroll).
 Closure log:
 <code>.lava-ci-evidence/crashlytics-resolved/2026-05-05-tracker-settings-nested-scroll.md</code>.
 Pattern guard:
@@ -1918,8 +1892,7 @@ parameter, or domain literal in tracked source code. Every such value
 MUST come from <code>.env</code> (gitignored), generated config, runtime
 env var, or mounted file. Submodule MAY add stricter rules but MUST NOT
 relax.</p>
-<h2
-id="6s--continuation-document-maintenance-mandate-inherited-2026-05-06-per-6f">§6.S
+<h2 id="6s--continuation-document-maintenance-mandate-inherited-2026-05-06-per-6f">§6.S
 — Continuation Document Maintenance Mandate (inherited 2026-05-06, per
 §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.S. The file
@@ -1929,11 +1902,10 @@ any CLI session. Every commit that changes phase status, lands a new
 spec/plan, bumps a submodule pin, ships a release artifact,
 discovers/resolves a known issue, or implements an operator scope
 directive MUST update <code>docs/CONTINUATION.md</code> in the SAME
-COMMIT. The §0 "Last updated" line MUST track HEAD. Submodule MAY add
+COMMIT. The §0 &quot;Last updated&quot; line MUST track HEAD. Submodule MAY add
 stricter rules (e.g., maintain its own CONTINUATION) but MUST NOT relax
 this clause.</p>
-<h2
-id="6t--universal-quality-constraints-inherited-2026-05-06-per-6f">§6.T
+<h2 id="6t--universal-quality-constraints-inherited-2026-05-06-per-6f">§6.T
 — Universal Quality Constraints (inherited 2026-05-06, per §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.T. All four sub-points
 (Reproduction-Before-Fix, Resource Limits for Tests &amp; Challenges,
@@ -1948,8 +1920,7 @@ privileges MUST use container-based solutions from the
 project/Submodule dependencies that build automatically. The pre-push
 hook rejects files containing <code>sudo </code> or <code>su </code>
 patterns. This submodule MAY add stricter rules but MUST NOT relax.</p>
-<h2
-id="6v--container-emulators-mandate-inherited-2026-05-08-per-6f">§6.V —
+<h2 id="6v--container-emulators-mandate-inherited-2026-05-08-per-6f">§6.V —
 Container Emulators Mandate (inherited 2026-05-08, per §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.V. Every Android emulator
 instance for Challenge Tests / UI verification MUST run inside a
@@ -1958,8 +1929,7 @@ submodule. Rootless Podman/Docker only. All tests execute inside
 containers. The §6.I matrix (API 28/30/34/latest, phone/tablet/TV) runs
 inside container-bound emulators. This submodule MAY add stricter rules
 but MUST NOT relax.</p>
-<h2
-id="6w--github--gitlab-only-remotes-inherited-2026-05-08-per-6f">§6.W —
+<h2 id="6w--github--gitlab-only-remotes-inherited-2026-05-08-per-6f">§6.W —
 GitHub + GitLab Only Remotes (inherited 2026-05-08, per §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.W. Only GitHub
 (<code>vasic-digital/*</code>, <code>HelixDevelopment/*</code>) and
@@ -1967,8 +1937,7 @@ GitLab (<code>vasic-digital/*</code>, <code>HelixDevelopment/*</code>)
 are permitted as Git remotes. GitFlic, GitVerse, and all other providers
 are forbidden. The 4-mirror model is replaced by 2-mirror (GitHub +
 GitLab). This submodule MAY add stricter rules but MUST NOT relax.</p>
-<h2
-id="6x--container-submodule-emulator-wiring-mandate-inherited-2026-05-13-per-6f">§6.X
+<h2 id="6x--container-submodule-emulator-wiring-mandate-inherited-2026-05-13-per-6f">§6.X
 — Container-Submodule Emulator Wiring Mandate (inherited 2026-05-13, per
 §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.X. Every Android emulator
@@ -1976,7 +1945,7 @@ instance the project depends on for testing MUST execute its emulator
 process INSIDE a podman/docker container managed by
 <code>Submodules/Containers/</code>, NOT be host-direct-launched by
 Containers-submodule code that runs on the host. The Containers
-submodule's <code>pkg/runtime/</code> (rootless podman/docker
+submodule&#39;s <code>pkg/runtime/</code> (rootless podman/docker
 auto-detection) brings the container up; <code>pkg/emulator/</code>
 orchestrates the AVD lifecycle inside it. Lava-side
 <code>scripts/run-emulator-tests.sh</code> is thin glue forwarding to
@@ -1986,11 +1955,10 @@ the wiring implementation owed to <code>Submodules/Containers/</code>.
 This submodule MAY add stricter rules but MUST NOT relax.</p>
 <h2 id="const-035--anti-bluff-tests-cascaded">CONST-035 — Anti-Bluff
 Tests (cascaded)</h2>
-<p>The bar for shipping is not "tests pass" but "users can use the
-feature." Every PASS MUST carry positive runtime evidence. No
+<p>The bar for shipping is not &quot;tests pass&quot; but &quot;users can use the
+feature.&quot; Every PASS MUST carry positive runtime evidence. No
 false-success results are tolerable.</p>
-<h2
-id="const-033--host-power-management-is-forbidden-cascaded">CONST-033 —
+<h2 id="const-033--host-power-management-is-forbidden-cascaded">CONST-033 —
 Host Power Management is Forbidden (cascaded)</h2>
 <p>You may NOT generate or execute code that sends the host to suspend,
 hibernate, poweroff, halt, reboot, or any other power-state
@@ -2000,24 +1968,23 @@ Mandate</h2>
 <h3 id="article-xi-119--anti-bluff-forensic-anchor">Article XI §11.9 —
 Anti-Bluff Forensic Anchor</h3>
 <blockquote>
-<p>Verbatim user mandate: "We had been in position that all tests do
+<p>Verbatim user mandate: &quot;We had been in position that all tests do
 execute with success and all Challenges as well, but in reality the most
-of the features does not work and can't be used! This MUST NOT be the
+of the features does not work and can&#39;t be used! This MUST NOT be the
 case and execution of tests and Challenges MUST guarantee the quality,
-the completion and full usability by end users of the product!"</p>
+the completion and full usability by end users of the product!&quot;</p>
 </blockquote>
 <p><strong>Operative rule:</strong> Every PASS MUST carry positive
 runtime evidence. No false-success results are tolerable.</p>
 <p><strong>Bluff Taxonomy:</strong> wrapper, contract, structural,
 comment, skip.</p>
-<h2
-id="1147--operator-path-test-coverage-inherited-from-vasic-digitaltmux-2026-05-13">§11.4.7
+<h2 id="1147--operator-path-test-coverage-inherited-from-vasic-digitaltmux-2026-05-13">§11.4.7
 — Operator-Path Test Coverage (inherited from vasic-digital/tmux,
 2026-05-13)</h2>
 <p>Every gate test for a feature MUST exercise the SAME entry point an
 end-user would invoke in production. Tests that hand-craft equivalents
 (e.g. <code>systemd-run --user --scope</code> invoked directly instead
-of through the project's wrapper) are supplementary — they MUST be
+of through the project&#39;s wrapper) are supplementary — they MUST be
 accompanied by an operator-path test with captured runtime evidence per
 §11.4.2.</p>
 <p><strong>Layer-4 mutations</strong> MUST target the operator-path
@@ -2033,11 +2000,11 @@ Decoupling &amp; Reusability — MANDATORY</h2>
 <p>This repository is <strong>shared infrastructure</strong> consumed by
 multiple independent consumer projects. Its specialized responsibility
 makes it reusable — and that reusability is destroyed the moment any
-consumer's specifics leak in.</p>
+consumer&#39;s specifics leak in.</p>
 <p><strong>Hard rules when editing anything in this
 repository:</strong></p>
 <ul>
-<li>DO NOT hardcode any specific consumer project's name, platform list,
+<li>DO NOT hardcode any specific consumer project&#39;s name, platform list,
 paths, version strings, or release-naming conventions.</li>
 <li>DO NOT import / reference any consumer-project namespace.</li>
 <li>DO NOT embed consumer-project-specific governance, branding, or rule
@@ -2046,22 +2013,21 @@ numbering in <code>CONSTITUTION.md</code> / <code>CLAUDE.md</code> /
 <li>DO assume N ≥ 2 unrelated consumer projects exist, even if you only
 know of one today.</li>
 </ul>
-<p>Cross-project rules MUST be phrased generically ("every consuming
-project's full platform matrix"), never with a specific consumer's
+<p>Cross-project rules MUST be phrased generically (&quot;every consuming
+project&#39;s full platform matrix&quot;), never with a specific consumer&#39;s
 matrix hardcoded.</p>
 <!-- END submodule-decoupling-and-reusability (parent-mirror) -->
 
 <hr />
-<h2
-id="const-047--recursive-submodule-application-mandate-cascaded-from-root-constitutionmd">CONST-047
+<h2 id="const-047--recursive-submodule-application-mandate-cascaded-from-root-constitutionmd">CONST-047
 — Recursive Submodule Application Mandate (cascaded from root
 CONSTITUTION.md)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-14): <em>"Make sure all work we do is
+<p>Verbatim user mandate (2026-05-14): <em>&quot;Make sure all work we do is
 applied ALWAYS to all Submodules we control under our organizations
 (vasic-digital and HelixDevelopment) fully recursively everywhere with
 full bluff-proofing and comprehensive documentation, user manuals and
-guides and full tests and Challenges coverage!"</em></p>
+guides and full tests and Challenges coverage!&quot;</em></p>
 </blockquote>
 <p>Every engineering deliverable produced for the main project MUST be
 applied — fully and recursively — to every owned submodule under the
@@ -2073,12 +2039,11 @@ comprehensive documentation matching actual capabilities, (3) full tests
 propagation through nested submodules under the same orgs, (5)
 synchronized commits when meta-repo state advances this surface.</p>
 <p>See the root <code>CONSTITUTION.md</code> §CONST-047 for the full
-mandate. This anchor MUST remain in this submodule's CONSTITUTION.md,
+mandate. This anchor MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md.</p>
 <!-- BEGIN cross-platform-impact (mirrors Yole CONST-037) -->
 
-<h2
-id="cross-platform-impact--mandatory-consideration-mirrors-yole-const-037">Cross-Platform
+<h2 id="cross-platform-impact--mandatory-consideration-mirrors-yole-const-037">Cross-Platform
 Impact — MANDATORY Consideration (mirrors Yole CONST-037)</h2>
 <p>This submodule is consumed by the Yole multi-platform project
 (Android / Desktop (Linux x64 / Windows x64 / macOS arm64) / iOS / Web
@@ -2086,27 +2051,26 @@ Impact — MANDATORY Consideration (mirrors Yole CONST-037)</h2>
 platforms BEFORE coding.</p>
 <p><strong>Pre-edit checklist:</strong></p>
 <ul class="task-list">
-<li><label><input type="checkbox" />Does this compile on every Yole
+<li><label><input type="checkbox"></input>Does this compile on every Yole
 target?</label></li>
-<li><label><input type="checkbox" />Does it behave identically — or
+<li><label><input type="checkbox"></input>Does it behave identically — or
 by-design differently — on each?</label></li>
-<li><label><input type="checkbox" />Is the change covered by a test on
+<li><label><input type="checkbox"></input>Is the change covered by a test on
 every affected target?</label></li>
-<li><label><input type="checkbox" />Are platform manifests updated
+<li><label><input type="checkbox"></input>Are platform manifests updated
 coherently?</label></li>
 </ul>
 <p><strong>Commit body requirement:</strong> any change affecting more
-than one Yole platform MUST include a "Cross-platform impact" block
-enumerating each platform's disposition. See CONST-037 in the parent
-Yole repo's <code>CONSTITUTION.md</code> for the full rule.</p>
+than one Yole platform MUST include a &quot;Cross-platform impact&quot; block
+enumerating each platform&#39;s disposition. See CONST-037 in the parent
+Yole repo&#39;s <code>CONSTITUTION.md</code> for the full rule.</p>
 <!-- END cross-platform-impact (mirrors Yole CONST-037) -->
 
-<h2
-id="6z--anti-bluff-distribute-guard-inherited-2026-05-14-per-6f">§6.Z —
+<h2 id="6z--anti-bluff-distribute-guard-inherited-2026-05-14-per-6f">§6.Z —
 Anti-Bluff Distribute Guard (inherited 2026-05-14, per §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.Z. No artifact may be distributed
 (Firebase App Distribution, Google Play Store release, container image
-push, this submodule's binary release, any future channel) UNLESS the
+push, this submodule&#39;s binary release, any future channel) UNLESS the
 corresponding end-to-end tests have been <strong>EXECUTED — not
 source-compiled, EXECUTED</strong> — against the EXACT artifact about to
 be distributed, AND have <strong>passed</strong>. Pre-distribute
@@ -2124,15 +2088,14 @@ Lava-Android-1.2.19-1039 (Crashlytics
 <code>40a62f97a5c65abb56142b4ca2c37eeb</code> —
 <code>painterResource()</code> rejection of
 <code>&lt;layer-list&gt;</code> drawable); agent had skipped Compose UI
-test execution citing the wrong §6.X caveat. Operator's 26th §6.L
-invocation: "Anti-bluff policy MUST BE ENFORCED ALWAYS!!!" This
+test execution citing the wrong §6.X caveat. Operator&#39;s 26th §6.L
+invocation: &quot;Anti-bluff policy MUST BE ENFORCED ALWAYS!!!&quot; This
 submodule MAY add stricter rules but MUST NOT relax this clause.</p>
-<h2
-id="6aa--two-stage-distribute-mandate-inherited-2026-05-14-per-6f">§6.AA
+<h2 id="6aa--two-stage-distribute-mandate-inherited-2026-05-14-per-6f">§6.AA
 — Two-Stage Distribute Mandate (inherited 2026-05-14, per §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.AA. When an artifact has both a
 debug and a release variant (or analogous dev-vs-prod build types —
-including this submodule's binary release if it ships separate dev /
+including this submodule&#39;s binary release if it ships separate dev /
 prod variants), distribute MUST happen in TWO STAGES with
 operator-confirmed verification between them. Stage 1 distributes the
 debug / dev variant only; the operator verifies the
@@ -2150,18 +2113,17 @@ out-of-order <code>--release-only</code> + paired
 <code>last-version-{debug,release}</code> per-channel pre-push check is
 documented but not yet enforced. Forensic anchor: 2026-05-14 operator
 directive immediately after the §6.Z forensic-anchor crash on
-Lava-Android-1.2.19-1039: "for purposes like this one we shall
+Lava-Android-1.2.19-1039: &quot;for purposes like this one we shall
 distribute via Firebase DEV / DEBUG version only. Once we try it, you
-continue and once all verified you distribute RELEASE too!" This
+continue and once all verified you distribute RELEASE too!&quot; This
 submodule MAY add stricter rules but MUST NOT relax this clause.</p>
-<h2
-id="6ab--anti-bluff-test-suite-reinforcement-inherited-2026-05-14-per-6f">§6.AB
+<h2 id="6ab--anti-bluff-test-suite-reinforcement-inherited-2026-05-14-per-6f">§6.AB
 — Anti-Bluff Test-Suite Reinforcement (inherited 2026-05-14, per
 §6.F)</h2>
 <p>See root <code>/CLAUDE.md</code> §6.AB. Every existing test +
 Challenge in this submodule MUST be auditable for the anti-bluff
-property "would this test fail if the user-visible behavior broke in a
-way a real user would notice?" Per-feature completeness checklist:
+property &quot;would this test fail if the user-visible behavior broke in a
+way a real user would notice?&quot; Per-feature completeness checklist:
 rendering correctness (assert dominant color matches expected hue, not
 just RGB-variance), state-machine completeness (negative tests for
 forbidden transitions), gating logic (gate fires only on actual
@@ -2173,17 +2135,15 @@ Discrimination test mandatory per Challenge Test:
 deliberately-broken-but-non-crashing production code MUST cause the
 Challenge Test to fail. Forensic anchor: 2026-05-14
 Lava-Android-1.2.20-1040 white-icon + onboarding-gate-bypass — both
-passed all existing tests but failed for the user. Operator's 27th §6.L
-invocation: "all existing tests and Challenges do work in anti-bluff
+passed all existing tests but failed for the user. Operator&#39;s 27th §6.L
+invocation: &quot;all existing tests and Challenges do work in anti-bluff
 manner — they MUST confirm that all tested codebase really works as
-expected!" This submodule MAY add stricter rules but MUST NOT relax this
+expected!&quot; This submodule MAY add stricter rules but MUST NOT relax this
 clause.</p>
-<h2
-id="6ac--comprehensive-non-fatal-telemetry-mandate-inherited-2026-05-14-per-6f">§6.AC
+<h2 id="6ac--comprehensive-non-fatal-telemetry-mandate-inherited-2026-05-14-per-6f">§6.AC
 — Comprehensive Non-Fatal Telemetry Mandate (inherited 2026-05-14, per
 §6.F)</h2>
-<h2
-id="see-root-claudemd-6ac-every-catch--error--fallback--unexpected-state-path-on-every-distributable-artifact-in-this-submodule-must-record-a-non-fatal-telemetry-event-with-sufficient-context-to-triage-the-failure-remotely-the-android-side-canonical-entry-is-analyticsrecordnonfatalthrowable-ctx--analyticsrecordwarningmessage-ctx-lavacommonanalyticsanalyticstracker-the-go-side-equivalent-is-observabilityrecordnonfatalctx-err-attrs-cancellation-throwables-are-filtered-automatically-mandatory-context-featuremodule--operation--error_class--error_message-truncated-1024-no-credentials-per-6h--per-platform-extras-forbidden-silent-fallbacks-without-telemetry-credentialstokenscookiespii-unredacted-in-event-attributes-6ac-debt-is-open-detekt--go-vet-rules-flagging-trycatch-blocks-lacking-the-telemetry-call-pre-push-hook-integration-forensic-anchor-2026-05-14-operator-add-comprehensive-crashlytics-non-fatals-recording-all-over-the-apps-and-api-so-we-can-track-in-the-background-all-warnings-issues-and-unexpected-situations-this-submodule-may-add-stricter-rules-but-must-not-relax-this-clause">See
+<h2 id="see-root-claudemd-6ac-every-catch--error--fallback--unexpected-state-path-on-every-distributable-artifact-in-this-submodule-must-record-a-non-fatal-telemetry-event-with-sufficient-context-to-triage-the-failure-remotely-the-android-side-canonical-entry-is-analyticsrecordnonfatalthrowable-ctx--analyticsrecordwarningmessage-ctx-lavacommonanalyticsanalyticstracker-the-go-side-equivalent-is-observabilityrecordnonfatalctx-err-attrs-cancellation-throwables-are-filtered-automatically-mandatory-context-featuremodule--operation--error_class--error_message-truncated-1024-no-credentials-per-6h--per-platform-extras-forbidden-silent-fallbacks-without-telemetry-credentialstokenscookiespii-unredacted-in-event-attributes-6ac-debt-is-open-detekt--go-vet-rules-flagging-trycatch-blocks-lacking-the-telemetry-call-pre-push-hook-integration-forensic-anchor-2026-05-14-operator-add-comprehensive-crashlytics-non-fatals-recording-all-over-the-apps-and-api-so-we-can-track-in-the-background-all-warnings-issues-and-unexpected-situations-this-submodule-may-add-stricter-rules-but-must-not-relax-this-clause">See
 root <code>/CLAUDE.md</code> §6.AC. Every catch / error / fallback /
 unexpected-state path on every distributable artifact in this submodule
 MUST record a non-fatal telemetry event with sufficient context to
@@ -2198,17 +2158,16 @@ credentials per §6.H) + per-platform extras. Forbidden: silent fallbacks
 without telemetry; credentials/tokens/cookies/PII unredacted in event
 attributes. §6.AC-debt is open: Detekt + Go-vet rules flagging
 <code>try/catch</code> blocks lacking the telemetry call, pre-push hook
-integration. Forensic anchor: 2026-05-14 operator: "Add comprehensive
+integration. Forensic anchor: 2026-05-14 operator: &quot;Add comprehensive
 Crashlytics non-fatals recording all over the apps and API so we can
-track in the background all warnings, issues and unexpected situations!"
+track in the background all warnings, issues and unexpected situations!&quot;
 This submodule MAY add stricter rules but MUST NOT relax this
 clause.</h2>
-<h2
-id="const-048-full-automation-coverage-mandate-cascaded-from-constitution-submodule-11425">CONST-048:
+<h2 id="const-048-full-automation-coverage-mandate-cascaded-from-constitution-submodule-11425">CONST-048:
 Full-Automation-Coverage Mandate (cascaded from constitution submodule
 §11.4.25)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Make sure that every
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Make sure that every
 feature, every functionality, every flow, every use case, every edge
 case, every service or application, on every platform we support is
 covered with full automation tests which will confirm anti-bluff policy
@@ -2216,7 +2175,7 @@ and provide the proof of fully working capabilities, working
 implementation as expected, no issues, no bugs, fully documented, tests
 covered! Nothing less than this does not give us a chance to deliver
 stable product! This is mandatory constraint which MUST BE respected
-without ignoring, skipping, slacking or forgetting it!"</em></p>
+without ignoring, skipping, slacking or forgetting it!&quot;</em></p>
 </blockquote>
 <p>No feature / functionality / flow / use case / edge case / service /
 application on any supported platform of this submodule is deliverable
@@ -2227,24 +2186,23 @@ documented promise; (4) no open issues/bugs surfaced; (5) full
 documentation in sync; (6) four-layer test floor (pre-build + post-build
 + runtime + paired mutation).</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
-CONST-048 ID reference) MUST remain in this submodule's CONSTITUTION.md,
+CONST-048 ID reference) MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md, and propagate recursively to any nested
-owned-by-us submodule. See parent project's <code>CONSTITUTION.md</code>
+owned-by-us submodule. See parent project&#39;s <code>CONSTITUTION.md</code>
 §CONST-048 and constitution submodule <code>Constitution.md</code>
 §11.4.25 for the full mandate.</p>
-<h2
-id="const-049-constitution-submodule-update-workflow-mandate-cascaded-from-constitution-submodule-11426">CONST-049:
+<h2 id="const-049-constitution-submodule-update-workflow-mandate-cascaded-from-constitution-submodule-11426">CONST-049:
 Constitution-Submodule Update Workflow Mandate (cascaded from
 constitution submodule §11.4.26)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Every time we add something
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Every time we add something
 into our root (constitution Submodule) Constitution, CLAUDE.MD and
 AGENTS.MD we MUST FIRST fetch and pull all new changes / work from
 constitution Submodule first! All changes we apply MUST BE commited and
 pushed to all constitution Submodule upstreams! In case of conflict, IT
 MUST BE carefully resolved! Nothing can be broken, made faulty,
 corrupted or unusable! After merging full validation and verification
-MUST BE done!"</em></p>
+MUST BE done!&quot;</em></p>
 </blockquote>
 <p>Before ANY modification to
 <code>constitution/{Constitution,CLAUDE,AGENTS}.md</code> in the parent
@@ -2257,21 +2215,20 @@ constitution submodule (governance files only — never
 <code>git add -A</code>); (5) careful conflict resolution preserving
 union of governance content (force-push forbidden per CONST-043 / §9.2);
 (6) post-merge <code>git submodule update --remote --init</code> +
-re-run cascade verifier (CONST-047); (7) bump consuming project's
+re-run cascade verifier (CONST-047); (7) bump consuming project&#39;s
 <code>.gitmodules</code> pointer to the new constitution HEAD in the
 SAME commit as cascade work.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
-CONST-049 ID reference) MUST remain in this submodule's CONSTITUTION.md,
+CONST-049 ID reference) MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md, and propagate recursively to any nested
-owned-by-us submodule. See parent project's <code>CONSTITUTION.md</code>
+owned-by-us submodule. See parent project&#39;s <code>CONSTITUTION.md</code>
 §CONST-049 and constitution submodule <code>Constitution.md</code>
 §11.4.26 for the full mandate.</p>
-<h2
-id="const-050-no-fakes-beyond-unit-tests--100-test-type-coverage-mandate-cascaded-from-constitution-submodule-11427">CONST-050:
+<h2 id="const-050-no-fakes-beyond-unit-tests--100-test-type-coverage-mandate-cascaded-from-constitution-submodule-11427">CONST-050:
 No-Fakes-Beyond-Unit-Tests + 100%-Test-Type-Coverage Mandate (cascaded
 from constitution submodule §11.4.27)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Mocks, stubs, placeholders,
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Mocks, stubs, placeholders,
 TODOs or FIXMEs are allowed to exist ONLY in Unit tests! All other test
 types MUST interract with real fully implemented System! No fakes, empty
 implementations or bluffing is allowed of any kind! All codebase of the
@@ -2279,24 +2236,22 @@ project MUST BE 100% covered with every supported test type: unit tests,
 integration tests, e2e tests, full automation tests, security tests,
 ddos tests, scaling tests, chaos tests, stress tests, performance tests,
 benchmarking tests, ui tests, ux tests, Challenges (fully incorporating
-our Challenges Submodule — <a
-href="https://github.com/vasic-digital/Challenges">https://github.com/vasic-digital/Challenges</a>).
+our Challenges Submodule — <a href="https://github.com/vasic-digital/Challenges">https://github.com/vasic-digital/Challenges</a>).
 EVERYTHING MUST BE tested using HelixQA (fully incorporating HelixQA
-Submodule — <a
-href="https://github.com/HelixDevelopment/HelixQA">https://github.com/HelixDevelopment/HelixQA</a>).
+Submodule — <a href="https://github.com/HelixDevelopment/HelixQA">https://github.com/HelixDevelopment/HelixQA</a>).
 HelixQA MUST BE used with all possible written tests suites (test banks)
 for every applications, service, platform, etc and execution of the full
 HelixQA QA autonomous sessions! All required dependency Submodules MUST
-BE added into the project as well (fully recursive!!!)."</em></p>
+BE added into the project as well (fully recursive!!!).&quot;</em></p>
 </blockquote>
 <p>Two cooperating invariants:</p>
 <p><strong>(A) No-fakes-beyond-unit-tests.</strong> Mocks, stubs, fakes,
-placeholders, <code>TODO</code>, <code>FIXME</code>, "for now", "in
-production this would", or empty-implementation patterns are PERMITTED
+placeholders, <code>TODO</code>, <code>FIXME</code>, &quot;for now&quot;, &quot;in
+production this would&quot;, or empty-implementation patterns are PERMITTED
 only in unit-test sources. Every other test type — integration, E2E,
 full automation, security, DDoS, scaling, chaos, stress, performance,
 benchmarking, UI, UX, Challenges, HelixQA — MUST exercise this
-submodule's real, fully implemented system against real infrastructure.
+submodule&#39;s real, fully implemented system against real infrastructure.
 Production code MUST NOT import mock paths.</p>
 <p><strong>(B) 100% test-type coverage.</strong> Codebase MUST be
 covered by every supported test type the domain warrants: unit,
@@ -2310,32 +2265,31 @@ captured wire evidence).</p>
 CONST-047): Challenges + HelixQA + any other functionality submodules
 under vasic-digital/HelixDevelopment orgs this submodule depends on.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
-CONST-050 ID reference) MUST remain in this submodule's CONSTITUTION.md,
+CONST-050 ID reference) MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md, and propagate recursively to any nested
-owned-by-us submodule. See parent project's <code>CONSTITUTION.md</code>
+owned-by-us submodule. See parent project&#39;s <code>CONSTITUTION.md</code>
 §CONST-050 and constitution submodule <code>Constitution.md</code>
 §11.4.27 for the full mandate.</p>
-<h2
-id="const-051-submodules-as-equal-codebase--decoupling--dependency-layout-mandate-cascaded-from-constitution-submodule-11428">CONST-051:
+<h2 id="const-051-submodules-as-equal-codebase--decoupling--dependency-layout-mandate-cascaded-from-constitution-submodule-11428">CONST-051:
 Submodules-As-Equal-Codebase + Decoupling + Dependency-Layout Mandate
 (cascaded from constitution submodule §11.4.28)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"All existing Submodules in
+<p>Verbatim user mandate (2026-05-15): <em>&quot;All existing Submodules in
 the project that we are controlling and belong to some our organizations
 (vasic-digital, HelixDevelopment, red-elf, ATMOSphere1234321,
 Bear-Suite, BoatOS123456, Helix-Flow, Helix-Track, Server-Factory - we
 can ALWAYS check dynamically using GitHub and GitLab CLIs) are equal
-parts of the project's codebase! We MUST work on that code as much as we
-do with main project's codebase! All on equal basis! Equally important!
+parts of the project&#39;s codebase! We MUST work on that code as much as we
+do with main project&#39;s codebase! All on equal basis! Equally important!
 ... We MUST NEVER modify Submodules to bring into them any project
 specific context since they all MUST BE ALWAYS fully decoupled, project
 not-aware, fully reusable and modular (by any other project(s)),
 completely testable! All Submodule dependencies that are used by
 Submodule MUST BE acessed from the root of the project! We MUST NOT have
 nested Submodule dependencies but accessing each from proper location
-from the root of the project - directly from project's root
+from the root of the project - directly from project&#39;s root
 project_name/submodule_name or some more proper structure
-project_name/submodules/submodule_name!"</em></p>
+project_name/submodules/submodule_name!&quot;</em></p>
 </blockquote>
 <p>Three cooperating invariants apply to every owned-by-us submodule
 (orgs: vasic-digital, HelixDevelopment, red-elf, ATMOSphere1234321,
@@ -2343,7 +2297,7 @@ Bear-Suite, BoatOS123456, Helix-Flow, Helix-Track, Server-Factory, plus
 any subsequently authorised org — discoverable via
 <code>gh org list</code> / <code>glab</code>):</p>
 <p><strong>(A) Equal-codebase.</strong> This submodule is an EQUAL part
-of every consuming project's codebase. The consuming project's
+of every consuming project&#39;s codebase. The consuming project&#39;s
 engineering practice — analysis, extension, test creation, gap-filling,
 bug-fix, documentation (user manuals, guides, diagrams, graphs, SQL
 definitions, website pages, all materials) — applies to this submodule
@@ -2357,27 +2311,26 @@ testable as a standalone repository. When parent-project info is needed,
 use configuration injection (env var, config file, constructor
 parameter) — never a hardcoded reach.</p>
 <p><strong>(C) Dependency-layout.</strong> Any dependency this submodule
-consumes MUST be accessible from the consuming project's root at
+consumes MUST be accessible from the consuming project&#39;s root at
 <code>&lt;root&gt;/&lt;name&gt;/</code> or
 <code>&lt;root&gt;/submodules/&lt;name&gt;/</code>. <strong>Nested
 own-org submodule chains are FORBIDDEN</strong> — this submodule MUST
 NOT have its own <code>.gitmodules</code> entries pulling in further
 owned-by-us repos. Third-party submodules are exempt.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
-CONST-051 ID reference) MUST remain in this submodule's CONSTITUTION.md,
+CONST-051 ID reference) MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md, and propagate recursively to any nested
-owned-by-us submodule. See parent project's <code>CONSTITUTION.md</code>
+owned-by-us submodule. See parent project&#39;s <code>CONSTITUTION.md</code>
 §CONST-051 and constitution submodule <code>Constitution.md</code>
 §11.4.28 for the full mandate.</p>
-<h2
-id="const-052-lowercase-snake_case-naming-mandate-cascaded-from-constitution-submodule-11429">CONST-052:
+<h2 id="const-052-lowercase-snake_case-naming-mandate-cascaded-from-constitution-submodule-11429">CONST-052:
 Lowercase-Snake_Case-Naming Mandate (cascaded from constitution
 submodule §11.4.29)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"naming convention for
+<p>Verbatim user mandate (2026-05-15): <em>&quot;naming convention for
 Submodules and directories (applied deep into hierarchy recursively) -
 all directories and Submodules MSUT HAVE lowercase names with space
-separator between the words of '_' character (snake-case)! All existing
+separator between the words of &#39;_&#39; character (snake-case)! All existing
 Submodules and directories which are not following this rule MUST BE
 renamed! However, since this will most likely break some of the
 functionalities renaming we do MUST BE applied to all references to
@@ -2390,7 +2343,7 @@ root project containing the install_upstreams system command (it is
 exported in out paths in our .bashrc or .zshrc) MUST BE updated to fully
 work with both Upstreams and upstreams directory. ... NOTE: Rules
 lowercase / snake-case do apply to all project files as well and
-references to it and from them!"</em></p>
+references to it and from them!&quot;</em></p>
 </blockquote>
 <p>Every directory, submodule, and file in this submodule MUST use
 lowercase snake_case names. Existing non-compliant names MUST be renamed
@@ -2403,9 +2356,9 @@ language-roots; vendor/upstream third-party submodules keep upstream
 names; build artefacts (<code>node_modules</code>,
 <code>__pycache__</code>, <code>.git</code>, <code>target</code>,
 <code>build</code>, <code>bin</code>) keep tool-mandated names. The test
-"does renaming break the technology?" trumps the rule.</p>
+&quot;does renaming break the technology?&quot; trumps the rule.</p>
 <p><strong><code>Upstreams/</code> → <code>upstreams/</code>
-transition:</strong> the constitution submodule's
+transition:</strong> the constitution submodule&#39;s
 <code>install_upstreams.sh</code> (exported via
 <code>.bashrc</code>/<code>.zshrc</code>) supports BOTH directory
 layouts; lowercase wins when both present.</p>
@@ -2413,17 +2366,16 @@ layouts; lowercase wins when both present.</p>
 regression test for reference resolution + full test-type matrix run +
 anti-bluff wire-evidence captured.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
-CONST-052 ID reference) MUST remain in this submodule's CONSTITUTION.md,
+CONST-052 ID reference) MUST remain in this submodule&#39;s CONSTITUTION.md,
 CLAUDE.md, and AGENTS.md, and propagate recursively to any nested
-owned-by-us submodule. See parent project's <code>CONSTITUTION.md</code>
+owned-by-us submodule. See parent project&#39;s <code>CONSTITUTION.md</code>
 §CONST-052 and constitution submodule <code>Constitution.md</code>
 §11.4.29 for the full mandate.</p>
-<h2
-id="const-053-gitignore--no-versioned-build-artifacts-mandate-cascaded-from-constitution-submodule-11430">CONST-053:
+<h2 id="const-053-gitignore--no-versioned-build-artifacts-mandate-cascaded-from-constitution-submodule-11430">CONST-053:
 .gitignore + No-Versioned-Build-Artifacts Mandate (cascaded from
 constitution submodule §11.4.30)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"every project module, every
+<p>Verbatim user mandate (2026-05-15): <em>&quot;every project module, every
 Submodule, every servcie and apolication MUST HAVE proper .gitignore
 file! We MUST NOT git version build artifacts, cache files, tmp files,
 main .env file(s) or any files containing sensitive data, API keys or
@@ -2431,7 +2383,7 @@ token! Any build derivate which we can recreate by executing proper
 mechanism for generating MUST NOT be versioned! We MUST pay attention
 what is going to be commited every time we are preparing to execute
 commit! If any violetion is detected it MUST be fixed before commit is
-executed!"</em></p>
+executed!&quot;</em></p>
 </blockquote>
 <p>Every project module, owned-by-us submodule, service, and application
 MUST ship a proper <code>.gitignore</code>.
@@ -2482,22 +2434,21 @@ regenerates the file from sources, it is a build derivative and MUST be
 ignored. The committed sources MUST include the generator.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-053</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. Severity-equivalent to a §11.4 PASS-bluff at the
 repository-hygiene layer. See constitution submodule
 <code>Constitution.md</code> §11.4.30 for the full mandate.</p>
-<h2
-id="const-054-submodule-dependency-manifest-mandate-cascaded-from-constitution-submodule-11431">CONST-054:
+<h2 id="const-054-submodule-dependency-manifest-mandate-cascaded-from-constitution-submodule-11431">CONST-054:
 Submodule-Dependency-Manifest Mandate (cascaded from constitution
 submodule §11.4.31)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"We MUST HAVE mechanism for
+<p>Verbatim user mandate (2026-05-15): <em>&quot;We MUST HAVE mechanism for
 each Submodule to determine / know what are its Submodule dependencies
 so new projects or palces we are incorporate them can add these
 Submodules to the project root and make them available! Suggested idea
 is configuration file with expected Submodules Git ssh urls perhaps? New
 project can read it, and recursively add each Submodule to the root of
-the project and install / expose it to veryone."</em></p>
+the project and install / expose it to veryone.&quot;</em></p>
 </blockquote>
 <p>Every owned-by-us submodule MUST ship <code>helix-deps.yaml</code> at
 its root declaring its own-org dependencies. Schema:
@@ -2506,14 +2457,14 @@ its root declaring its own-org dependencies. Schema:
 <code>transitive_handling.{recursive,conflict_resolution}</code>,
 <code>language_specific_subtree</code>. Tooling:
 <code>incorporate-submodule &lt;ssh-url&gt;</code> adds the submodule at
-the parent project's canonical path (CONST-051(C)), reads
+the parent project&#39;s canonical path (CONST-051(C)), reads
 <code>helix-deps.yaml</code>, recurses for each declared dep, aborts on
 conflicting refs, emits <code>&lt;root&gt;/.helix-manifest.yaml</code>
 audit record.</p>
 <p>Anti-bluff guarantee: every manifest paired with a Challenge that
 bootstraps a throwaway consuming project, runs
 <code>incorporate-submodule</code>, asserts produced layout matches the
-manifest, runs the submodule's own tests against the bootstrapped
+manifest, runs the submodule&#39;s own tests against the bootstrapped
 layout, captures wire evidence per §11.4.2. A manifest without this
 proof is a CONST-054 violation.</p>
 <p>§11.4.31 / CONST-054 is the <strong>operational complement</strong>
@@ -2522,22 +2473,21 @@ manifests are the bridge that lets consumers reconstruct the dependency
 graph at the parent root.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-054</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. Severity-equivalent to §11.4 PASS-bluff at the
 dependency-graph layer. See constitution submodule
 <code>Constitution.md</code> §11.4.31 for the full mandate.</p>
-<h2
-id="const-055-post-constitution-pull-validation-mandate-cascaded-from-constitution-submodule-11432">CONST-055:
+<h2 id="const-055-post-constitution-pull-validation-mandate-cascaded-from-constitution-submodule-11432">CONST-055:
 Post-Constitution-Pull Validation Mandate (cascaded from constitution
 submodule §11.4.32)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Every time we fetch and pull
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Every time we fetch and pull
 new changes on constitution Submodule we MUST process the whole project
 and all Submodule (deep recursively) for validation and verification
 taht every single rule or mandatory constraint is followed and
-respected! If it is not, IT MUST BE!"</em></p>
+respected! If it is not, IT MUST BE!&quot;</em></p>
 </blockquote>
-<p>Whenever a project's constitution submodule is fetched + pulled with
+<p>Whenever a project&#39;s constitution submodule is fetched + pulled with
 any content change, the project MUST run
 <code>scripts/verify-all-constitution-rules.sh</code> BEFORE the new
 constitution HEAD is treated as canonical for any other work. The sweep
@@ -2545,14 +2495,14 @@ re-runs the governance-cascade verifier AND every implementable rule
 gate (CONST-053 <code>.gitignore</code> audit, CONST-051(C)
 nested-own-org-chain audit, CONST-052 case audit, CONST-050(A)
 mock-from-production audit, CONST-035 anti-bluff smoke, etc.) against
-the post-pull tree. Failures populate the project's Issues tracker per
+the post-pull tree. Failures populate the project&#39;s Issues tracker per
 §11.4.15 (Status: <code>Reopened</code>, Type: <code>Bug</code>);
 closure requires positive-evidence per §11.4.</p>
 <p>Pull-time invocation:
 <code>git submodule update --remote constitution</code> triggers the
 sweep automatically (post-update hook OR commit-wrapper invocation).
 Operator-explicit manual invocation also available.</p>
-<p>Anti-bluff: the sweep's own meta-test (paired mutation per §1.1)
+<p>Anti-bluff: the sweep&#39;s own meta-test (paired mutation per §1.1)
 plants a known violation of each enforced gate and asserts the sweep
 reports FAIL for the planted gate. A sweep that exits PASS without
 running every implementable gate is a CONST-055 violation.</p>
@@ -2561,30 +2511,29 @@ running every implementable gate is a CONST-055 violation.</p>
 but never get enforced.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-055</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. Severity-equivalent to §11.4 PASS-bluff at the
 constitutional-enforcement layer. See constitution submodule
 <code>Constitution.md</code> §11.4.32 for the full mandate.</p>
-<h2
-id="const-056-mandatory-install_upstreams-on-cloneadd-mandate-cascaded-from-constitution-submodule-11436">CONST-056:
+<h2 id="const-056-mandatory-install_upstreams-on-cloneadd-mandate-cascaded-from-constitution-submodule-11436">CONST-056:
 Mandatory install_upstreams on clone/add Mandate (cascaded from
 constitution submodule §11.4.36)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Every Submodule or Git
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Every Submodule or Git
 repository we add or clone MUST BE upstreams installed using
 Upstreamable utility which MUST BE available through exported paths of
 the host system (in .bashrc or .zhrc) using install_upstreams command
 executed from the root of the cloned (added) repository - only if in it
 is Upstreams or upstreams directory present with bash script files
-(recipes) for all repository's upstreams!"</em></p>
+(recipes) for all repository&#39;s upstreams!&quot;</em></p>
 </blockquote>
 <p>Every clone / add of a Git repository under HelixCode MUST be
 followed by <code>install_upstreams</code> invocation from the
-repository's root IF its tree contains <code>upstreams/</code> (or
+repository&#39;s root IF its tree contains <code>upstreams/</code> (or
 legacy <code>Upstreams/</code> per CONST-052 transition) populated with
-<code>*.sh</code> recipe files. The utility (installed on operator's
+<code>*.sh</code> recipe files. The utility (installed on operator&#39;s
 <code>PATH</code> via <code>.bashrc</code>/<code>.zshrc</code>;
-implementation in the constitution submodule's
+implementation in the constitution submodule&#39;s
 <code>install_upstreams.sh</code> — already supports BOTH directory
 names since constitution commit <code>45d3678</code>) reads the recipe
 files, configures every declared upstream as a named git remote, and
@@ -2598,11 +2547,10 @@ auto-invokes; manual invocation supported. Pre-commit check:
 <code>git remote -v | grep -c push</code> reports expected count.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-056</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. See constitution submodule
 <code>Constitution.md</code> §11.4.36 for the full mandate.</p>
-<h2
-id="const-057-type-aware-closure-status-vocabulary-cascaded-from-constitution-submodule-11433">CONST-057:
+<h2 id="const-057-type-aware-closure-status-vocabulary-cascaded-from-constitution-submodule-11433">CONST-057:
 Type-aware Closure-Status Vocabulary (cascaded from constitution
 submodule §11.4.33)</h2>
 <p>Every project tracking work items by Type per §11.4.16 MUST close
@@ -2635,8 +2583,8 @@ the existing migration-discipline tooling (atomic Issues.md → Fixed.md
 move per §11.4.19) keeps working without per-Type branching. Generators
 (<code>generate_issues_summary.sh</code>,
 <code>generate_fixed_summary.sh</code>, the §11.4.23 colorizer) MUST
-treat the three terminal values as semantically equivalent (all "closed,
-positive evidence captured") while preserving the literal in the emitted
+treat the three terminal values as semantically equivalent (all &quot;closed,
+positive evidence captured&quot;) while preserving the literal in the emitted
 document.</p>
 <p>Closing a <code>Feature</code> with <code>Fixed (→ Fixed.md)</code>
 or a <code>Task</code> with <code>Implemented (→ Fixed.md)</code> is a
@@ -2647,11 +2595,10 @@ the Status-Type match. Composes with §11.4.15 / §11.4.16 / §11.4.19 /
 §11.4.23.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-057</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. See constitution submodule
 <code>Constitution.md</code> §11.4.33 for the full mandate.</p>
-<h2
-id="const-058-reopened-source-attribution-mandate-cascaded-from-constitution-submodule-11434">CONST-058:
+<h2 id="const-058-reopened-source-attribution-mandate-cascaded-from-constitution-submodule-11434">CONST-058:
 Reopened-Source Attribution Mandate (cascaded from constitution
 submodule §11.4.34)</h2>
 <p>Every Issues.md (or equivalent project tracker) heading whose
@@ -2678,8 +2625,8 @@ failure ID, operator quote, etc. Reopens without evidence are §11.4.6 /
 the conditions that re-exposed the defect).</li>
 </ul>
 <p>The Issues_Summary.md Status column MUST distinguish the four
-<code>Reopened</code> sub-states by source so a sweep query for "reopens
-by AI in the last 30 days" is mechanically possible. Suggested column
+<code>Reopened</code> sub-states by source so a sweep query for &quot;reopens
+by AI in the last 30 days&quot; is mechanically possible. Suggested column
 rendering: <code>Reopened (AI: test-failed)</code> vs
 <code>Reopened (User: manual-testing)</code>. Gate
 <code>CM-ITEM-REOPENED-DETAILS</code> mirrors
@@ -2687,20 +2634,19 @@ rendering: <code>Reopened (AI: test-failed)</code> vs
 Composes with §11.4.6 / §11.4.7 / §11.4.15 / §11.4.21.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-058</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. See constitution submodule
 <code>Constitution.md</code> §11.4.34 for the full mandate.</p>
-<h2
-id="const-059-canonical-root-inheritance-clarity-cascaded-from-constitution-submodule-11435">CONST-059:
+<h2 id="const-059-canonical-root-inheritance-clarity-cascaded-from-constitution-submodule-11435">CONST-059:
 Canonical-Root Inheritance Clarity (cascaded from constitution submodule
 §11.4.35)</h2>
-<p>The <strong>constitution submodule's</strong> three files
+<p>The <strong>constitution submodule&#39;s</strong> three files
 (<code>constitution/Constitution.md</code>,
 <code>constitution/CLAUDE.md</code>,
 <code>constitution/AGENTS.md</code>) ARE the <strong>canonical
 root</strong> (also called the <strong>parent</strong> files). They
 contain only universal rules per §11.4.17.</p>
-<p>The consuming project's <strong>repository-root files</strong>
+<p>The consuming project&#39;s <strong>repository-root files</strong>
 (<code>&lt;project-root&gt;/CLAUDE.md</code>,
 <code>&lt;project-root&gt;/AGENTS.md</code>, optionally
 <code>&lt;project-root&gt;/Constitution.md</code>) are <strong>consumer
@@ -2710,46 +2656,44 @@ import or the portable
 <code>## INHERITED FROM constitution/CLAUDE.md</code> heading). They
 contain only project-specific rules per §11.4.17.</p>
 <p><strong>When in doubt about which file to edit:</strong> universal
-rule → constitution submodule's file; project-specific rule → consumer's
+rule → constitution submodule&#39;s file; project-specific rule → consumer&#39;s
 file. Default consumer-side when uncertain (§11.4.17 — narrower scope is
 cheap to widen).</p>
-<p><strong>Terminology:</strong> "the parent CLAUDE.md" / "the root
-Constitution" → constitution-submodule file at
-<code>constitution/&lt;filename&gt;</code>; "the project CLAUDE.md" /
-"this project's AGENTS.md" → consumer-side file at
+<p><strong>Terminology:</strong> &quot;the parent CLAUDE.md&quot; / &quot;the root
+Constitution&quot; → constitution-submodule file at
+<code>constitution/&lt;filename&gt;</code>; &quot;the project CLAUDE.md&quot; /
+&quot;this project&#39;s AGENTS.md&quot; → consumer-side file at
 <code>&lt;project-root&gt;/&lt;filename&gt;</code>.</p>
 <p><strong>No silent demotion or silent promotion.</strong> Moving a
 rule between layers MUST be a visible commit — <code>git mv</code> of a
-section if it's a clean clone, or explicit
+section if it&#39;s a clean clone, or explicit
 <code>Lifted from &lt;project&gt; to constitution per §11.4.35</code> /
 <code>Demoted from constitution to &lt;project&gt; per §11.4.35</code>
 commit-message annotation.</p>
-<p>Gate <code>CM-CANONICAL-ROOT-CLARITY</code> verifies (a) consumer's
+<p>Gate <code>CM-CANONICAL-ROOT-CLARITY</code> verifies (a) consumer&#39;s
 <code>CLAUDE.md</code> opens with the inheritance pointer, (b)
-constitution submodule's three files are present at the expected path,
+constitution submodule&#39;s three files are present at the expected path,
 (c) no <code>## INHERITED FROM</code> block in the constitution
-submodule's own files (those ARE the source-of-truth, not consumers).
+submodule&#39;s own files (those ARE the source-of-truth, not consumers).
 Composes with §11.4.17.</p>
 <p><strong>Cascade requirement:</strong> This anchor (verbatim or by
 <code>CONST-059</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. See constitution submodule
 <code>Constitution.md</code> §11.4.35 for the full mandate.</p>
-<h2
-id="const-060-fetch-before-edit-mandate-cascaded-from-constitution-submodule-11437">CONST-060:
+<h2 id="const-060-fetch-before-edit-mandate-cascaded-from-constitution-submodule-11437">CONST-060:
 Fetch-before-edit Mandate (cascaded from constitution submodule
 §11.4.37)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-15): <em>"Make sure that
+<p>Verbatim user mandate (2026-05-15): <em>&quot;Make sure that
 feedback_fetch_before_edit memory rule is part of our constitution
 Submodule - the root Consitution, AGENTS.MD and CLAUDE.MD. Validate and
 verify that Proejct-Toolkit and all Submodules do inherit all of them!
-Follow the constitution Submodule documentation for details."</em></p>
+Follow the constitution Submodule documentation for details.&quot;</em></p>
 </blockquote>
 <p>The FIRST git-touching action of every session, on every consuming
 project (owned or third-party), MUST be:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> fetch <span class="at">--all</span> <span class="at">--prune</span></span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> fetch <span class="at">--all</span> <span class="at">--prune</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> log <span class="at">--oneline</span> HEAD..@{u}</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> submodule foreach <span class="at">--recursive</span> <span class="st">&#39;git fetch --all --prune --quiet&#39;</span></span></code></pre></div>
 <p>If <code>HEAD..@{u}</code> is non-empty, integrate the upstream
@@ -2762,34 +2706,33 @@ already-done work, (3) <strong>divergent history</strong> — duplicate
 sibling commits that double the conflict surface on next push.</p>
 <p><strong>Anti-bluff invariant</strong>: the fetch+log check MUST
 produce captured evidence — the actual <code>HEAD..@{u}</code> output,
-even if empty. Skipping the check on the basis of "I just fetched" or
-"nothing could have changed in the last N minutes" is a §11.4.6
+even if empty. Skipping the check on the basis of &quot;I just fetched&quot; or
+&quot;nothing could have changed in the last N minutes&quot; is a §11.4.6
 (no-guessing) violation: the remote state is not knowable without a
 fetch.</p>
 <p><strong>Cascade requirement</strong>: This anchor (verbatim or by
 <code>CONST-060</code> ID reference) MUST appear in every owned
-submodule's <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+submodule&#39;s <code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
 <code>AGENTS.md</code>. Severity-equivalent to §11.4 PASS-bluff at the
 parallel-session-coordination layer. See constitution submodule
 <code>Constitution.md</code> §11.4.37 for the full mandate.</p>
 <!-- BEGIN helix-constitution-inheritance + anti-bluff escalation -->
 
-<h2
-id="anti-bluff-end-user-quality-guarantee-escalated-via-helixconstitution">Anti-Bluff
+<h2 id="anti-bluff-end-user-quality-guarantee-escalated-via-helixconstitution">Anti-Bluff
 End-User Quality Guarantee (Escalated via HelixConstitution)</h2>
 <p><strong>Canonical authority:</strong>
 <code>HelixConstitution/Constitution.md</code> §7.1 + §11.4.</p>
 <p><strong>Forensic anchor — verbatim operator mandate
 (2026-04-28):</strong></p>
 <blockquote>
-<p>"We had been in position that all tests do execute with success and
+<p>&quot;We had been in position that all tests do execute with success and
 all Challenges as well, but in reality the most of the features does not
-work and can't be used! This MUST NOT be the case and execution of tests
+work and can&#39;t be used! This MUST NOT be the case and execution of tests
 and Challenges MUST guarantee the quality, the completition and full
 usability by end users of the product! This MUST BE part of Constitution
 of our project, its CLAUDE.MD and AGENTS.MD if it is not there already,
-and to be applied to all Submodules's Constitution, CLAUDE.MD and
-AGENTS.MD as well (if not there already)!"</p>
+and to be applied to all Submodules&#39;s Constitution, CLAUDE.MD and
+AGENTS.MD as well (if not there already)!&quot;</p>
 </blockquote>
 <p><strong>When writing a test in this submodule, ask:</strong> if every
 line of the unit under test were replaced with a trivial stub, would
@@ -2797,7 +2740,7 @@ this test still pass? If yes, the test is bluff. Rewrite it to exercise
 the real behaviour.</p>
 <p>Every PASS MUST carry positive runtime evidence.
 Consuming-project-specific evidence requirements are defined by each
-consuming project's Constitution.</p>
+consuming project&#39;s Constitution.</p>
 <!-- END helix-constitution-inheritance + anti-bluff escalation -->
 
 <p><strong>§11.4.40 — Full-suite retest before release tag mandate (User
@@ -2806,7 +2749,7 @@ mandate, 2026-05-17)</strong></p>
 existing tests has been executed on a clean baseline AFTER every
 workable item in the batch is done, fixed, polished, and individually
 verified. Spot-check retests that run only the tests touched by the
-batch are FORBIDDEN — they miss interaction defects between the batch's
+batch are FORBIDDEN — they miss interaction defects between the batch&#39;s
 fixes and previously-stable code.</p>
 <p>The complete retest comprises: (1) pre-build full sweep, (2)
 post-build full sweep, (3) on-device 4-phase cycle on EVERY owned
@@ -2814,8 +2757,8 @@ device, (4) meta-test full mutation sweep, (5) Challenge bank full
 sweep, (6) Issues.md/Fixed.md state audit, (7) CONTINUATION.md sync
 check.</p>
 <p>Time is essential — complete retest is typically 12–48 hour elapsed
-effort. NOT optional, NOT abbreviated. Skipping is the exact "tests
-passed but feature broken" failure mode §11.4 specifically
+effort. NOT optional, NOT abbreviated. Skipping is the exact &quot;tests
+passed but feature broken&quot; failure mode §11.4 specifically
 prohibits.</p>
 <p>Composes with §11.4.4 (per-fix retest) — §11.4.40 is the additional
 final integrity check at RELEASE granularity. Composes with §11.4.7 —
@@ -2846,7 +2789,7 @@ via <code>git rebase</code> (local is strict superset),
 <code>git merge</code> (independent additions both deserve
 preservation), or operator-confirmed cherry-pick (remote subset already
 present locally). (3) Audit: no conflict markers
-(<code>grep -rn '^&lt;&lt;&lt;&lt;&lt;&lt;&lt; \|^=======$\|^&gt;&gt;&gt;&gt;&gt;&gt;&gt; '</code>
+(<code>grep -rn &#39;^&lt;&lt;&lt;&lt;&lt;&lt;&lt; \|^=======$\|^&gt;&gt;&gt;&gt;&gt;&gt;&gt; &#39;</code>
 returns empty), no silent file drops
 (<code>git diff --stat HEAD@{1} HEAD</code>), every previously-passing
 test still passes per §11.4.4 / §11.4.40 baseline, every
@@ -2857,14 +2800,14 @@ captured-evidence artifact still validates. (4)
 semantics are unavailable). One force-push event per CONST-043
 authorisation — no batch authorisation.</p>
 <p><strong>Two-gate composition with CONST-043</strong> — §11.4.41 does
-NOT relax CONST-043's operator-approval requirement. Gate A (CONST-043):
+NOT relax CONST-043&#39;s operator-approval requirement. Gate A (CONST-043):
 operator types explicit per-operation force-push authorisation. Gate B
 (§11.4.41): agent executes the 4-step merge-first pipeline, captures
 evidence of clean integration, presents evidence to operator BEFORE the
 force-push. Both gates required.</p>
 <p><strong>Verification artefact</strong> — every §11.4.41-governed
 force-push emits a <code>docs/changelogs/&lt;tag&gt;.md</code>
-"Force-push merge-first audit" section containing 7 elements: (i)
+&quot;Force-push merge-first audit&quot; section containing 7 elements: (i)
 <code>git fetch</code> output, (ii) per-remote
 <code>HEAD..&lt;remote&gt;/&lt;branch&gt;</code> log before integration,
 (iii) integration strategy chosen per remote with rationale, (iv)
@@ -2874,19 +2817,19 @@ post-integration test suite delta (must show only expected changes),
 evidence, (vii) CONST-043 authorisation quote from the conversation.</p>
 <p>Composes with §9.2 (data-safety hardlinked backup), §11.4.4
 (test-interrupt-on-discovery — broken integration triggers rollback),
-§11.4.6 (no-guessing — every step's outcome captured, not assumed),
+§11.4.6 (no-guessing — every step&#39;s outcome captured, not assumed),
 §11.4.26 (constitution-submodule update pipeline — per-submodule
-specialisation), §11.4.32 (post-pull validation — audit step's
+specialisation), §11.4.32 (post-pull validation — audit step&#39;s
 mechanical companion), §11.4.37 (fetch-before-edit — step 1 enforces it
-for force-push specifically), §11.4.40 (full-suite retest — step 3's
+for force-push specifically), §11.4.40 (full-suite retest — step 3&#39;s
 test-evidence requirement).</p>
-<p>No escape hatch — the operator-pressure escape ("just force-push,
-we'll fix it later") is the exact failure mode this anchor closes.
+<p>No escape hatch — the operator-pressure escape (&quot;just force-push,
+we&#39;ll fix it later&quot;) is the exact failure mode this anchor closes.
 Pre-build gate <code>CM-COVENANT-114-41-PROPAGATION</code> enforces this
 anchor in every CLAUDE.md/AGENTS.md across parent + 10 owned submodules
 + nested submodules + HelixQA dependencies. Paired mutation strips the
 anchor literal → gate FAILs. Gate <code>CM-FORCE-PUSH-MERGE-FIRST</code>
-walks <code>docs/changelogs/&lt;tag&gt;.md</code> "Force-push" entries
+walks <code>docs/changelogs/&lt;tag&gt;.md</code> &quot;Force-push&quot; entries
 for the 7 audit elements; paired mutation strips any element and asserts
 gate FAILs.</p>
 <p><strong>Canonical authority:</strong> constitution submodule
@@ -2895,15 +2838,15 @@ gate FAILs.</p>
 <p><strong>§11.4.52 — Autonomous-Validation Mandate (User mandate,
 2026-05-18)</strong></p>
 <p><strong>Forensic anchor — verbatim user mandate
-(2026-05-18):</strong> "Make sure we have full automation tests which
+(2026-05-18):</strong> &quot;Make sure we have full automation tests which
 will do all this work in full automation! IMPORTANT: Make sure that all
 existing tests and Challenges do work in anti-bluff manner — they MUST
 confirm that all tested codebase really works as expected! execution of
 tests and Challenges MUST guarantee the quality, the completition and
 full usability by end users of the product! This MUST BE part of
 Constitution of our project, its CLAUDE.MD and AGENTS.MD if it is not
-there already, and to be applied to all Submodules's Constitution,
-CLAUDE.MD and AGENTS.MD as well."</p>
+there already, and to be applied to all Submodules&#39;s Constitution,
+CLAUDE.MD and AGENTS.MD as well.&quot;</p>
 <p>Every user-facing feature MUST have at least one autonomous
 validation path: end-to-end via <code>adb shell</code> + scripted
 automation, captured runtime evidence per §11.4.5, PASS/FAIL verdict
@@ -2911,8 +2854,8 @@ WITHOUT human presence to drive UI, observe screen, or make decisions.
 Operator-attended tests are SUPPLEMENTARY, never PRIMARY. A feature
 whose ONLY validation path is operator-attended is a §11.4.52 violation
 — the path does not scale to CI, does not run on every commit, does not
-survive operator unavailability, and produces the exact "tests pass but
-feature doesn't work for users" failure mode §11.4 forbids.</p>
+survive operator unavailability, and produces the exact &quot;tests pass but
+feature doesn&#39;t work for users&quot; failure mode §11.4 forbids.</p>
 <p>Acceptable autonomous paths: (a) programmatic instrumentation APK
 (SDK-API exercises like <code>MediaCodec.createDecoderByName</code> +
 structured JSON result file); (b) headless intent dispatch + state poll
@@ -2945,11 +2888,11 @@ Constitution.md §11.4.52.</p>
 <p><strong>§11.4.53 — Fixed_Summary parity mandate (User mandate,
 2026-05-18)</strong></p>
 <p><strong>Forensic anchor — verbatim user mandate
-(2026-05-18T17:55Z):</strong> "Note: Just like for Issues we have
+(2026-05-18T17:55Z):</strong> &quot;Note: Just like for Issues we have
 Issues_Summary, for Fixed we MUST HAVE Fixed_Summary - like all other
 docs: ALWAYS in sync and up to date and ALWAYS exported into the PDF and
 HTML! Add this mandatory rule / constraint into the root (constitution
-Submodule) Constitution, AGENTS.MD and CLAUDE.MD."</p>
+Submodule) Constitution, AGENTS.MD and CLAUDE.MD.&quot;</p>
 <p><code>docs/Fixed_Summary.md</code> is the symmetric short-form
 summary of <code>docs/Fixed.md</code>. MUST be regenerated whenever
 <code>Fixed.md</code> changes. HTML + PDF exports MUST travel with the
@@ -3027,21 +2970,19 @@ meta-test mutation per §1.1.</p>
 <code>CM-COVENANT-114-58-PROPAGATION</code>. Paired mutations cover each
 gate. No escape hatch.</li>
 </ul>
-<p>Canonical authority: constitution submodule <a
-href="constitution/Constitution.md"><code>Constitution.md</code></a>
-§11.4.58. Project-specific implementation reference: <a
-href="docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md"><code>docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md</code></a>.</p>
+<p>Canonical authority: constitution submodule <a href="constitution/Constitution.md"><code>Constitution.md</code></a>
+§11.4.58. Project-specific implementation reference: <a href="docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md"><code>docs/guides/PARALLEL_DEVELOPMENT_METHODOLOGY.md</code></a>.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.65 — Universal Markdown export mandate (User mandate,
 2026-05-19)</strong></p>
 <p>Every Markdown document inside the project that is NOT part of an
-application or service's source-code tree MUST have synchronized
+application or service&#39;s source-code tree MUST have synchronized
 <code>.html</code> and <code>.pdf</code> siblings. Includes:
 project-root <code>*.md</code>, <code>docs/**/*.md</code>,
 <code>scripts/**/*.md</code> (doc-format companion docs),
 owned-submodule top-level README.md / CLAUDE.md / AGENTS.md /
 CHANGELOG.md and their <code>docs/**/*.md</code>,
-<code>constitution/**/*.md</code>, owned HelixQA submodules'
+<code>constitution/**/*.md</code>, owned HelixQA submodules&#39;
 equivalents. Excludes: <code>external/**</code>,
 <code>prebuilts/**</code>, <code>packages/modules/**</code>,
 <code>kernel-5.10/**</code>, <code>out/**</code>, <code>build/**</code>,
@@ -3057,20 +2998,19 @@ Composes with §11.4.12 / §11.4.18 / §11.4.23 / §11.4.44 / §11.4.45 /
 §11.4.53 / §11.4.59 / §11.4.60 / §11.4.63 / §11.4.64. No escape hatch —
 no <code>--skip-md-exports</code>, <code>--no-pdf-only</code>,
 <code>--md-export-not-applicable</code> flag.</p>
-<p><strong>Canonical authority:</strong> constitution submodule <a
-href="constitution/Constitution.md"><code>Constitution.md</code></a>
+<p><strong>Canonical authority:</strong> constitution submodule <a href="constitution/Constitution.md"><code>Constitution.md</code></a>
 §11.4.65.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.66 — Blocker-resolution interactive-clarification
 mandate (User mandate, 2026-05-19)</strong></p>
 <p>When any task is blocked (operator decision, hardware access,
 external authorization, ambiguous scope), the agent MUST: (1) research
-what's doable from the agent side without operator input; (2) calculate
+what&#39;s doable from the agent side without operator input; (2) calculate
 minimum-viable operator input; (3) construct 2–4 mutually-exclusive
-options with one marked "Recommended" and each stating what the agent
-does after that answer; (4) present via the platform's interactive
+options with one marked &quot;Recommended&quot; and each stating what the agent
+does after that answer; (4) present via the platform&#39;s interactive
 question mechanism (<code>AskUserQuestion</code> on Claude Code) — NEVER
-free-text "what would you like?" for closed- set decisions; (5) after
+free-text &quot;what would you like?&quot; for closed- set decisions; (5) after
 the answer, resume work without follow-up round-trips. Composes with
 §11.4.6 / §11.4.7 / §11.4.40 / §11.4.41 / §11.4.42 / §11.4.52. No silent
 waiting; no bulk-text questions when interactive options would do.</p>
@@ -3079,27 +3019,26 @@ the anchor literal across the 42-file consumer fleet. Paired meta- test
 mutation strips the literal → gate FAILs. No escape hatch — no
 <code>--skip-ask</code>, <code>--silent-wait</code>,
 <code>--free-form-only</code> flag.</p>
-<p><strong>Canonical authority:</strong> constitution submodule <a
-href="constitution/Constitution.md"><code>Constitution.md</code></a>
+<p><strong>Canonical authority:</strong> constitution submodule <a href="constitution/Constitution.md"><code>Constitution.md</code></a>
 §11.4.66.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
 <p><strong>§11.4.67 — Shell-script target-shell-parseability mandate
 (User mandate, 2026-05-19)</strong></p>
 <p><strong>Forensic anchor — direct user mandate (verbatim,
-2026-05-19):</strong> "any issue we spot must be fixed, bash scripts as
-well if they are broken!"</p>
+2026-05-19):</strong> &quot;any issue we spot must be fixed, bash scripts as
+well if they are broken!&quot;</p>
 <ul>
-<li>"Make sure that this is mandatory rule!"</li>
+<li>&quot;Make sure that this is mandatory rule!&quot;</li>
 </ul>
 <p>Every shell script that may be invoked under a target shell other
 than the one in its shebang MUST parse cleanly under that target shell.
 Forensic incident:
 <code>device/rockchip/rk3588/tests/test_all_fixes.sh:114</code> used
-bash-only <code>exec &gt; &gt;(tee -a "$f") 2&gt;&amp;1</code> on a
+bash-only <code>exec &gt; &gt;(tee -a &quot;$f&quot;) 2&gt;&amp;1</code> on a
 <code>sh script.sh</code> callsite — Android mksh parses the whole
 script BEFORE executing, so the runtime
-<code>[ -n "${BASH_VERSION:-}" ]</code> guard could not save it. Fixed
-by wrapping in <code>eval 'exec &gt; &gt;(tee …) 2&gt;&amp;1'</code> so
+<code>[ -n &quot;${BASH_VERSION:-}&quot; ]</code> guard could not save it. Fixed
+by wrapping in <code>eval &#39;exec &gt; &gt;(tee …) 2&gt;&amp;1&#39;</code> so
 the parser sees only a string.</p>
 <p>Closed-set scope: every tracked <code>.sh</code> under
 <code>device/rockchip/rk3588/tests/</code>, <code>scripts/</code>,
@@ -3123,12 +3062,10 @@ outside <code>eval</code> → parse gate FAILs; strip <code>11.4.67</code>
 literal → propagation gate FAILs. No escape hatch — no
 <code>--skip-parseability-check</code>, <code>--bash-only-script</code>,
 <code>--runtime-guard-suffices</code> flag.</p>
-<p><strong>Canonical authority:</strong> constitution submodule <a
-href="constitution/Constitution.md"><code>Constitution.md</code></a>
+<p><strong>Canonical authority:</strong> constitution submodule <a href="constitution/Constitution.md"><code>Constitution.md</code></a>
 §11.4.67.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
-<h2
-id="const-062--065--066--067--075--076--077-round-191-supplemental-cascade--anchors-11442-11445-47-11455-57">CONST-062
+<h2 id="const-062--065--066--067--075--076--077-round-191-supplemental-cascade--anchors-11442-11445-47-11455-57">CONST-062
 / 065 / 066 / 067 / 075 / 076 / 077: Round-191 supplemental cascade —
 anchors §11.4.42, §11.4.45-47, §11.4.55-57</h2>
 <p>Anchors not covered by the Phase-39.EX cascade are added here for
@@ -3168,23 +3105,22 @@ canonical governance + status + plan docs.</li>
 <p>For full mandate text + verbatim user quotes + gates, see
 constitution submodule <code>Constitution.md</code> §11.4.42,
 §11.4.45-47, §11.4.55-57.</p>
-<h2
-id="round-207-cascade--11459--11460-readme-always-sync--documentation-always-sync-composite-covenant">Round-207
+<h2 id="round-207-cascade--11459--11460-readme-always-sync--documentation-always-sync-composite-covenant">Round-207
 cascade — §11.4.59 + §11.4.60 (README always-sync + Documentation
 always-sync composite covenant)</h2>
 <blockquote>
-<p>Verbatim user mandate (2026-05-19): <em>"fully review and update our
+<p>Verbatim user mandate (2026-05-19): <em>&quot;fully review and update our
 main README document. ... Make sure main README is among documents we
 MUST ALWAYS keep updated and in Sync with the projects and other
 documentation! Make sure we always export it (on every update) into PDF
-and HTML."</em> AND (2026-05-19 ~09:00Z): <em>"Double check if all
+and HTML.&quot;</em> AND (2026-05-19 ~09:00Z): <em>&quot;Double check if all
 documents are properly tied with our root Constitution, CLAUDE.MD and
 AGENTS.MD so they are always up to date, always in sync and exported
 into PDF and HTML! ... Issues, Issues_Summary, Fixed, Fixed_Summary,
 Continuation, Status and Status_Summary for all contexts (areas) — THEY
 ALL MUST BE REGULARLY UPDATED, IN SYNC AND CONSISTENT without giving at
 any moment false picture about the state of the project or particular
-area(s) of it!"</em></p>
+area(s) of it!&quot;</em></p>
 </blockquote>
 <ul>
 <li><strong>§11.4.59 — README always-sync mandate.</strong>
@@ -3210,7 +3146,7 @@ Status_Summary.md) MUST be in sync at all times across <code>.md</code>
 §11.4.12 / §11.4.44 / §11.4.45 / §11.4.53 / §11.4.56 / §11.4.57 /
 §11.4.59 / §12.10 govern individually; §11.4.60 binds them via single
 composite gate <code>CM-DOCS-COMPOSITE-SYNC</code> that FAILs the build
-if ANY instance's <code>.html</code> or <code>.pdf</code> mtime is older
+if ANY instance&#39;s <code>.html</code> or <code>.pdf</code> mtime is older
 than <code>.md</code> mtime. Walks <code>docs/</code> recursively for
 Status fleet. Paired mutation backdates <code>docs/Issues.html</code> →
 gate FAILs. No escape hatch — no <code>--skip-composite-doc-sync</code>,
@@ -3219,28 +3155,66 @@ flag exists.</li>
 </ul>
 <p><strong>Cascade requirement:</strong> These anchors (verbatim or by
 <code>§11.4.59</code> / <code>§11.4.60</code> reference) MUST appear in
-every owned submodule's <code>CONSTITUTION.md</code>,
+every owned submodule&#39;s <code>CONSTITUTION.md</code>,
 <code>CLAUDE.md</code>, and <code>AGENTS.md</code>. See constitution
 submodule <code>Constitution.md</code> §11.4.59 + §11.4.60 for the full
 mandates.</p>
+<h2 id="11468--positive-sink-side--downstream-evidence-mandate-cascaded-from-constitution-submodule-11468">§11.4.68
+— Positive Sink-Side / Downstream Evidence Mandate (cascaded from
+constitution submodule §11.4.68)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;We still do not hear any
+audio played from D3 device! Arvus Web Dashboard when we play music from
+D3 shows nothing for Codec In Use! This MUST BE investigated and fixed!
+How come we passed the tests with Arvus validation? What were values for
+the Codec In Use field? Empty means nothing! This is not working! It
+MUST BE FIXED, TESTED AND VERIFIED WITH FULL AUTOMATION TESTING
+ASAP!!!&quot;</em></p>
+</blockquote>
+<p>A test that asserts audio or video routing PASS MUST capture and
+verify <strong>positive sink-side or downstream evidence</strong> —
+never config-only, never metadata-only, never PCM-open-state-only. At
+least one of the closed enumeration MUST be captured for every
+audio/video routing PASS: (1) sink-side codec-state with non-empty
+Codec-In-Use matching the expected codec regex; (2) strictly-positive
+PCM frames-written delta from
+<code>/proc/asound/.../status hw_ptr</code>; (3) ALSA ELD/EDID-Like-Data
+showing negotiated channel count + format; (4) ffprobe-on-captured-mp4
+with non-zero frame count + expected codec/resolution/fps; (5)
+recording-analyzer event match per §11.4.2/§11.4.5; (6) tinycap RMS
+amplitude above the line-level floor. Empty /
+<code>&lt;unreachable&gt;</code> / <code>&lt;N.E.&gt;</code> /
+<code>&lt;None&gt;</code> placeholders are NOT positive evidence; a
+missing-but-required sink is <code>OPERATOR-BLOCKED</code>
+(release-blocker), never SKIP, never PASS. No escape hatch — no
+<code>--skip-sink-evidence</code>, <code>--allow-empty-codec</code>,
+<code>--sink-unreachable-is-pass</code>,
+<code>--metadata-only-suffices</code> flag exists.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.68</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a §11.4 PASS-bluff at the
+sink-side-evidence layer. <strong>Canonical authority:</strong>
+constitution submodule <code>Constitution.md</code> §11.4.68 for the
+full mandate.</p>
 <p><strong>§11.4.69 — Universal sink-side positive-evidence taxonomy +
 mechanical enforcement (User mandate, 2026-05-20)</strong></p>
 <p><strong>Forensic anchor — direct user mandate (verbatim,
 2026-05-20):</strong></p>
 <blockquote>
-<p>"THIS MUST HAPPEN NEVER AGAIN!!! We MUST HAVE this all working! Not
+<p>&quot;THIS MUST HAPPEN NEVER AGAIN!!! We MUST HAVE this all working! Not
 just for audio but for every single piece of the System!!! Proper full
 automation when executed with success MUST MEAN that manual testing will
 be as much positive at least regarding the success results! ... Solution
 MUST BE universal, generic that solves working flows for all System
 components and for all future and all existing projects! ... Everything
 we do MUST BE validated and verified with rock-solid proofs and
-anti-bluff policy enforcement and fulfillment!"</p>
+anti-bluff policy enforcement and fulfillment!&quot;</p>
 </blockquote>
 <p>Universal generalisation of §11.4.68 (audio-specific) across every
 user-visible feature class. Closes the PASS-bluff pattern where tests
 reported green while end users hit broken features (2026-05-19→20 D3
-audio "82/84 PASS" + empty Arvus Codec-In-Use).</p>
+audio &quot;82/84 PASS&quot; + empty Arvus Codec-In-Use).</p>
 <p><strong>The mandate.</strong> Every user-visible feature MUST map to
 one entry in the closed-set §11.4.69 sink-side evidence taxonomy
 (audio_output, audio_input, video_display, network_throughput,
@@ -3295,9 +3269,211 @@ Codec-In-Use field was empty.</p>
 <p>Propagation gate <code>CM-COVENANT-114-69-PROPAGATION</code> enforces
 this anchor literal across the ~44-file consumer fleet. Paired mutation
 strips the literal → gate FAILs.</p>
-<p><strong>Canonical authority:</strong> constitution submodule <a
-href="constitution/Constitution.md"><code>Constitution.md</code></a>
+<p><strong>Canonical authority:</strong> constitution submodule <a href="constitution/Constitution.md"><code>Constitution.md</code></a>
 §11.4.69.</p>
 <p>Non-compliance is a release blocker regardless of context.</p>
+<h2 id="11470--subagent-driven-execution-is-the-default-cascaded-from-constitution-submodule-11470">§11.4.70
+— Subagent-Driven Execution Is The Default (cascaded from constitution
+submodule §11.4.70)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;Always do if possible
+Subagent-driven! Add this into our root (constitution Submodule)
+Constitution.md, CLAUDE.md and AGENTS.md. This should be the default
+choice ALWAYS!&quot;</em></p>
+</blockquote>
+<p>When executing implementation plans (or any task-decomposed execution
+flow), the <strong>default execution model is subagent-driven</strong>
+per <code>superpowers:subagent-driven-development</code>. Inline
+execution is permitted ONLY when (a) the task is trivial AND fits a
+single sub-300-line edit, OR (b) the operator explicitly requests inline
+at brainstorm-handoff time. Subagent-driven is the default because it
+gives isolated context per task, naturally enforces two-stage review, is
+parallel-PWU compatible (§11.4.58), creates an anti-bluff seam (§11.4),
+and survives operator absence. No escape hatch —
+<code>--inline-execution-required</code>, <code>--no-subagents</code>,
+<code>--monolithic-execution</code> are NOT permitted flags. Skipping
+subagent-driven for non-trivial work without recorded operator
+authorisation is itself a §11.4 PASS-bluff.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.70</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a §11.4 PASS-bluff at the
+execution-model layer. <strong>Canonical authority:</strong>
+constitution submodule <code>Constitution.md</code> §11.4.70 for the
+full mandate.</p>
+<h2 id="11471--pre-push-fetch--investigate--integrate-mandate-cascaded-from-constitution-submodule-11471">§11.4.71
+— Pre-Push Fetch + Investigate + Integrate Mandate (cascaded from
+constitution submodule §11.4.71)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;before pushing changes to
+any upstream for any repository - main repo or Submodule, we MUST fetch
+and pull all changes. Once these are obtained WE MUST investigate what
+is different compared to head position we were on last time before
+fetching and pulling new changes! We MUST understand what is done and
+for what purpose, easpecially how that does affect our project and our
+System in general! Any mandatory changes or improvements required by
+fresh changes we just have brough in MUST BE incorporated, covered with
+all supported types of the tests which will produce as a result of its
+success execution REAL PROOFS of working for all componetns and
+functionalities covered and work fully in anti-bluff manner!&quot;</em></p>
+</blockquote>
+<p>The everyday-push variant of §11.4.41. EVERY push (every repository —
+main + every submodule) MUST follow the 5-step cycle: (1) fetch all
+remotes (<code>git fetch --all --prune --tags</code>, capture stdout);
+(2) pull all upstream branches whose tip differs, resolving conflicts
+per consumer judgment (never
+auto-<code>--ours</code>/<code>--theirs</code>); (3) investigate the
+diff vs OUR previous HEAD — read EVERY foreign commit&#39;s body, understand
+what/why/how-it-affects-our-system; (4) integrate mandatory changes with
+§11.4.4(b) four-layer coverage + §11.4.43 TDD-fix discipline, every PASS
+carrying §11.4.5 captured-evidence (REAL PROOFS, not metadata-only); (5)
+only then push, verifying with <code>git ls-remote</code> post-push. No
+escape hatch — no <code>--skip-fetch</code>,
+<code>--no-investigate</code>, <code>--fast-push</code>,
+<code>--trust-upstream</code> flag.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.71</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a §11.4 PASS-bluff at the
+push-discipline layer. <strong>Canonical authority:</strong>
+constitution submodule <code>Constitution.md</code> §11.4.71 for the
+full mandate.</p>
+<h2 id="11472--audio-top-priority-mandate-cascaded-from-constitution-submodule-11472">§11.4.72
+— Audio Top-Priority Mandate (cascaded from constitution submodule
+§11.4.72)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;Make sure all fixes for
+audio are always top priority in main working stream!&quot;</em></p>
+</blockquote>
+<p>The conductor (main working stream — Claude Code session, AI agent,
+or human operator) MUST treat audio fixes as the highest-priority class
+on the serial dispatch queue. Any time the conductor faces a choice
+between dispatching an audio task vs a non-audio task on the SAME serial
+resource, the audio task wins. Parallel BACKGROUND subagents (research,
+refactors, infrastructure documentation) MAY run concurrently with audio
+work but do NOT preempt audio on the main-stream serial dispatch queue.
+No escape hatch — there is no &quot;but this non-audio task is faster&quot; or
+&quot;but this research is more interesting&quot; override; audio-stack
+regressions are user-perceptible and high-impact while research and
+refactors can wait.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.72</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a process violation at
+the dispatch-priority layer. <strong>Canonical authority:</strong>
+constitution submodule <code>Constitution.md</code> §11.4.72 for the
+full mandate.</p>
+<h2 id="11473--main-specification-document-versioning--revision-discipline-cascaded-from-constitution-submodule-11473">§11.4.73
+— Main-Specification Document Versioning + Revision Discipline (cascaded
+from constitution submodule §11.4.73)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;Make sure everything we add
+now in previous and upcoming requests IS ALWAYS applied to the main
+specification — if we have one. Since all these are not major changes we
+could increase Specification version per change for secondary version
+instead of the primary. Primary version MUST BE increased for much
+bigger levels of changes! Add this into root (constitution Submodule)
+Constitution.md, CLAUDE.md and AGENTS.md as mandatory rule / constraint
+applicable ONLY IF we have something like the main specification
+document or we do recognize something like the main specification
+document. Document MUST BE updated ALWAYS to follow the versioning rules
+we are appling here + revision and other properties we have!&quot;</em></p>
+</blockquote>
+<p>Applies <strong>only when a project recognises a main specification
+document</strong>. When it does: (1) every additive operator
+requirement, refinement, or accepted recommendation MUST be applied to
+the spec before or as part of the implementing work; (2) spec versioning
+has two axes — <em>primary</em> (V1/V2/V3, bumped for major rewrites by
+explicit operator decision, old versions archived) and
+<em>secondary</em> (the §11.4.61 metadata-table <code>Revision</code>
+integer, bumped for every other change); (3) the metadata table MUST
+stay current (<code>Revision</code>, <code>Last modified</code>,
+<code>Status summary</code>, <code>Fixed</code>); (4) propagated copies
+of the rule MUST reference the active
+<code>specification.V&lt;primary&gt;.md</code>, not a stale archive; (5)
+on primary bump the old file moves to
+<code>&lt;spec-dir&gt;/archive/</code> with
+<code>Status: superseded</code>. Classification: universal, applicable
+conditionally per the scope condition.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.73</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a release blocker when a
+project has a main spec and lets it drift. <strong>Canonical
+authority:</strong> constitution submodule <code>Constitution.md</code>
+§11.4.73 for the full mandate.</p>
+<h2 id="11474--submodule-catalogue-first-discovery--extend-dont-reimplement-cascaded-from-constitution-submodule-11474">§11.4.74
+— Submodule-Catalogue-First Discovery + Extend-Don&#39;t-Reimplement
+(cascaded from constitution submodule §11.4.74)</h2>
+<blockquote>
+<p>Verbatim user mandate (2026-05-20): <em>&quot;We MUST ALWAYS check which
+already developed features / functionalities do exist as a part of our
+comprehensive Submodules catalogue located in vasic-digital and
+HelixDevelopment organizations on GitHub and GitLab both! Project MUST
+BE aware of all its existence so we do not implement same things
+multiple times if they are already done as some of existing universal,
+reusable general development purpose Submodules! For any missing
+features that some Submodules we incorporate may be missing we MUST
+IMPLEMENT the properly and extend those Submodules furter! We do control
+all of the and we CAN and MUST maintain and extend the regularly! All
+development cycle rules we have MUST BE applied to them and fully
+respected!&quot;</em></p>
+</blockquote>
+<p>Before scaffolding ANY new module, package, helper, or utility, the
+contributor (human or AI agent) MUST: (1) survey the canonical Submodule
+catalogue — <code>vasic-digital</code> and <code>HelixDevelopment</code>
+on both GitHub AND GitLab; (2) inventory existing Submodules; (3) reuse
+before reimplement — if a Submodule provides the functionality (or 80%+
+of it), add it as a Git submodule rather than write fresh; (4) extend
+in-place when 80%+ matches but features are missing — add the missing
+features TO THAT SUBMODULE (PR upstream + bump pointer), never as a
+duplicating consuming-project helper; (5) apply all development-cycle
+rules to those Submodules; (6) document the survey result in the
+feature&#39;s tracker entry with a <code>Catalogue-Check:</code> field
+(<code>reuse &lt;org/repo&gt;@&lt;sha&gt;</code> /
+<code>extend &lt;org/repo&gt;@&lt;sha&gt;</code> /
+<code>no-match &lt;date&gt;</code>). Classification: universal.</p>
+<p><strong>Cascade requirement:</strong> This anchor (verbatim or by
+<code>§11.4.74</code> reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>, and
+<code>AGENTS.md</code>. Severity-equivalent to a process violation;
+duplicate implementations landed without catalogue check are release
+blockers. <strong>Canonical authority:</strong> constitution submodule
+<code>Constitution.md</code> §11.4.74 for the full mandate.</p>
+<h2 id="11478--codegraph-code-intelligence-mandate-cascaded-from-constitution-submodule">§11.4.78
+— CodeGraph code-intelligence mandate (cascaded from constitution
+submodule)</h2>
+<p>Inherited from <code>constitution/Constitution.md</code> §11.4.78.
+Every project worked on by AI coding agents — and every owned submodule
+when developed standalone — MUST install, initialize, and use
+<strong>CodeGraph</strong>
+(<code>https://github.com/colbymchenry/codegraph</code>, npm package
+<code>@colbymchenry/codegraph</code>): a local SQLite semantic
+code-knowledge-graph exposed to AI agents over the Model Context
+Protocol (MCP), 100% local with no cloud or external API. Install
+globally via npm (no <code>sudo</code> — the npm prefix MUST be
+user-writable). Run <code>codegraph init</code> +
+<code>codegraph index</code>: <code>.codegraph/config.json</code> is
+tracked; <code>.codegraph/codegraph.db</code> is gitignored with
+<code>codegraph index</code> as its §11.4.77 regeneration mechanism; the
+<code>config.json</code> <code>exclude</code> list MUST exclude
+other-owned submodules and — non-negotiably — every §11.4.10
+credential/secret path. Wire the <code>codegraph serve --mcp</code> MCP
+server into every CLI agent the developers use (Claude Code
+<code>.mcp.json</code>, OpenCode <code>opencode.json</code>, Qwen Code
+<code>.qwen/settings.json</code>, Crush <code>.crush.json</code>, Kimi
+CLI <code>~/.kimi/mcp.json</code>); every config references the bare
+<code>codegraph</code> command on <code>PATH</code>. Cover the
+integration with an anti-bluff verification suite whose per-agent
+end-to-end layer uses an unforgeable challenge (a fact obtainable only
+by calling a CodeGraph MCP tool); un-runnable agents are documented SKIP
+gaps per §11.4.3, never faked PASSes. Document everything in
+<code>docs/CODEGRAPH.md</code>.</p>
+<p><strong>Cascade requirement:</strong> this anchor (verbatim or by
+§11.4.78 ID reference) MUST appear in every owned submodule&#39;s
+<code>CONSTITUTION.md</code>, <code>CLAUDE.md</code>,
+<code>AGENTS.md</code>, and <code>QWEN.md</code>. See the constitution
+submodule <code>Constitution.md</code> §11.4.78 for the full mandate.
+Non-compliance is a process violation.</p>
 </body>
 </html>

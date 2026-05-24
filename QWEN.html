@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>QWEN</title>
+  <style>
+
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid #1a1a1a;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">QWEN</h1>
+</header>
+<h1 id="qwenmd--qwen-code-context-for-this-module">QWEN.md — Qwen Code
+context for this module</h1>
+<p>This file is read by Qwen Code as its module-context file. It is the
+Qwen Code counterpart of CLAUDE.md and AGENTS.md for this module, and it
+is a pointer: there is one canonical agent-instruction file per
+scope.</p>
+<h2 id="read-claudemd--it-is-mandatory">Read CLAUDE.md — it is
+mandatory</h2>
+<p>This module&#39;s canonical agent-instruction file is CLAUDE.md in this
+directory. Before doing any work in this module, open and read CLAUDE.md
+and this module&#39;s CONSTITUTION.md in full. Every rule there binds Qwen
+Code exactly as it binds Claude Code.</p>
+<p>This file is a plain-text pointer and deliberately uses no
+auto-import directive. Qwen Code&#39;s memory-import processor resolves
+import-prefixed tokens recursively, and the instruction files reference
+tokens that are not files. To stay compatible with Qwen Code this file
+contains no such tokens — read CLAUDE.md directly.</p>
+<h2 id="inherited-from-constitutionclaudemd">INHERITED FROM
+constitution/CLAUDE.md</h2>
+<p>This module&#39;s CLAUDE.md inherits, unconditionally, every rule in
+constitution/CLAUDE.md and the constitution/Constitution.md it
+references — the HelixConstitution submodule mounted at the parent
+project&#39;s constitution/ directory (resolve the path with
+constitution/find_constitution.sh from the parent project root). Qwen
+Code MUST NOT weaken any inherited rule.</p>
+<h2 id="mandatory-anti-bluff-end-user-quality-covenant">MANDATORY
+ANTI-BLUFF END-USER-QUALITY COVENANT</h2>
+<p><strong>Forensic anchor — verbatim user mandate (2026-04-28,
+reasserted 2026-05-21):</strong></p>
+<blockquote>
+<p>&quot;We had been in position that all tests do execute with success and
+all Challenges as well, but in reality the most of the features does not
+work and can&#39;t be used! This MUST NOT be the case and execution of tests
+and Challenges MUST guarantee the quality, the completion and full
+usability by end users of the product!&quot;</p>
+</blockquote>
+<p><strong>Operative rule.</strong> Tests and Challenges exist for
+exactly one purpose: to confirm a feature genuinely works for a real end
+user, end-to-end. The bar for shipping is <strong>not</strong> &quot;tests
+pass&quot; but <strong>&quot;end users can actually use the feature.&quot;</strong> A
+test that passes while the feature is broken is a bluff test and is
+forbidden. Metadata-only PASS, configuration-only PASS,
+&quot;absence-of-error&quot; PASS, and grep-without- runtime PASS are all critical
+defects regardless of how green the summary line looks. CI green is
+necessary, never sufficient. Tests and HelixQA Challenges are bound
+EQUALLY.</p>
+<p>This covenant is restated verbatim in every governance file at the
+consumer layer (CLAUDE.md, AGENTS.md, QWEN.md, CONSTITUTION.md) so any
+tool that does not expand @imports still reads it. The same verbatim
+block lives upstream at <code>constitution/Constitution.md</code> §11.4.
+See this module&#39;s CLAUDE.md, AGENTS.md, and CONSTITUTION.md for the full
+Sixth/Seventh Law and section 6.J / 6.L mandate.</p>
+<h2 id="11478--codegraph-code-intelligence-mandate">§11.4.78 — CodeGraph
+code-intelligence mandate</h2>
+<p>Inherited by §11.4.78 ID reference from
+<code>constitution/Constitution.md</code> §11.4.78 (this module&#39;s
+<code>CLAUDE.md</code> and <code>CONSTITUTION.md</code> carry the full
+anchor with the package name and install commands). In brief: every
+project worked on by AI coding agents MUST install, initialize, and use
+CodeGraph — a local semantic code-knowledge-graph exposed to agents over
+MCP — wired into every CLI agent the developers use, covered by an
+anti-bluff verification suite. See <code>CLAUDE.md</code> and
+<code>CONSTITUTION.md</code> in this module, and the constitution
+submodule <code>Constitution.md</code> §11.4.78, for the full
+mandate.</p>
+<h2 id="11481--cross-platform-parity-mandate">§11.4.81 —
+Cross-platform-parity mandate</h2>
+<p>Inherited by §11.4.81 ID reference from
+<code>constitution/Constitution.md</code> §11.4.81 (User mandate,
+2026-05-21). Every consuming project whose supported-platforms manifest
+lists more than one OS MUST, for every
+feature/test/gate/challenge/mutation that depends on platform-specific
+primitives, ship a per-OS-equivalent implementation chosen at runtime
+via <code>uname -s</code> (or equivalent platform detection). Three
+sub-mandates: <strong>(A)</strong> per-OS implementation REQUIRED via
+runtime dispatch (POSIX <code>setrlimit</code>/<code>ulimit</code> on
+macOS, launchd, BSD <code>rctl</code>, Windows Job Object);
+<strong>(B)</strong> per-OS tests REQUIRED with positive captured
+evidence per branch; <strong>(C)</strong> honest kernel-gap citation +
+adjacent equivalent test REQUIRED where no equivalent exists (canonical:
+XNU does NOT enforce <code>RLIMIT_AS</code> for unprivileged processes →
+SKIP with reproducer + adjacent test of what IS enforced, e.g.
+<code>RLIMIT_CPU</code>+<code>SIGXCPU</code>). The adjacent test is
+itself anti-bluff per §11.4 with a paired §1.1 mutation. See
+<code>CLAUDE.md</code>, <code>AGENTS.md</code>,
+<code>CONSTITUTION.md</code> for §11.4.81 in full; canonical authority
+at the constitution submodule <code>Constitution.md</code> §11.4.81.</p>
+</body>
+</html>

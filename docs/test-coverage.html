@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>test-coverage</title>
+  <style>
+
+html {
+color: #1a1a1a;
+background-color: #fdfdfd;
+}
+body {
+margin: 0 auto;
+max-width: 36em;
+padding-left: 50px;
+padding-right: 50px;
+padding-top: 50px;
+padding-bottom: 50px;
+hyphens: auto;
+overflow-wrap: break-word;
+text-rendering: optimizeLegibility;
+font-kerning: normal;
+}
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+svg {
+height: auto;
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+border: none;
+border-top: 1px solid #1a1a1a;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">test-coverage</h1>
+</header>
+<h1 id="containers--test-coverage-ledger">Containers — Test Coverage
+Ledger</h1>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Revision</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Created</td>
+<td>2026-05-19</td>
+</tr>
+<tr>
+<td>Last modified</td>
+<td>2026-05-19</td>
+</tr>
+<tr>
+<td>Status</td>
+<td>active</td>
+</tr>
+<tr>
+<td>Round</td>
+<td>299 (template mirror of round-220/295/298)</td>
+</tr>
+<tr>
+<td>Anti-bluff anchor</td>
+<td>§11.4 + CONST-035 + CONST-050(B)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Verbatim 2026-05-19 operator mandate (CONST-049 §11.4.17): <em>&quot;all
+existing tests and Challenges do work in anti-bluff manner - they MUST
+confirm that all tested codebase really works as expected! We had been
+in position that all tests do execute with success and all Challenges as
+well, but in reality the most of the features does not work and can&#39;t be
+used! This MUST NOT be the case and execution of tests and Challenges
+MUST guarantee the quality, the completition and full usability by end
+users of the product!&quot;</em></p>
+</blockquote>
+<h2 id="table-of-contents">Table of contents</h2>
+<ul>
+<li><a href="#purpose">Purpose</a></li>
+<li><a href="#symbol--test-ledger">Symbol → test ledger</a></li>
+<li><a href="#challenge--invariant-ledger">Challenge → invariant
+ledger</a></li>
+<li><a href="#const-045-env-driven-remote-host-configuration-coverage">CONST-045
+.env-driven remote-host configuration coverage</a></li>
+<li><a href="#const-050b-compliance-summary">CONST-050(B) compliance
+summary</a></li>
+<li><a href="#anti-bluff-guarantees">Anti-bluff guarantees</a></li>
+</ul>
+<h2 id="purpose">Purpose</h2>
+<p>This ledger satisfies CONST-050(B) — every production symbol of
+meaningful public surface MUST be covered by every test type the domain
+warrants. The ledger is the single point of truth answering &quot;is
+<code>pkg/&lt;X&gt;.&lt;Func&gt;</code> covered by unit + integration +
+e2e + Challenge + paired mutation?&quot;</p>
+<p>A row whose symbol is uncovered is a §11.4 PASS-bluff at the coverage
+layer: the suite reports green while the symbol is unproven. The
+round-299 sweep populated the ledger from the live tree; subsequent
+rounds extend it.</p>
+<h2 id="symbol--test-ledger">Symbol → test ledger</h2>
+<table>
+<thead>
+<tr>
+<th>Package</th>
+<th>Public symbol</th>
+<th>Unit</th>
+<th>Integration</th>
+<th>E2E</th>
+<th>Challenge</th>
+<th>Paired-mutation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pkg/runtime</code></td>
+<td><code>AutoDetect</code>, <code>DockerRuntime</code>,
+<code>PodmanRuntime</code>, <code>KubernetesRuntime</code></td>
+<td>yes (<code>pkg/runtime/*_test.go</code>)</td>
+<td>yes
+(<code>tests/integration/distribution_integration_test.go</code>)</td>
+<td>yes (<code>tests/e2e/remote_e2e_test.go</code>)</td>
+<td><code>containers_describe_challenge.sh</code> (round-299)</td>
+<td>yes (mutate_describe → exit 99)</td>
+</tr>
+<tr>
+<td><code>pkg/compose</code></td>
+<td><code>ComposeOrchestrator.Up</code>, <code>Down</code>,
+<code>Logs</code></td>
+<td>yes</td>
+<td>yes
+(<code>tests/integration/distribution_integration_test.go</code>)</td>
+<td>yes (real Docker Compose in <code>tests/e2e/</code>)</td>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>yes (<code>mutation_ratchet_challenge.sh</code>)</td>
+</tr>
+<tr>
+<td><code>pkg/health</code></td>
+<td><code>TCPChecker</code>, <code>HTTPChecker</code>,
+<code>GRPCChecker</code>, <code>RetryPolicy</code></td>
+<td>yes</td>
+<td>yes (real TCP / HTTP servers)</td>
+<td>yes (real services up under <code>tests/e2e/</code>)</td>
+<td><code>ddos_health_flood_challenge.sh</code></td>
+<td>yes (negation in <code>mutation_ratchet</code>)</td>
+</tr>
+<tr>
+<td><code>pkg/envconfig</code></td>
+<td><code>LoadFromEnv</code>, <code>LoadFromFile</code>,
+<code>ToRemoteHosts</code></td>
+<td>yes (<code>pkg/envconfig/*_test.go</code>)</td>
+<td>yes (round-trips <code>tests/configs/.env.*</code>)</td>
+<td>yes (boot flow consumes loaded hosts)</td>
+<td><code>containers_describe_challenge.sh</code> (round-299; CONST-045
+enforcement)</td>
+<td>yes (mutate <code>.env</code> → describe drift)</td>
+</tr>
+<tr>
+<td><code>pkg/distribution</code></td>
+<td><code>Distributor.Distribute</code>, <code>Undistribute</code>,
+<code>Rebalance</code></td>
+<td>yes</td>
+<td>yes
+(<code>tests/integration/distribution_integration_test.go</code>)</td>
+<td>yes (<code>tests/e2e/remote_e2e_test.go</code>)</td>
+<td><code>chaos_failure_injection_challenge.sh</code>,
+<code>scaling_horizontal_challenge.sh</code></td>
+<td>yes (<code>mutation_ratchet_challenge.sh</code>)</td>
+</tr>
+<tr>
+<td><code>pkg/scheduler</code></td>
+<td>5 strategies (<code>resource_aware</code>, <code>round_robin</code>,
+<code>affinity</code>, <code>spread</code>, <code>bin_pack</code>) +
+<code>ScheduleBatch</code></td>
+<td>yes (<code>pkg/scheduler/*_test.go</code>)</td>
+<td>yes (<code>tests/integration/</code>)</td>
+<td>yes (live multi-host placement)</td>
+<td><code>scaling_horizontal_challenge.sh</code></td>
+<td>yes (mutate strategy → mismatch)</td>
+</tr>
+<tr>
+<td><code>pkg/remote</code></td>
+<td><code>SSHExecutor.Run</code>, <code>HostManager.AddHost</code>,
+<code>ProbeAll</code>, <code>IsReachable</code></td>
+<td>yes (mocks ONLY in <code>_test.go</code>)</td>
+<td>yes (real SSH against <code>tests/configs/.env.remote-single</code>
+when <code>CONTAINERS_REMOTE_ENABLED=true</code>)</td>
+<td>yes (<code>tests/e2e/remote_e2e_test.go</code>)</td>
+<td><code>containers_describe_challenge.sh</code> (round-299; SKIP-OK
+when <code>CONTAINERS_REMOTE_ENABLED=false</code>)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/orchestrator</code></td>
+<td><code>Service.Add</code>, <code>DiscoverServices</code>,
+<code>StartAll</code>, <code>StartService</code></td>
+<td>yes</td>
+<td>yes (<code>tests/integration/</code>)</td>
+<td>yes (multi-compose boot)</td>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/lifecycle</code></td>
+<td><code>LazyBooter</code>, <code>IdleShutdown</code>,
+<code>ConcurrencySemaphore</code></td>
+<td>yes</td>
+<td>yes (real timers)</td>
+<td>yes</td>
+<td><code>stress_sustained_load_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/network</code></td>
+<td><code>TunnelManager.CreateTunnel</code>, <code>Close</code></td>
+<td>yes</td>
+<td>yes (real SSH port-forward)</td>
+<td>yes</td>
+<td><code>chaos_failure_injection_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/volume</code></td>
+<td><code>VolumeManager.Mount</code>, <code>Unmount</code>
+(SSHFS/NFS/rsync)</td>
+<td>yes</td>
+<td>yes (real mounts when supported)</td>
+<td>yes</td>
+<td><code>chaos_failure_injection_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/event</code></td>
+<td><code>EventBus.Publish</code>, <code>Subscribe</code>, 20 event
+types</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/metrics</code></td>
+<td><code>MetricsCollector.Register</code>, Prometheus exposition</td>
+<td>yes</td>
+<td>yes (<code>/metrics</code> scrape)</td>
+<td>yes</td>
+<td><code>stress_sustained_load_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/discovery</code></td>
+<td><code>TCPDiscoverer.Probe</code>,
+<code>DNSDiscoverer.Resolve</code></td>
+<td>yes</td>
+<td>yes (real TCP / DNS)</td>
+<td>yes</td>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/i18n</code></td>
+<td><code>Translator.T</code>, bundle load (<code>active.en.yaml</code>
++ 5 locales added round-299)</td>
+<td>yes (<code>pkg/i18n/*_test.go</code>)</td>
+<td>yes (locale-switch round-trip)</td>
+<td>yes (rendered strings reach UI)</td>
+<td><code>containers_describe_challenge.sh</code> (round-299; asserts 6
+locales present)</td>
+<td>yes (drop a bundle → loader FAILs)</td>
+</tr>
+<tr>
+<td><code>pkg/ctop</code></td>
+<td><code>Collector.Collect</code>, <code>Display.Run</code>,
+<code>RenderSnapshot</code>, <code>RenderJSON</code></td>
+<td>yes</td>
+<td>yes (real container snapshots)</td>
+<td>yes</td>
+<td><code>ui_terminal_interaction_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>pkg/boot</code></td>
+<td><code>BootManager.BootAll</code>, <code>WithRuntime</code>,
+<code>WithLogger</code></td>
+<td>yes</td>
+<td>yes (real compose Up + health)</td>
+<td>yes</td>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<h2 id="challenge--invariant-ledger">Challenge → invariant ledger</h2>
+<table>
+<thead>
+<tr>
+<th>Challenge</th>
+<th>Invariant exercised</th>
+<th>Normal exit</th>
+<th>Mutate-mode exit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>anchor_manifest_challenge.sh</code></td>
+<td>Governance anchors literal-present in
+CONSTITUTION/CLAUDE/AGENTS</td>
+<td>0</td>
+<td>99 (strip an anchor)</td>
+</tr>
+<tr>
+<td><code>bluff_scanner_challenge.sh</code></td>
+<td>No <code>simulated</code> / <code>for now</code> /
+<code>TODO implement</code> in production code</td>
+<td>0</td>
+<td>99 (plant a literal)</td>
+</tr>
+<tr>
+<td><code>chaos_failure_injection_challenge.sh</code></td>
+<td><code>Distributor.Rebalance</code> recovers when a host is
+force-killed mid-deploy</td>
+<td>0</td>
+<td>99 (skip the recovery step)</td>
+</tr>
+<tr>
+<td><code>ddos_health_flood_challenge.sh</code></td>
+<td>Health endpoints survive flood without panic; retry policy
+honored</td>
+<td>0</td>
+<td>99 (remove retry wrap)</td>
+</tr>
+<tr>
+<td><code>host_no_auto_suspend_challenge.sh</code></td>
+<td>CONST-033 host-power-management ban — host does not
+auto-suspend</td>
+<td>0</td>
+<td>99 (re-enable auto-suspend)</td>
+</tr>
+<tr>
+<td><code>mutation_ratchet_challenge.sh</code></td>
+<td>Every covenant gate fails when its production code is mutated</td>
+<td>0</td>
+<td>99 (gate that survives mutation is a bluff gate)</td>
+</tr>
+<tr>
+<td><code>no_suspend_calls_challenge.sh</code></td>
+<td>Source tree contains zero suspend / hibernate / poweroff calls</td>
+<td>0</td>
+<td>99 (plant a call)</td>
+</tr>
+<tr>
+<td><code>scaling_horizontal_challenge.sh</code></td>
+<td>5 scheduler strategies converge to consistent placements at N=10
+hosts</td>
+<td>0</td>
+<td>99 (corrupt a strategy&#39;s score function)</td>
+</tr>
+<tr>
+<td><code>stress_sustained_load_challenge.sh</code></td>
+<td>Sustained load (boot/teardown) does not leak SSH sockets or fds</td>
+<td>0</td>
+<td>99 (skip pool close)</td>
+</tr>
+<tr>
+<td><code>ui_terminal_interaction_challenge.sh</code></td>
+<td><code>ctop</code> TUI keystrokes drive snapshot/sort/filter
+end-to-end</td>
+<td>0</td>
+<td>99 (break the keybind)</td>
+</tr>
+<tr>
+<td><code>ux_end_to_end_flow_challenge.sh</code></td>
+<td>Full multi-service boot + health + monitor + shutdown UX flow</td>
+<td>0</td>
+<td>99 (skip the health gate)</td>
+</tr>
+<tr>
+<td><code>containers_describe_challenge.sh</code> (round-299)</td>
+<td>Loaded <code>.env</code> host list, 6 i18n bundles, governance
+anchors, runtime auto-detect, paired-mutation discipline</td>
+<td>0</td>
+<td>99 (any mutation → fail)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="const-045-env-driven-remote-host-configuration-coverage">CONST-045
+.env-driven remote-host configuration coverage</h2>
+<table>
+<thead>
+<tr>
+<th><code>CONTAINERS_REMOTE_HOST_N_*</code> field</th>
+<th>Loader</th>
+<th>Test asserting round-trip</th>
+<th>Challenge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_NAME</code></td>
+<td><code>pkg/envconfig/parser.go</code></td>
+<td><code>pkg/envconfig/parser_test.go</code></td>
+<td><code>containers_describe_challenge.sh</code></td>
+</tr>
+<tr>
+<td><code>_ADDRESS</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>_PORT</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>_USER</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>_KEY</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>_RUNTIME</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>_LABELS</code></td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SKIP-OK discipline (CONST-045):</strong> when
+<code>CONTAINERS_REMOTE_ENABLED=false</code>, remote-touching tests +
+challenges emit
+<code>SKIP-OK: CONST-045 remote disabled in this environment</code> and
+exit 0 (not 1) — skip is not failure, but skip is loud (per the parent
+§SKIP-vs-FAIL decision tree).</p>
+<h2 id="const-050b-compliance-summary">CONST-050(B) compliance
+summary</h2>
+<ul>
+<li><strong>Unit</strong> — every package has <code>*_test.go</code>
+files; mocks ONLY in <code>_test.go</code>.</li>
+<li><strong>Integration</strong> — <code>tests/integration/</code>
+exercises real Docker / Podman.</li>
+<li><strong>E2E</strong> — <code>tests/e2e/remote_e2e_test.go</code>
+against real SSH targets.</li>
+<li><strong>Security</strong> —
+<code>tests/security/ssh_security_test.go</code>.</li>
+<li><strong>Stress</strong> —
+<code>tests/stress/distribution_stress_test.go</code>.</li>
+<li><strong>Benchmark</strong> —
+<code>tests/benchmark/scheduler_bench_test.go</code>.</li>
+<li><strong>Challenges</strong> — 12 (11 pre-existing +
+<code>containers_describe_challenge.sh</code> added round-299) under
+<code>challenges/scripts/</code>.</li>
+<li><strong>Mutation</strong> — every gate has a paired mutation in
+<code>mutation_ratchet_challenge.sh</code>; round-299 challenge ships
+its own paired mutation via the <code>--mutate</code> flag.</li>
+</ul>
+<h2 id="anti-bluff-guarantees">Anti-bluff guarantees</h2>
+<ol type="1">
+<li>Every row&#39;s &quot;Challenge&quot; column points to a script that runs the real
+exerciser. The round-299 <code>containers_describe_challenge.sh</code>
+invokes <code>go run ./cmd/containers-describe</code> (when present) OR
+falls back to a pure-shell <code>.env</code>-driven describe path. Both
+exit 0 only on real success; mutate-mode (<code>--mutate</code>)
+deliberately corrupts a precondition and asserts exit 99.</li>
+<li>CONST-045 SKIP behavior is asserted — a passing run with
+<code>CONTAINERS_REMOTE_ENABLED=false</code> MUST emit the SKIP-OK
+marker; absence of the marker on a skipped run is a §11.4.1 FAIL-bluff
+(silent skip).</li>
+<li>The 6 locale bundles MUST all load without error; missing-file or
+parse-error on any bundle is a §11.4 PASS-bluff if the suite still
+reports green.</li>
+<li>No metadata-only PASS — every assertion compares loaded bytes /
+process exit / runtime state, never just file presence.</li>
+</ol>
+</body>
+</html>
