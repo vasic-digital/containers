@@ -187,7 +187,7 @@ func main() {
 // Copy compose file to remote host
 err := executor.CopyFile(ctx, host, 
     "./docker-compose.yml", 
-    "/home/deploy/apps/myapp/docker-compose.yml",
+    "/opt/apps/myapp/docker-compose.yml",
 )
 if err != nil {
     panic(err)
@@ -195,7 +195,7 @@ if err != nil {
 
 // Deploy from copied file
 project := compose.ComposeProject{
-    File: "/home/deploy/apps/myapp/docker-compose.yml",
+    File: "/opt/apps/myapp/docker-compose.yml",
 }
 err = orch.Up(ctx, project)
 ```

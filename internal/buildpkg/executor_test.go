@@ -67,14 +67,14 @@ func TestBuildExecutor_SyncSource(t *testing.T) {
 	mock := newMockExecutor()
 	mock.reachable["thinker"] = true
 
-	exec := NewBuildExecutor(mock, "/home/user/Catalogizer", "/project")
+	exec := NewBuildExecutor(mock, "/srv/Catalogizer", "/project")
 
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 	err := exec.SyncSource(context.Background(), host)
 	require.NoError(t, err)
 
 	require.Len(t, mock.copiedFiles, 1)
-	assert.Equal(t, "/home/user/Catalogizer", mock.copiedFiles[0].localDir)
+	assert.Equal(t, "/srv/Catalogizer", mock.copiedFiles[0].localDir)
 	assert.Equal(t, "/project", mock.copiedFiles[0].remoteDir)
 	assert.Equal(t, "thinker", mock.copiedFiles[0].host.Name)
 
@@ -86,7 +86,7 @@ func TestBuildExecutor_SyncSourceUnreachable(t *testing.T) {
 	mock := newMockExecutor()
 	mock.reachable["thinker"] = false
 
-	exec := NewBuildExecutor(mock, "/home/user/Catalogizer", "/project")
+	exec := NewBuildExecutor(mock, "/srv/Catalogizer", "/project")
 
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 	err := exec.SyncSource(context.Background(), host)
@@ -100,7 +100,7 @@ func TestBuildExecutor_LaunchRemoteBuild(t *testing.T) {
 	mock := newMockExecutor()
 	mock.reachable["thinker"] = true
 
-	exec := NewBuildExecutor(mock, "/home/user/Catalogizer", "/project")
+	exec := NewBuildExecutor(mock, "/srv/Catalogizer", "/project")
 
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 	result, err := exec.LaunchRemoteBuild(context.Background(), host, "catalog-api", "2.2.0", true)
@@ -125,7 +125,7 @@ func TestBuildExecutor_BuildTimeout(t *testing.T) {
 	mock.reachable["thinker"] = true
 	mock.executeDelay = 10 * time.Second
 
-	exec := NewBuildExecutor(mock, "/home/user/Catalogizer", "/project").WithBuildTimeout(1 * time.Nanosecond)
+	exec := NewBuildExecutor(mock, "/srv/Catalogizer", "/project").WithBuildTimeout(1 * time.Nanosecond)
 
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 	_, err := exec.LaunchRemoteBuild(context.Background(), host, "catalog-api", "2.2.0", false)

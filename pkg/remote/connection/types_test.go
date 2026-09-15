@@ -116,7 +116,7 @@ func TestDockerConfig(t *testing.T) {
 
 func TestKubernetesConfig(t *testing.T) {
 	cfg := KubernetesConfig{
-		KubeconfigPath: "/home/user/.kube/config",
+		KubeconfigPath: "/etc/kube-test/config",
 		Namespace:      "default",
 		PodSelector:    "app=nginx",
 		Container:      "nginx",

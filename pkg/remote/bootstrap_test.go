@@ -159,8 +159,8 @@ func TestExpandHome(t *testing.T) {
 		},
 		{
 			"absolute path",
-			"/home/user/.ssh/id_rsa",
-			"/home/user/.ssh/id_rsa",
+			"/etc/ssh-test/id_rsa",
+			"/etc/ssh-test/id_rsa",
 		},
 		{
 			"relative path",

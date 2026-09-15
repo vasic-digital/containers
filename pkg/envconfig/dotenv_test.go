@@ -59,8 +59,8 @@ func TestParseDotEnvLine(t *testing.T) {
 		},
 		{
 			"path value",
-			"KEY=/home/user/.ssh/id_rsa",
-			"KEY", "/home/user/.ssh/id_rsa", true,
+			"KEY=/etc/ssh-test/id_rsa",
+			"KEY", "/etc/ssh-test/id_rsa", true,
 		},
 	}
 

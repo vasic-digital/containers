@@ -224,7 +224,7 @@ func TestTunnelArgs_RemoteDirection(t *testing.T) {
 		Name:    "h",
 		Address: "10.0.0.1",
 		User:    "user",
-		KeyPath: "/home/user/.ssh/id_rsa",
+		KeyPath: "/etc/ssh-test/id_rsa",
 		Port:    22,
 	}
 	spec := TunnelSpec{
@@ -238,7 +238,7 @@ func TestTunnelArgs_RemoteDirection(t *testing.T) {
 	// elements (never one combined "-R host:port:port" string).
 	assert.Contains(t, args, "-R")
 	assert.Contains(t, args, "9090:localhost:8080")
-	assert.Contains(t, args, "/home/user/.ssh/id_rsa")
+	assert.Contains(t, args, "/etc/ssh-test/id_rsa")
 }
 
 // TestTunnelArgs_RemoteHost_DefaultsToLocalhost verifies empty

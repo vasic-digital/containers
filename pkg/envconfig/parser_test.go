@@ -14,7 +14,7 @@ func TestLoadFromEnv(t *testing.T) {
 	// Set environment variables.
 	t.Setenv("CONTAINERS_REMOTE_ENABLED", "true")
 	t.Setenv("CONTAINERS_REMOTE_DEFAULT_SSH_USER", "deploy")
-	t.Setenv("CONTAINERS_REMOTE_DEFAULT_SSH_KEY", "/home/user/.ssh/id_rsa")
+	t.Setenv("CONTAINERS_REMOTE_DEFAULT_SSH_KEY", "/etc/ssh-test/id_rsa")
 	t.Setenv("CONTAINERS_REMOTE_DEFAULT_RUNTIME", "podman")
 	t.Setenv("CONTAINERS_REMOTE_SCHEDULER", "round_robin")
 	t.Setenv("CONTAINERS_REMOTE_PORT_RANGE_START", "25000")
@@ -32,7 +32,7 @@ func TestLoadFromEnv(t *testing.T) {
 
 	assert.True(t, cfg.Enabled)
 	assert.Equal(t, "deploy", cfg.DefaultUser)
-	assert.Equal(t, "/home/user/.ssh/id_rsa", cfg.DefaultKeyPath)
+	assert.Equal(t, "/etc/ssh-test/id_rsa", cfg.DefaultKeyPath)
 	assert.Equal(t, "podman", cfg.DefaultRuntime)
 	assert.Equal(t, "round_robin", cfg.Scheduler)
 	assert.Equal(t, 25000, cfg.PortRangeStart)

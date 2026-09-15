@@ -19,7 +19,7 @@ func TestArtifactCollector_DiscoverArtifacts(t *testing.T) {
 		ExitCode: 0,
 	}
 
-	collector := NewArtifactCollector(mock, "/home/user/Catalogizer", "/tmp/catalogizer-build")
+	collector := NewArtifactCollector(mock, "/srv/Catalogizer", "/tmp/catalogizer-build")
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 
 	paths, err := collector.DiscoverArtifacts(context.Background(), host, "catalog-api", "v2.2.0-build.19")
@@ -43,7 +43,7 @@ func TestArtifactCollector_DiscoverArtifactsEmptyResult(t *testing.T) {
 		ExitCode: 0,
 	}
 
-	collector := NewArtifactCollector(mock, "/home/user/Catalogizer", "/tmp/catalogizer-build")
+	collector := NewArtifactCollector(mock, "/srv/Catalogizer", "/tmp/catalogizer-build")
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 
 	paths, err := collector.DiscoverArtifacts(context.Background(), host, "catalog-api", "v2.2.0")
@@ -55,7 +55,7 @@ func TestArtifactCollector_CollectArtifacts(t *testing.T) {
 	mock := newMockExecutor()
 	mock.reachable["thinker"] = true
 
-	collector := NewArtifactCollector(mock, "/home/user/Catalogizer", "/tmp/catalogizer-build")
+	collector := NewArtifactCollector(mock, "/srv/Catalogizer", "/tmp/catalogizer-build")
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 
 	remotePaths := []string{
@@ -79,7 +79,7 @@ func TestArtifactCollector_CollectFromUnreachableHost(t *testing.T) {
 	mock := newMockExecutor()
 	mock.reachable["thinker"] = false
 
-	collector := NewArtifactCollector(mock, "/home/user/Catalogizer", "/tmp/catalogizer-build")
+	collector := NewArtifactCollector(mock, "/srv/Catalogizer", "/tmp/catalogizer-build")
 	host := remote.RemoteHost{Name: "thinker", Address: "thinker.local"}
 
 	_, err := collector.DiscoverArtifacts(context.Background(), host, "catalog-api", "v2.2.0")

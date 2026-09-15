@@ -91,7 +91,7 @@ func TestRemoteHost_FullConfig(t *testing.T) {
 		Address:       "192.168.1.100",
 		Port:          2222,
 		User:          "deploy",
-		KeyPath:       "/home/user/.ssh/id_rsa",
+		KeyPath:       "/etc/ssh-test/id_rsa",
 		Auth:          AuthSSHKey,
 		Runtime:       "docker",
 		Labels:        map[string]string{"gpu": "true"},

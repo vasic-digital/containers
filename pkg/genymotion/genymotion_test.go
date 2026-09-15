@@ -67,7 +67,7 @@ func TestParseVersion_realOutput(t *testing.T) {
 }
 
 func TestCandidatePathsForOS(t *testing.T) {
-	darwin := CandidatePathsForOS("darwin", "/Users/op")
+	darwin := CandidatePathsForOS("darwin", "/opt/simhome")
 	if len(darwin) == 0 || darwin[0] != "/Applications/Genymotion.app/Contents/MacOS/gmtool" {
 		t.Errorf("darwin candidates wrong: %v", darwin)
 	}

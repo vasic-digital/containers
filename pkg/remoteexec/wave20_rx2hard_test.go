@@ -65,12 +65,12 @@ func TestWave20_RX2_ResolveDefaultDir_RelativeRejected(t *testing.T) {
 // (the empty XDG_CACHE_HOME → $HOME/.cache path is absolute).
 func TestWave20_RX2_ResolveDefaultDir_AbsoluteAccepted(t *testing.T) {
 	got, err := resolveDir(context.Background(),
-		fakeRunner{res: Result{Stdout: "/home/u/.cache/remoteexec"}}, Spec{})
+		fakeRunner{res: Result{Stdout: "/var/cache/remoteexec"}}, Spec{})
 	if err != nil {
 		t.Fatalf("an absolute resolved default dir must be accepted, got: %v", err)
 	}
-	if got != "/home/u/.cache/remoteexec" {
-		t.Errorf("resolveDir(default,absolute) = %q, want /home/u/.cache/remoteexec", got)
+	if got != "/var/cache/remoteexec" {
+		t.Errorf("resolveDir(default,absolute) = %q, want /var/cache/remoteexec", got)
 	}
 }
 

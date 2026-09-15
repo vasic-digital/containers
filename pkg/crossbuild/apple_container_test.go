@@ -65,7 +65,7 @@ func TestAppleContainer_BuildRunArgs_VirtiofsMount(t *testing.T) {
 	spec := appleContainerRunSpec{
 		Image:       "docker.io/library/alpine:latest",
 		Name:        "cb-job",
-		MountSource: "/Users/dev/src",
+		MountSource: "/host/src",
 		MountTarget: "/work/src",
 		WorkDir:     "/work/src",
 		Command:     "uname -s -m",
@@ -74,7 +74,7 @@ func TestAppleContainer_BuildRunArgs_VirtiofsMount(t *testing.T) {
 	assert.Equal(t, []string{
 		"run", "--rm",
 		"--name", "cb-job",
-		"--mount", "type=virtiofs,source=/Users/dev/src,target=/work/src",
+		"--mount", "type=virtiofs,source=/host/src,target=/work/src",
 		"-w", "/work/src",
 		"--", // XBUILD2-2: end-of-options guard before the image positional
 		"docker.io/library/alpine:latest", "sh", "-c", "uname -s -m",
