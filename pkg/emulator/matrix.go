@@ -345,6 +345,17 @@ func (r *AndroidMatrixRunner) runOne(
 	if setter, ok := em.(gradleModuleSetter); ok {
 		setter.setGradleModule(config.GradleModule)
 	}
+	// Mirrors the GradleModule propagation immediately above: empty
+	// BuildType/GradleProperties is a no-op (the emulator's
+	// construction-time default, itself "debug", stands). An Emulator
+	// implementation not satisfying these optional capabilities simply
+	// runs with whatever it was constructed with.
+	if setter, ok := em.(buildTypeSetter); ok {
+		setter.setBuildType(config.BuildType)
+	}
+	if setter, ok := em.(gradlePropertiesSetter); ok {
+		setter.setGradleProperties(config.GradleProperties)
+	}
 
 	startedTest := time.Now()
 	out, passed, runErr := em.RunInstrumentation(

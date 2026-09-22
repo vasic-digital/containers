@@ -623,6 +623,66 @@ func TestContainerized_RunInstrumentation_HonorsGradleModule(t *testing.T) {
 	})
 }
 
+func TestContainerized_RunInstrumentation_HonorsBuildType(t *testing.T) {
+	t.Run("non-default build type substitutes the gradle task and forwards properties", func(t *testing.T) {
+		fake := &fakeExecutor{
+			scripts: map[string]fakeScript{
+				"/bin/sh": {Out: []byte("> Task :app:connectedReleaseTestAndroidTest\nBUILD SUCCESSFUL in 9s\n")},
+			},
+		}
+		c, _ := NewContainerized(ContainerizedConfig{
+			RuntimeBinary:    "podman",
+			Image:            "any:tag",
+			Executor:         fake,
+			BuildType:        "releaseTest",
+			GradleProperties: []string{"someConsumerFlag=true"},
+		})
+		_, _, err := c.RunInstrumentation(
+			context.Background(), 5555, "some.consumer.ChallengeTest", 60*time.Second,
+		)
+		if err != nil {
+			t.Fatalf("RunInstrumentation: %v", err)
+		}
+		shCall := firstCallMatching(t, fake.calls, "/bin/sh")
+		if len(shCall.Args) < 2 {
+			t.Fatalf("expected shell -c form; got args: %v", shCall.Args)
+		}
+		cmd := shCall.Args[1]
+		if !strings.Contains(cmd, ":app:connectedReleaseTestAndroidTest") {
+			t.Errorf("gradle command must target :app:connectedReleaseTestAndroidTest; got: %q", cmd)
+		}
+		if strings.Contains(cmd, ":app:connectedDebugAndroidTest") {
+			t.Errorf("gradle command must NOT target the debug default; got: %q", cmd)
+		}
+		if !strings.Contains(cmd, "-PsomeConsumerFlag=true") {
+			t.Errorf("gradle command must forward -PsomeConsumerFlag=true; got: %q", cmd)
+		}
+	})
+	t.Run("empty build type preserves the debug default", func(t *testing.T) {
+		fake := &fakeExecutor{
+			scripts: map[string]fakeScript{
+				"/bin/sh": {Out: []byte("> Task :app:connectedDebugAndroidTest\nBUILD SUCCESSFUL in 9s\n")},
+			},
+		}
+		c, _ := NewContainerized(ContainerizedConfig{
+			RuntimeBinary: "podman",
+			Image:         "any:tag",
+			Executor:      fake,
+			// BuildType omitted — defaults to "debug".
+		})
+		_, _, err := c.RunInstrumentation(
+			context.Background(), 5555, "some.consumer.ChallengeTest", 60*time.Second,
+		)
+		if err != nil {
+			t.Fatalf("RunInstrumentation: %v", err)
+		}
+		shCall := firstCallMatching(t, fake.calls, "/bin/sh")
+		if len(shCall.Args) < 2 || !strings.Contains(shCall.Args[1], ":app:connectedDebugAndroidTest") {
+			t.Errorf("empty build type must default to :app:connectedDebugAndroidTest; got: %v", shCall.Args)
+		}
+	})
+}
+
 // TestContainerized_satisfies_Emulator is the compile-time + runtime
 // assertion that Containerized fits the Emulator interface — without
 // it a future refactor of either side could silently break the matrix

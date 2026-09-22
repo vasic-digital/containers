@@ -188,6 +188,21 @@ type MatrixConfig struct {
 	// consumer module name is baked in as a default or special case.
 	GradleModule string
 
+	// BuildType selects which connected*AndroidTest task
+	// RunInstrumentation runs (e.g. "debug", "releaseTest"). Empty
+	// defaults to "debug", preserving all prior behavior byte-for-byte.
+	// The RunMatrix caller propagates this onto the Emulator before
+	// instrumentation, mirroring GradleModule's propagation exactly.
+	BuildType string
+
+	// GradleProperties are "KEY=VALUE" strings forwarded as -PKEY=VALUE
+	// Gradle project properties on the connected-test invocation. This
+	// is the generic mechanism a consumer uses to activate whatever its
+	// own build script needs to make a non-default BuildType's task
+	// exist at all — per the Decoupled Reusable Architecture rule this
+	// package never assumes any consumer-specific property name.
+	GradleProperties []string
+
 	// EvidenceDir is where the matrix runner writes its per-AVD
 	// attestation rows + log files. Per clause 6.I clause 4: one row
 	// per AVD-test pair.

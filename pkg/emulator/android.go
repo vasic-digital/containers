@@ -157,6 +157,16 @@ type AndroidEmulator struct {
 	// defaults to "app". Generic per the Decoupled Reusable
 	// Architecture rule — no consumer module is special-cased.
 	gradleModule string
+
+	// buildType selects which connected*AndroidTest task
+	// RunInstrumentation runs. Empty defaults to "debug", mirroring
+	// Containerized's identical field.
+	buildType string
+
+	// gradleProperties are "KEY=VALUE" strings forwarded as -PKEY=VALUE
+	// to the gradle invocation, mirroring Containerized's identical
+	// field — see gradlePropertiesSetter for the rationale.
+	gradleProperties []string
 }
 
 // NewAndroidEmulator constructs an AndroidEmulator that uses the real
@@ -1059,7 +1069,7 @@ func (a *AndroidEmulator) RunInstrumentation(
 	defer cancel()
 	gradleArgs := append(
 		[]string{"./gradlew"},
-		gradleConnectedTestArgs(a.gradleModule, testClass)...,
+		gradleConnectedTestArgs(a.gradleModule, a.buildType, testClass, a.gradleProperties)...,
 	)
 	cmd := exec.CommandContext(runCtx, gradleArgs[0], gradleArgs[1:]...)
 	cmd.Env = append(os.Environ(), "ANDROID_SERIAL="+target)
@@ -1078,6 +1088,23 @@ func (a *AndroidEmulator) RunInstrumentation(
 func (a *AndroidEmulator) setGradleModule(module string) {
 	if module != "" {
 		a.gradleModule = module
+	}
+}
+
+// setBuildType sets the build type RunInstrumentation targets. Empty is
+// a no-op. The matrix runner calls this to propagate
+// MatrixConfig.BuildType. Mirrors Containerized.setBuildType.
+func (a *AndroidEmulator) setBuildType(buildType string) {
+	if buildType != "" {
+		a.buildType = buildType
+	}
+}
+
+// setGradleProperties sets the -P properties RunInstrumentation forwards
+// to gradle. Empty is a no-op. Mirrors Containerized.setGradleProperties.
+func (a *AndroidEmulator) setGradleProperties(properties []string) {
+	if len(properties) > 0 {
+		a.gradleProperties = properties
 	}
 }
 

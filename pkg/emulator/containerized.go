@@ -149,24 +149,87 @@ type gradleModuleSetter interface {
 	setGradleModule(module string)
 }
 
+// defaultBuildType is the Gradle build type whose connected*AndroidTest
+// task runs when a caller supplies no BuildType. It is deliberately the
+// literal "debug" so every pre-existing caller (none of which know this
+// field exists) observes byte-identical behavior to before this field
+// was added.
+const defaultBuildType = "debug"
+
+// buildTypeSetter is the optional capability the matrix runner uses to
+// propagate MatrixConfig.BuildType onto an Emulator before
+// RunInstrumentation, mirroring gradleModuleSetter exactly. An external
+// Emulator implementation that does not satisfy it is run against
+// whichever build type it was constructed with (default "debug").
+type buildTypeSetter interface {
+	setBuildType(buildType string)
+}
+
+// gradlePropertiesSetter is the optional capability the matrix runner
+// uses to propagate MatrixConfig.GradleProperties onto an Emulator
+// before RunInstrumentation. This is the generic, project-agnostic
+// mechanism a consumer uses to activate a non-default Gradle build type
+// (e.g. a consumer project's own `-PsomeFlag=true` that its build
+// script reads to select `testBuildType`) — this package never bakes in
+// knowledge of any consumer-specific property name, per the Decoupled
+// Reusable Architecture rule.
+type gradlePropertiesSetter interface {
+	setGradleProperties(properties []string)
+}
+
+// gradleTaskForBuildType derives the Gradle connected-test task-name
+// suffix from a build type name, following Gradle's own build-type ->
+// task-name convention: the build type's first rune is upper-cased and
+// the rest is left unchanged (so "debug" -> "Debug", "releaseTest" ->
+// "ReleaseTest"). Empty defaults to defaultBuildType ("debug"), so the
+// result for an unset build type is always the literal "Debug" — the
+// pre-existing, hardcoded behavior this function replaces.
+func gradleTaskForBuildType(buildType string) string {
+	bt := buildType
+	if bt == "" {
+		bt = defaultBuildType
+	}
+	r := []rune(bt)
+	r[0] = []rune(strings.ToUpper(string(r[0])))[0]
+	return string(r)
+}
+
 // gradleConnectedTestArgs builds the gradle argument slice both
 // emulator implementations (host-direct AndroidEmulator and
 // Containerized) use to run a single instrumentation test class.
 // `module` is the bare gradle module name (e.g. "app", "api-app");
-// empty defaults to defaultGradleModule. The returned task is
-// `:<module>:connectedDebugAndroidTest`. Centralising this here keeps
-// the host-direct and container paths byte-identical and gives the
-// module-substitution one falsifiability-rehearsed code path.
-func gradleConnectedTestArgs(module, testClass string) []string {
+// empty defaults to defaultGradleModule. `buildType` selects which
+// connected*AndroidTest task runs (empty defaults to "debug", preserving
+// the pre-existing hardcoded `connectedDebugAndroidTest` behavior
+// byte-for-byte). `properties` is an optional list of "KEY=VALUE"
+// strings forwarded as `-PKEY=VALUE` Gradle project properties — the
+// generic mechanism a consumer's build script uses to actually make a
+// non-default `buildType`'s connected-test task exist at all (Gradle's
+// `testBuildType` is a config-time DSL property; a task named
+// `connected<BuildType>AndroidTest` for a non-default build type
+// typically only resolves when the consumer's own build script is told,
+// via some project property of ITS OWN naming, to select that build
+// type — this package deliberately does not know or assume that
+// property's name). Centralising this here keeps the host-direct and
+// container paths byte-identical and gives the module/build-type
+// substitution one falsifiability-rehearsed code path.
+func gradleConnectedTestArgs(module, buildType, testClass string, properties []string) []string {
 	m := module
 	if m == "" {
 		m = defaultGradleModule
 	}
-	return []string{
-		fmt.Sprintf(":%s:connectedDebugAndroidTest", m),
+	args := []string{
+		fmt.Sprintf(":%s:connected%sAndroidTest", m, gradleTaskForBuildType(buildType)),
 		"-Pandroid.testInstrumentationRunnerArguments.class=" + testClass,
-		"--no-daemon",
 	}
+	for _, p := range properties {
+		if p == "" {
+			continue
+		}
+		args = append(args, "-P"+p)
+	}
+	args = append(args, "--no-daemon")
+	return args
 }
 
 // Containerized implements [Emulator] by running the Android emulator
@@ -276,6 +339,17 @@ type Containerized struct {
 	// consuming project supplies its own module name; no consumer
 	// module is special-cased here.
 	gradleModule string
+
+	// buildType selects which connected*AndroidTest task
+	// RunInstrumentation runs. Empty defaults to "debug", preserving
+	// the pre-existing hardwired connectedDebugAndroidTest behavior.
+	buildType string
+
+	// gradleProperties are "KEY=VALUE" strings forwarded as -PKEY=VALUE
+	// to the gradle invocation. Generic passthrough — see
+	// gradlePropertiesSetter for why this package does not itself know
+	// any consumer-specific property name.
+	gradleProperties []string
 }
 
 // ContainerizedConfig parameterises a [Containerized] instance.
@@ -298,6 +372,15 @@ type ContainerizedConfig struct {
 	// The CLI's --gradle-module flag threads into this field. Generic
 	// — no consumer module is special-cased.
 	GradleModule string
+	// BuildType selects which connected*AndroidTest task runs. Empty
+	// defaults to "debug". The CLI's --build-type flag threads into
+	// this field.
+	BuildType string
+	// GradleProperties are "KEY=VALUE" strings forwarded as -PKEY=VALUE
+	// to the gradle invocation. The CLI's repeatable --gradle-property
+	// flag threads into this field. Generic passthrough; this package
+	// never assumes any consumer-specific property name.
+	GradleProperties []string
 }
 
 // NewContainerized constructs a Containerized emulator. Returns an
@@ -323,12 +406,14 @@ func NewContainerized(cfg ContainerizedConfig) (*Containerized, error) {
 		gradleBin = "./gradlew"
 	}
 	return &Containerized{
-		runtimeBinary: cfg.RuntimeBinary,
-		image:         cfg.Image,
-		executor:      executor,
-		adbBinaryPath: adbBin,
-		gradleBinary:  gradleBin,
-		gradleModule:  cfg.GradleModule,
+		runtimeBinary:    cfg.RuntimeBinary,
+		image:            cfg.Image,
+		executor:         executor,
+		adbBinaryPath:    adbBin,
+		gradleBinary:     gradleBin,
+		gradleModule:     cfg.GradleModule,
+		buildType:        cfg.BuildType,
+		gradleProperties: cfg.GradleProperties,
 	}, nil
 }
 
@@ -742,7 +827,7 @@ func (c *Containerized) RunInstrumentation(
 	// localhost:<port> form because that's what we connected via
 	// in WaitForBoot.
 	target := fmt.Sprintf("localhost:%d", port)
-	args := gradleConnectedTestArgs(c.gradleModule, testClass)
+	args := gradleConnectedTestArgs(c.gradleModule, c.buildType, testClass, c.gradleProperties)
 	// The CommandExecutor seam doesn't expose env-var setting, so
 	// we synthesize the env via a shell wrapper. In production
 	// osExecutor.Execute this is `sh -c 'ANDROID_SERIAL=... ./gradlew ...'`.
@@ -768,6 +853,26 @@ func (c *Containerized) RunInstrumentation(
 func (c *Containerized) setGradleModule(module string) {
 	if module != "" {
 		c.gradleModule = module
+	}
+}
+
+// setBuildType sets the build type RunInstrumentation targets. Empty is
+// a no-op (the constructor default, itself defaulting to "debug" inside
+// gradleConnectedTestArgs, stands). The matrix runner calls this to
+// propagate MatrixConfig.BuildType.
+func (c *Containerized) setBuildType(buildType string) {
+	if buildType != "" {
+		c.buildType = buildType
+	}
+}
+
+// setGradleProperties sets the -P properties RunInstrumentation forwards
+// to gradle. A nil/empty slice is a no-op (the constructor default
+// stands) — this mirrors setGradleModule/setBuildType's empty-is-no-op
+// convention rather than clearing previously-configured properties.
+func (c *Containerized) setGradleProperties(properties []string) {
+	if len(properties) > 0 {
+		c.gradleProperties = properties
 	}
 }
 

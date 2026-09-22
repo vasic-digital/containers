@@ -112,6 +112,22 @@ func main() {
 		"Bare gradle module whose connectedDebugAndroidTest task runs "+
 			"(e.g. \"app\", \"api-app\"); the runner targets "+
 			":<module>:connectedDebugAndroidTest")
+	flagBuildType := flag.String("build-type", "debug",
+		"Gradle build type whose connected*AndroidTest task runs (e.g. "+
+			"\"debug\", \"releaseTest\"); the runner targets "+
+			":<module>:connected<BuildType>AndroidTest (first rune "+
+			"upper-cased: \"debug\"->\"connectedDebugAndroidTest\", "+
+			"\"releaseTest\"->\"connectedReleaseTestAndroidTest\"). The "+
+			"literal default \"debug\" preserves pre-existing behavior "+
+			"for every caller that does not pass this flag.")
+	var flagGradleProperties stringSliceFlag
+	flag.Var(&flagGradleProperties, "gradle-property",
+		"A \"KEY=VALUE\" Gradle project property forwarded as -PKEY=VALUE "+
+			"on the connected-test invocation. Repeatable. Generic "+
+			"passthrough — required to actually make a non-default "+
+			"--build-type's task exist when the consumer project's own "+
+			"build script gates that build type behind a project "+
+			"property (this package never assumes that property's name).")
 	flagEvidence := flag.String("evidence-dir", "",
 		"Where to write per-AVD attestation rows (real-device-verification.json)")
 	flagAVDs := flag.String("avds", "",
@@ -241,9 +257,11 @@ func main() {
 	var newEmu func() emulator.Emulator
 	if resolvedRunner == emulator.RunnerContainerized {
 		cfg := emulator.ContainerizedConfig{
-			RuntimeBinary: *flagContainerRuntime,
-			Image:         *flagContainerImage,
-			GradleModule:  *flagGradleModule,
+			RuntimeBinary:    *flagContainerRuntime,
+			Image:            *flagContainerImage,
+			GradleModule:     *flagGradleModule,
+			BuildType:        *flagBuildType,
+			GradleProperties: []string(flagGradleProperties),
 		}
 		// Validate the config ONCE up front (fail-loud) so the factory
 		// below operates on already-validated, constant inputs.
@@ -290,6 +308,8 @@ func main() {
 		ExtraAPKPaths:     []string(flagExtraAPKs),
 		TestClass:         *flagTestClass,
 		GradleModule:      *flagGradleModule,
+		BuildType:         *flagBuildType,
+		GradleProperties:  []string(flagGradleProperties),
 		EvidenceDir:       *flagEvidence,
 		BootTimeout:       *flagBootTimeout,
 		TestTimeout:       *flagTestTimeout,
