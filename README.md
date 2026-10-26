@@ -2,10 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Revision | 2 |
+| Revision | 3 |
 | Created | 2026-04-30 |
-| Last modified | 2026-05-19 |
+| Last modified | 2026-10-26 |
 | Status | active |
+| Documented state | HEAD 919ad1e (2026-10-15), 159 commits after tag `helixcode-v1.1.0`; release `containers-1.2.0` proposed, NOT tagged |
+| Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |
 | Continuation | docs/CONTINUATION.md (when present) |
@@ -95,6 +97,58 @@ func main() {
 - **Remote volumes**: SSHFS, NFS, and rsync-based volume sharing
 - **Automatic failover**: Detect offline hosts and reschedule containers
 - **Environment configuration**: `.env` files and `CONTAINERS_REMOTE_*` env vars
+- **Android / Cuttlefish / Genymotion / Apple-simulator / QEMU matrices**: `pkg/emulator`, `pkg/cuttlefish`, `pkg/genymotion`, `pkg/applesim`, `pkg/vm` plus `cmd/emulator-matrix` (with `--build-type` / `--gradle-property`), `emulator-canary`, `vm-matrix`
+- **Cross-platform build backends**: `pkg/crossbuild` (host, Linux container, Apple `container` micro-VM on macOS) selected by `crossbuild.Selector`
+- **GPU-aware scheduling**: see [docs/gpu-scheduling.md](docs/gpu-scheduling.md)
+- **Durable remote execution and egress**: `pkg/remoteexec`, `pkg/egress` (SOCKS egress verification)
+- **Dependency-ordered orchestrator startup**: topological waves in `pkg/orchestrator`
+
+## Configuration and runtime defaults
+
+Remote hosts are configured only through environment variables / a `.env` file
+(loaded by `pkg/envconfig`); nothing host-specific is compiled in. Names below
+are taken from `pkg/envconfig/parser.go` and `pkg/envconfig/template.go`
+(`envconfig.GenerateEnvExample()` prints the full documented template):
+
+| Variable | Meaning | Default (code) |
+|---|---|---|
+| `CONTAINERS_REMOTE_ENABLED` | master switch for remote distribution | `false` |
+| `CONTAINERS_REMOTE_DEFAULT_SSH_USER` / `_SSH_KEY` / `_SSH_PASSWORD` | SSH defaults for all hosts | empty |
+| `CONTAINERS_REMOTE_DEFAULT_RUNTIME` | runtime assumed on remote hosts (`docker` / `podman`) | `docker` |
+| `CONTAINERS_REMOTE_SCHEDULER` | `resource_aware`, `round_robin`, `affinity`, `spread`, `bin_pack` | `resource_aware` |
+| `CONTAINERS_REMOTE_HOST_N_NAME`, `_ADDRESS`, `_PORT`, `_USER`, `_KEY`, `_RUNTIME`, `_LABELS`, `_GPU_AUTOPROBE` | per-host settings, `N` = 1, 2, ... | per-host; unset falls back to the global defaults above |
+
+Example (placeholder values; use your own hostnames and keys, never commit
+credentials):
+
+```dotenv
+CONTAINERS_REMOTE_ENABLED=true
+CONTAINERS_REMOTE_DEFAULT_RUNTIME=docker
+CONTAINERS_REMOTE_HOST_1_NAME=build-host-a
+CONTAINERS_REMOTE_HOST_1_ADDRESS=build-a.example.internal
+CONTAINERS_REMOTE_HOST_1_USER=deploy
+CONTAINERS_REMOTE_HOST_1_RUNTIME=podman
+```
+
+Since `helixcode-v1.1.0`, SET-but-invalid values are reported as errors by
+`Parse` / `LoadFromFile` instead of silently defaulting (`LoadFromEnv` itself
+returns a config without validation).
+
+**Runtime defaults, stated precisely:**
+- Remote-host runtime default is `docker` (`CONTAINERS_REMOTE_DEFAULT_RUNTIME`).
+- Local auto-detection (`runtime.AutoDetect`) tries, in order, Podman, Docker,
+  nerdctl, CRI-O, LXD, Kubernetes, and honours `runtime.SetRuntimePriority`.
+- Podman is supported as a runtime (`PodmanRuntime`, podman-compose shim
+  detection in `pkg/compose`). NOT VERIFIED end-to-end in this documentation
+  pass: no builds or container tests were run for this refresh; rootless Podman
+  against a real remote host and Docker/Podman behaviour parity on the full
+  matrix are UNCONFIRMED until the containerised full-suite run happens.
+- Host names such as `thinker` appear in this repository only as illustrative
+  examples (for instance the `ctop --host` usage text and emulator comments);
+  they are not defaults and nothing resolves them implicitly.
+
+**Open proposal (not implemented):** a first-class local-host build target is
+described in [docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md](docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md).
 
 ## Architecture
 

@@ -4,7 +4,8 @@
 # Containers is a leaf Go submodule with ZERO own-org submodule dependencies.
 #
 # Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
-# Last updated: 2026-05-15 (Phase 3-debt closure for Containers).
+# Last updated: 2026-10-26 (date refresh only; content re-read: still zero own-org
+# submodule dependencies - `deps: []`, no .gitmodules in this repository).
 
 schema_version: 1
 deps: []
