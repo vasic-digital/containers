@@ -2,7 +2,14 @@
 
 ## [Unreleased]
 
-(Nothing yet.)
+### 1.2.2 (docs-only, not yet released)
+
+- docs: `MIGRATION.md` no longer says llmctl must be updated. Verified
+  2026-10-27: llmctl `v3.3.0` (7cc9e83) and llmctl `origin/main` (81645ab)
+  both build (`go build ./...` rc=0) and pass their `internal/registry`,
+  `internal/vantage`, `internal/gateway` tests against `containers-1.2.1`
+  (06a0b52); llmctl already handles the `error` returns of `Unregister` /
+  `UpdateHealth`. No code change in this repository.
 
 ## [1.2.1] - 2026-10-27 (prepared, NOT tagged)
 

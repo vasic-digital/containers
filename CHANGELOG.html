@@ -1,6 +1,386 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc 3.11" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>CHANGELOG</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">CHANGELOG</h1>
+</header>
 <h1 id="changelog">Changelog</h1>
 <h2 id="unreleased">[Unreleased]</h2>
+<h3 id="docs-only-not-yet-released">1.2.2 (docs-only, not yet
+released)</h3>
+<ul>
+<li>docs: <code>MIGRATION.md</code> no longer says llmctl must be
+updated. Verified 2026-10-27: llmctl <code>v3.3.0</code> (7cc9e83) and
+llmctl <code>origin/main</code> (81645ab) both build
+(<code>go build ./...</code> rc=0) and pass their
+<code>internal/registry</code>, <code>internal/vantage</code>,
+<code>internal/gateway</code> tests against
+<code>containers-1.2.1</code> (06a0b52); llmctl already handles the
+<code>error</code> returns of <code>Unregister</code> /
+<code>UpdateHealth</code>. No code change in this repository.</li>
+</ul>
+<h2 id="prepared-not-tagged">[1.2.1] - 2026-10-27 (prepared, NOT
+tagged)</h2>
+<p>Tag <code>containers-1.2.1</code> (to be cut by the operator). Code
+delta versus <code>containers-1.2.0</code> (cb5c727): NONE;
+<code>origin/main</code> == <code>containers-1.2.0</code> at preparation
+time. This release adds <code>MIGRATION.md</code> (every breaking
+signature change since <code>helixcode-v1.1.0</code>, verified with
+<code>apidiff</code> + consumer scan) and corrects the release
+metadata.</p>
+<p><strong>SemVer deviation (operator decision):</strong> the breaking
+Go API changes listed in <code>MIGRATION.md</code> were first shipped in
+<code>containers-1.2.0</code> (a minor bump). Strict SemVer requires a
+major bump (2.0.0). The operator chose a patch release
+<code>1.2.1</code> to attach the migration guide without renumbering the
+already-published 1.2.0 line; consumers MUST NOT assume 1.2.x patch
+releases are source-compatible with 1.1.x. See <code>MIGRATION.md</code>
+and <code>RELEASE_NOTES_1.2.1.md</code>.</p>
+<h2 id="section">[1.2.0] - 2026-10-27</h2>
+<p>Tag <code>containers-1.2.0</code> (project-prefixed per section
+11.4.151). Range: <code>helixcode-v1.1.0..919ad1e</code> + release-docs
+commit = 159 commits (21 first-parent), 399 files changed, +45683 /
+-2371 lines (<code>git diff --stat</code>). Commit-type counts by
+conventional-commit prefix: fix 82, hardening 54, feat 8, docs 4, govern
+2, chore 2, test 1, style 1, remainder merges/WIP.</p>
+<p>Verification run for this release (host-run, NOT containerised; see
+Known limitations): <code>go vet ./...</code> rc=0;
+<code>go test -count=1 -race -p 1 ./...</code> over 56 packages = 43 ok,
+12 with no test files, 1 FAIL (<code>pkg/remote</code>, root-caused to
+the test environment, see Fixed) and, after the test-only fix,
+<code>pkg/remote</code> passes (<code>ok ... 15.4s</code>) under the
+default umask 0002.</p>
+<p><strong>Versioning decision (pending owner confirmation):</strong>
+strict SemVer would call this release 2.0.0 because exported signatures
+changed (see BREAKING). The owner picked 1.2.0 by default; that decision
+is recorded as PENDING, not final.</p>
+<h3
+id="breaking-go-api-source-level---verified-against-git-diff-of-non-test-code">BREAKING
+(Go API, source-level) - verified against <code>git diff</code> of
+non-test code</h3>
+<p>Earlier drafts stated “no breaking changes”; that is NOT correct. The
+following exported signatures changed since
+<code>helixcode-v1.1.0</code>:</p>
+<ul>
+<li><code>serviceregistry.(*ServiceRegistry).Unregister(name)</code> and
+<code>UpdateHealth(name, healthy)</code> now return <code>error</code>
+(a551ffd, persistence errors are surfaced).</li>
+<li><code>emulator.Cleanup(ctx)</code> is now
+<code>Cleanup(ctx, avdName string)</code> and
+<code>cuttlefish.Cleanup(ctx)</code> is now
+<code>Cleanup(ctx, ownerToken string)</code> (552be2c, process kill is
+scoped to OUR device; the host-wide reap fallbacks were removed).
+<code>cmd/emulator-cleanup</code> was updated accordingly.</li>
+<li>Behaviour change: <code>cuttlefish</code> default
+<code>NetworkHost=true</code> and image refs are passed after
+<code>--</code> (fbff142). <code>health.CheckHTTP</code> treats 4xx as
+UNHEALTHY and accepts only 2xx-3xx (d21f0d8). <code>envconfig</code> now
+surfaces SET-but-invalid env values as errors instead of silently
+defaulting (90cb2f9).</li>
+</ul>
+<p>Callers of the changed signatures must be updated; this is why the
+proposed version is a minor bump on a 1.x line only if the maintainers
+accept the signature changes (decision pending).</p>
 <h3 id="added">Added</h3>
+<ul>
+<li><code>emulator-matrix</code>: <code>--build-type</code> and
+<code>--gradle-property</code> flags to close the release-variant
+device-testing gap (4a8f04e).</li>
+<li><code>emulator</code>: install extra APKs alongside the primary
+matrix APK (0788dd7); containerised-runner support in
+<code>RunCanary</code> / <code>emulator-canary</code> (7fa49f7); LVA-014
+durable device-gate fixes: baked-AVD resolution,
+<code>WaitForBoot</code> container liveness, per-API image template
+(746efe3).</li>
+<li><code>network</code>: race-free <code>ListenEphemeral</code> port
+helper (0053986).</li>
+<li><code>orchestrator</code>: dependency-ordered startup in topological
+waves (c8178cd).</li>
+<li><code>egress</code> + <code>remoteexec</code>: SOCKS egress
+verification, durable remote execution and durable-run shell
+(<code>scripts/lib/durable-run.sh</code>) (cde354f).</li>
+<li>QEMU end-to-end integration test: QMP capability negotiation,
+<code>query-version</code>, clean exit (feeba3f).</li>
+<li>Docs: <code>docs/PRE_INTEGRATION_MATERIALS.md</code>.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><code>lifecycle</code>: idle-shutdown, lease and lazy-boot reworked
+for race/leak safety (see Fixed); <code>lazyservice</code> detects
+dependency cycles instead of overflowing the stack (406e7b9).</li>
+<li><code>scheduler</code>: gpu-affinity fitting-zero-score false
+negative fixed and deterministic tie-breaks across all 5 strategies
+(f0349a8).</li>
+<li><code>runtime</code>: <code>AutoDetect</code> now honours
+<code>SetRuntimePriority</code> (9e92e51); docker / nerdctl
+<code>List</code> populate <code>Created</code> and <code>Ports</code>
+(c7cd749).</li>
+<li><code>health</code> / <code>endpoint</code>: IPv6 literals are
+bracketed correctly (11280cc, f810e6d, 6158d9b).</li>
+<li>Governance: universal covenant anchors carried (9da662f),
+four-carrier lockstep restored (4dab992), GEMINI.md mirror backfilled,
+upstream scripts lowercased per section 11.4.29, shebangs made portable
+(d940b51).</li>
+</ul>
+<h3
+id="fixed-hardened-82-fix-54-hardening-commits-selected-by-area">Fixed /
+hardened (82 fix + 54 hardening commits; selected, by area)</h3>
+<ul>
+<li><p>Security (argument / shell injection class): shell-quoting of
+caller- and registry-controlled values spliced into remote commands
+(7f7649a, 4b89cda, 3c1dc01, 70a9084, e97636e, 2862ec0, cf52b5f);
+leading-dash ssh/scp/simctl/ device-name refusal and <code>--</code>
+end-of-options before image refs (14e73b5, 5627348, 3a52825, 26a1009,
+c76d4f5, ddc4b45, a028b4c); VM guest-shell/argv injection (b745208);
+crossbuild artifact path-traversal, symlink exfiltration and FIFO
+copy-hang (cc4281a, 69df446, 4884191); dotenv inline-comment credential
+corruption (d293baa).</p></li>
+<li><p>Concurrency / lifecycle: ReleaseFunc double-release,
+idle-vs-lease reclaim, TOCTOU double-boot, Stop-during-Start
+resurrection, event bus Close hang and self-unsubscribe deadlock,
+panicking subscriber/<code>onIdle</code> containment (9470007, a9c660d,
+c6d401c, 031d305, da4c3b8, 2f3c0b1, 6800059).</p></li>
+<li><p>Durability / honesty: atomic registry persistence,
+fsync-before-rename cache durability and corrupt-blob quarantine,
+remoteexec honest transport and sentinel reporting, boot rollback tears
+down distributed endpoints (06e9872, 686db32, ca83bd7, 9b8d6f5,
+fc25fc8).</p></li>
+<li><p>Resource leaks / teardown: tunnel port leaks and dead-tunnel
+reaping, <code>Undistribute</code> of <code>StateMigrating</code>
+containers, deadline-bounded waits across emulator / cuttlefish /
+genymotion / brokertest / applesim / vm (bfd8fd3, 7c228f8, 8e16441,
+1ec51e7, 5e38856, 793d402, a900f3a, 822a6d1).</p></li>
+<li><p>Challenges / scanners: a challenge no longer certifies a
+panicking binary as PASSED (7f59225); the CONST-033 host-power scanner
+gains a paired <code>--prove-failure</code> proof and stops reporting
+false greens (919ad1e, VSC-368); scripts no longer report success for
+work never done (b3758dd).</p></li>
+<li><p>Per-package fix/hardening commit counts (measured from subject
+prefixes; a commit naming several packages counts for each): remote 8,
+lifecycle 8, vm 7, serviceregistry 7, network 7, emulator 7,
+distribution 7, volume 6, scheduler 5, runtime 5, health 5, event 5, and
+further packages (<code>git log</code>).</p></li>
+<li><p>Tests: <code>pkg/remote</code> now pins umask 0022 in
+<code>TestMain</code> (<code>main_umask_unix_test.go</code>). Under
+umask 0002 <code>t.TempDir()</code> is 0775 and the pool’s hardening
+(refuse a pre-existing group/other-writable control-socket dir) rejected
+it; <code>TestNewConnectionPool</code> then dereferenced a nil pool and
+the panic aborted the whole package. Test-only change, no product code
+touched.</p></li>
+</ul>
+<h3 id="known-limitations-imperfections">Known limitations /
+imperfections</h3>
+<ul>
+<li><code>internal/buildpkg/executor.go</code>
+<code>LaunchLocalBuild</code> is a stub that returns an error (“local
+builds are handled by the shell pipeline, not the Go executor”); the
+design question is open in
+<code>docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md</code>.</li>
+<li>Test run was on the local host, not inside a build container (the
+repository ships no containerised test target); section 11.4.173
+compliance for this release is therefore NOT claimed.</li>
+<li>The test-only umask fix has not had an independent review (section
+11.4.142 / 11.4.209); it is owed.</li>
+<li>Tag naming in this repository is inconsistent:
+<code>helixcode-v1.1.0</code>, <code>helix_translate-2.3.x</code>,
+<code>1.0.2-dev-0.0.2</code>, <code>1.1.0-dev</code>,
+<code>1.1.1-dev-0.0.x</code>, <code>yole-1.0.0-0.0.0.0.6-dev</code>.
+<code>containers-1.2.0</code> follows section 11.4.151
+(<code>&lt;prefix&gt;-&lt;version&gt;</code>); no <code>v1.2.0</code>
+alias was created because no existing tag uses a bare
+<code>vX.Y.Z</code> form.</li>
+<li>HTML/PDF twins of README/CHANGELOG/docs are stale (no exporter in
+the repo).</li>
+</ul>
+<h3 id="notes">Notes</h3>
+<ul>
+<li>The former <code>[Unreleased]</code> entries (Apple
+<code>container</code> crossbuild backend, GPU-aware scheduling,
+<code>CONTAINERS_REMOTE_HOST_N_GPU_AUTOPROBE</code>) were already
+contained in tag <code>helixcode-v1.1.0</code> (verified: commits
+61e01dc and a3ee5ce are ancestors of that tag); they are kept below
+under that tag, not re-announced.</li>
+<li>HTML/PDF twins of this file are NOT regenerated (no documented
+exporter in the repository); they are stale until regenerated.</li>
+</ul>
+<h2
+id="helixcode-v1.1.0---2026-06-23-retroactive-heading-content-previously-under-unreleased">[helixcode-v1.1.0]
+- 2026-06-23 (retroactive heading; content previously under
+[Unreleased])</h2>
+<h3 id="added-1">Added</h3>
 <ul>
 <li>Apple <code>container</code> crossbuild backend
 (<code>pkg/crossbuild/apple_container.go</code>
@@ -27,3 +407,5 @@ consumer-project references.</li>
 <code>docs/gpu-scheduling.md</code>.</li>
 <li><code>CONTAINERS_REMOTE_HOST_N_GPU_AUTOPROBE</code> env var.</li>
 </ul>
+</body>
+</html>

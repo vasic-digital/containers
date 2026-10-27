@@ -53,10 +53,20 @@ Totals: 4 + 9 + 11 distinct in the catalogizer tree (24 files; the constitution
 hub llmctl copy adds 11 duplicates). `constitution/submodules/containers` and
 `catalogizer/submodules/containers` are the library itself. Per-file usage of
 the changed symbols (grep): llmctl `internal/registry/registry.go` calls
-`serviceregistry` `Unregister`/`UpdateHealth` (lines 326, 366, 382, 552, 565,
-594) and must handle the new `error` return; llmctl `internal/vantage` uses
-`runtime.ContainerRuntime` and its `fake_test.go` fake must implement the
-full interface. Other call sites were NOT individually compile-checked against
-1.2.x (UNCONFIRMED: llmctl/helix_qa/catalog-api build against this tree was not
-run); the catalogizer submodule pin `submodules/containers` @ 4a8f04e is an
-ancestor of 1.2.0 (7 files differ).
+`serviceregistry` `Unregister`/`UpdateHealth` and `internal/vantage` uses
+`runtime.ContainerRuntime`. **Status (verified 2026-10-27): llmctl needs no
+further change.** llmctl `v3.3.0` (7cc9e83) already consumes the new API: every
+`sr.Unregister(...)` call checks the returned `error`
+(`internal/registry/registry.go` lines 366, 552, 565, 594), `UpdateHealth` is
+returned to the caller (line 326), and `internal/vantage` compiles against
+`runtime.ContainerRuntime`. Evidence: `go build ./...` rc=0 and
+`go test -count=1 ./internal/registry ./internal/vantage ./internal/gateway`
+all `ok` for BOTH llmctl `v3.3.0` and llmctl `origin/main` (81645ab), each built
+against this repository at `containers-1.2.1` (06a0b52), wired through
+`replace digital.vasic.containers => ./submodules/containers`. llmctl no longer
+vendors `containers` as a gitlink (since `v3.3.0` it is resolved from the hub via
+`lib/resolve_deps.sh`), so a consumer links the checkout they want. Earlier
+revisions of this guide said llmctl "must be updated"; that was stale and is
+withdrawn. `helix_qa` and `catalog-api` were NOT compile-checked against 1.2.x
+(UNCONFIRMED); the catalogizer submodule pin `submodules/containers` @ 4a8f04e
+is an ancestor of 1.2.0 (7 files differ).

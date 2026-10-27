@@ -1,244 +1,253 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
+  <meta name="generator" content="pandoc 3.11" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
   <title>README</title>
   <style>
-
-html {
-color: #1a1a1a;
-background-color: #fdfdfd;
-}
-body {
-margin: 0 auto;
-max-width: 36em;
-padding-left: 50px;
-padding-right: 50px;
-padding-top: 50px;
-padding-bottom: 50px;
-hyphens: auto;
-overflow-wrap: break-word;
-text-rendering: optimizeLegibility;
-font-kerning: normal;
-}
-@media (max-width: 600px) {
-body {
-font-size: 0.9em;
-padding: 12px;
-}
-h1 {
-font-size: 1.8em;
-}
-}
-@media print {
-html {
-background-color: white;
-}
-body {
-background-color: transparent;
-color: black;
-font-size: 12pt;
-}
-p, h2, h3 {
-orphans: 3;
-widows: 3;
-}
-h2, h3, h4 {
-page-break-after: avoid;
-}
-}
-p {
-margin: 1em 0;
-}
-a {
-color: #1a1a1a;
-}
-a:visited {
-color: #1a1a1a;
-}
-img {
-max-width: 100%;
-}
-svg {
-height: auto;
-max-width: 100%;
-}
-h1, h2, h3, h4, h5, h6 {
-margin-top: 1.4em;
-}
-h5, h6 {
-font-size: 1em;
-font-style: italic;
-}
-h6 {
-font-weight: normal;
-}
-ol, ul {
-padding-left: 1.7em;
-margin-top: 1em;
-}
-li > ol, li > ul {
-margin-top: 0;
-}
-blockquote {
-margin: 1em 0 1em 1.7em;
-padding-left: 1em;
-border-left: 2px solid #e6e6e6;
-color: #606060;
-}
-code {
-font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
-font-size: 85%;
-margin: 0;
-hyphens: manual;
-}
-pre {
-margin: 1em 0;
-overflow: auto;
-}
-pre code {
-padding: 0;
-overflow: visible;
-overflow-wrap: normal;
-}
-.sourceCode {
-background-color: transparent;
-overflow: visible;
-}
-hr {
-border: none;
-border-top: 1px solid #1a1a1a;
-height: 1px;
-margin: 1em 0;
-}
-table {
-margin: 1em 0;
-border-collapse: collapse;
-width: 100%;
-overflow-x: auto;
-display: block;
-font-variant-numeric: lining-nums tabular-nums;
-}
-table caption {
-margin-bottom: 0.75em;
-}
-tbody {
-margin-top: 0.5em;
-border-top: 1px solid #1a1a1a;
-border-bottom: 1px solid #1a1a1a;
-}
-th {
-border-top: 1px solid #1a1a1a;
-padding: 0.25em 0.5em 0.25em 0.5em;
-}
-td {
-padding: 0.125em 0.5em 0.25em 0.5em;
-}
-header {
-margin-bottom: 4em;
-text-align: center;
-}
-#TOC li {
-list-style: none;
-}
-#TOC ul {
-padding-left: 1.3em;
-}
-#TOC > ul {
-padding-left: 0;
-}
-#TOC a:not(:hover) {
-text-decoration: none;
-}
-code{white-space: pre-wrap;}
-span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
-div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
-
-ul.task-list[class]{list-style: none;}
-ul.task-list li input[type="checkbox"] {
-font-size: inherit;
-width: 0.8em;
-margin: 0 0.8em 0.2em -1.6em;
-vertical-align: middle;
-}
-.display.math{display: block; text-align: center; margin: 0.5rem auto;}
-
-html { -webkit-text-size-adjust: 100%; }
-pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
-pre > code.sourceCode > span:empty { height: 1.2em; }
-.sourceCode { overflow: visible; }
-code.sourceCode > span { color: inherit; text-decoration: inherit; }
-div.sourceCode { margin: 1em 0; }
-pre.sourceCode { margin: 0; }
-@media screen {
-div.sourceCode { overflow: auto; }
-}
-@media print {
-pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
-}
-pre.numberSource code
-{ counter-reset: source-line 0; }
-pre.numberSource code > span
-{ position: relative; left: -4em; counter-increment: source-line; }
-pre.numberSource code > span > a:first-child::before
-{ content: counter(source-line);
-position: relative; left: -1em; text-align: right; vertical-align: baseline;
-border: none; display: inline-block;
--webkit-touch-callout: none; -webkit-user-select: none;
--khtml-user-select: none; -moz-user-select: none;
--ms-user-select: none; user-select: none;
-padding: 0 4px; width: 4em;
-color: #aaaaaa;
-}
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
-div.sourceCode
-{ }
-@media screen {
-pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
-}
-code span.al { color: #ff0000; font-weight: bold; } 
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.at { color: #7d9029; } 
-code span.bn { color: #40a070; } 
-code span.bu { color: #008000; } 
-code span.cf { color: #007020; font-weight: bold; } 
-code span.ch { color: #4070a0; } 
-code span.cn { color: #880000; } 
-code span.co { color: #60a0b0; font-style: italic; } 
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.do { color: #ba2121; font-style: italic; } 
-code span.dt { color: #902000; } 
-code span.dv { color: #40a070; } 
-code span.er { color: #ff0000; font-weight: bold; } 
-code span.ex { } 
-code span.fl { color: #40a070; } 
-code span.fu { color: #06287e; } 
-code span.im { color: #008000; font-weight: bold; } 
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
-code span.kw { color: #007020; font-weight: bold; } 
-code span.op { color: #666666; } 
-code span.ot { color: #007020; } 
-code span.pp { color: #bc7a00; } 
-code span.sc { color: #4070a0; } 
-code span.ss { color: #bb6688; } 
-code span.st { color: #4070a0; } 
-code span.va { color: #19177c; } 
-code span.vs { color: #4070a0; } 
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
-</style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: 1.5em;}
+    div.column{flex: auto;}
+    @media screen {
+    div.columns{gap: min(4vw, 1.5em);}
+    div.column{overflow-x: auto;}
+    }
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
 </head>
 <body>
 <header id="title-block-header">
 <h1 class="title">README</h1>
 </header>
-<h1 id="digitalvasiccontainers">digital.vasic.containers</h1>
+<h1 id="digital.vasic.containers">digital.vasic.containers</h1>
 <table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
 <thead>
 <tr>
 <th>Field</th>
@@ -248,7 +257,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 <tbody>
 <tr>
 <td>Revision</td>
-<td>2</td>
+<td>4</td>
 </tr>
 <tr>
 <td>Created</td>
@@ -256,11 +265,26 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 </tr>
 <tr>
 <td>Last modified</td>
-<td>2026-05-19</td>
+<td>2026-10-27 (docs correction after
+<code>containers-1.2.1</code>)</td>
 </tr>
 <tr>
 <td>Status</td>
 <td>active</td>
+</tr>
+<tr>
+<td>Documented state</td>
+<td>release <code>containers-1.2.1</code> (prepared 2026-10-27; code
+identical to <code>containers-1.2.0</code>), 159 commits after tag
+<code>helixcode-v1.1.0</code>; BREAKING Go API changes since 1.1.x are
+listed in <a href="MIGRATION.md">MIGRATION.md</a>; SemVer deviation:
+breaking change shipped in 1.2.0/1.2.1 instead of 2.0.0 (operator
+decision); llmctl <code>v3.3.0</code> already consumes the new API, see
+MIGRATION.md</td>
+</tr>
+<tr>
+<td>Change history</td>
+<td><a href="CHANGELOG.md">CHANGELOG.md</a></td>
 </tr>
 <tr>
 <td>Test coverage</td>
@@ -280,7 +304,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; }
 checking, lifecycle management, and service discovery. Supports Docker,
 Podman, and Kubernetes runtimes.</p>
 <h2 id="installation">Installation</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get digital.vasic.containers</span></code></pre></div>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> get digital.vasic.containers</span></code></pre></div>
 <h2 id="quick-start">Quick Start</h2>
 <div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -370,7 +395,111 @@ sharing</li>
 reschedule containers</li>
 <li><strong>Environment configuration</strong>: <code>.env</code> files
 and <code>CONTAINERS_REMOTE_*</code> env vars</li>
+<li><strong>Android / Cuttlefish / Genymotion / Apple-simulator / QEMU
+matrices</strong>: <code>pkg/emulator</code>,
+<code>pkg/cuttlefish</code>, <code>pkg/genymotion</code>,
+<code>pkg/applesim</code>, <code>pkg/vm</code> plus
+<code>cmd/emulator-matrix</code> (with <code>--build-type</code> /
+<code>--gradle-property</code>), <code>emulator-canary</code>,
+<code>vm-matrix</code></li>
+<li><strong>Cross-platform build backends</strong>:
+<code>pkg/crossbuild</code> (host, Linux container, Apple
+<code>container</code> micro-VM on macOS) selected by
+<code>crossbuild.Selector</code></li>
+<li><strong>GPU-aware scheduling</strong>: see <a
+href="docs/gpu-scheduling.md">docs/gpu-scheduling.md</a></li>
+<li><strong>Durable remote execution and egress</strong>:
+<code>pkg/remoteexec</code>, <code>pkg/egress</code> (SOCKS egress
+verification)</li>
+<li><strong>Dependency-ordered orchestrator startup</strong>:
+topological waves in <code>pkg/orchestrator</code></li>
 </ul>
+<h2 id="configuration-and-runtime-defaults">Configuration and runtime
+defaults</h2>
+<p>Remote hosts are configured only through environment variables / a
+<code>.env</code> file (loaded by <code>pkg/envconfig</code>); nothing
+host-specific is compiled in. Names below are taken from
+<code>pkg/envconfig/parser.go</code> and
+<code>pkg/envconfig/template.go</code>
+(<code>envconfig.GenerateEnvExample()</code> prints the full documented
+template):</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Meaning</th>
+<th>Default (code)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CONTAINERS_REMOTE_ENABLED</code></td>
+<td>master switch for remote distribution</td>
+<td><code>false</code></td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_SSH_USER</code> /
+<code>_SSH_KEY</code> / <code>_SSH_PASSWORD</code></td>
+<td>SSH defaults for all hosts</td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_DEFAULT_RUNTIME</code></td>
+<td>runtime assumed on remote hosts (<code>docker</code> /
+<code>podman</code>)</td>
+<td><code>docker</code></td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_SCHEDULER</code></td>
+<td><code>resource_aware</code>, <code>round_robin</code>,
+<code>affinity</code>, <code>spread</code>, <code>bin_pack</code></td>
+<td><code>resource_aware</code></td>
+</tr>
+<tr>
+<td><code>CONTAINERS_REMOTE_HOST_N_NAME</code>, <code>_ADDRESS</code>,
+<code>_PORT</code>, <code>_USER</code>, <code>_KEY</code>,
+<code>_RUNTIME</code>, <code>_LABELS</code>,
+<code>_GPU_AUTOPROBE</code></td>
+<td>per-host settings, <code>N</code> = 1, 2, …</td>
+<td>per-host; unset falls back to the global defaults above</td>
+</tr>
+</tbody>
+</table>
+<p>Example (placeholder values; use your own hostnames and keys, never
+commit credentials):</p>
+<pre class="dotenv"><code>CONTAINERS_REMOTE_ENABLED=true
+CONTAINERS_REMOTE_DEFAULT_RUNTIME=docker
+CONTAINERS_REMOTE_HOST_1_NAME=build-host-a
+CONTAINERS_REMOTE_HOST_1_ADDRESS=build-a.example.internal
+CONTAINERS_REMOTE_HOST_1_USER=deploy
+CONTAINERS_REMOTE_HOST_1_RUNTIME=podman</code></pre>
+<p>Since <code>helixcode-v1.1.0</code>, SET-but-invalid values are
+reported as errors by <code>Parse</code> / <code>LoadFromFile</code>
+instead of silently defaulting (<code>LoadFromEnv</code> itself returns
+a config without validation).</p>
+<p><strong>Runtime defaults, stated precisely:</strong> - Remote-host
+runtime default is <code>docker</code>
+(<code>CONTAINERS_REMOTE_DEFAULT_RUNTIME</code>). - Local auto-detection
+(<code>runtime.AutoDetect</code>) tries, in order, Podman, Docker,
+nerdctl, CRI-O, LXD, Kubernetes, and honours
+<code>runtime.SetRuntimePriority</code>. - Podman is supported as a
+runtime (<code>PodmanRuntime</code>, podman-compose shim detection in
+<code>pkg/compose</code>). NOT VERIFIED end-to-end in this documentation
+pass: no builds or container tests were run for this refresh; rootless
+Podman against a real remote host and Docker/Podman behaviour parity on
+the full matrix are UNCONFIRMED until the containerised full-suite run
+happens. - Host names such as <code>thinker</code> appear in this
+repository only as illustrative examples (for instance the
+<code>ctop --host</code> usage text and emulator comments); they are not
+defaults and nothing resolves them implicitly.</p>
+<p><strong>Open proposal (not implemented):</strong> a first-class
+local-host build target is described in <a
+href="docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md">docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md</a>.</p>
 <h2 id="architecture">Architecture</h2>
 <pre><code>boot.BootManager
 ├── compose.ComposeOrchestrator  (Docker Compose operations)
@@ -399,133 +528,135 @@ runtime.ContainerRuntime
 ├── KubernetesRuntime
 └── remote.RemoteRuntime         (ContainerRuntime over SSH)</code></pre>
 <h2 id="remote-distribution">Remote Distribution</h2>
-<p>Distribute containers across local and remote hosts. See <a href="docs/REMOTE_DISTRIBUTION.md">docs/REMOTE_DISTRIBUTION.md</a> for
+<p>Distribute containers across local and remote hosts. See <a
+href="docs/REMOTE_DISTRIBUTION.md">docs/REMOTE_DISTRIBUTION.md</a> for
 the full guide.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/distribution&quot;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/envconfig&quot;</span></span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/scheduler&quot;</span></span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Load remote host configuration from .env</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>cfg<span class="op">,</span> _ <span class="op">:=</span> envconfig<span class="op">.</span>LoadFromEnv<span class="op">()</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>hosts <span class="op">:=</span> cfg<span class="op">.</span>ToRemoteHosts<span class="op">()</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">// Create host manager and register hosts</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>hm <span class="op">:=</span> remote<span class="op">.</span>NewDefaultHostManager<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">())</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _<span class="op">,</span> h <span class="op">:=</span> <span class="kw">range</span> hosts <span class="op">{</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    hm<span class="op">.</span>AddHost<span class="op">(</span>h<span class="op">)</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
-<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Create distributor</span></span>
-<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>dist <span class="op">:=</span> distribution<span class="op">.</span>NewDistributor<span class="op">(</span></span>
-<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithScheduler<span class="op">(</span></span>
-<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>        scheduler<span class="op">.</span>NewDefaultScheduler<span class="op">(</span>hm<span class="op">),</span></span>
-<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
-<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithHostManager<span class="op">(</span>hm<span class="op">),</span></span>
-<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithExecutor<span class="op">(</span></span>
-<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>        remote<span class="op">.</span>NewSSHExecutor<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">()),</span></span>
-<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a><span class="co">// Distribute containers</span></span>
-<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>summary<span class="op">,</span> _ <span class="op">:=</span> dist<span class="op">.</span>Distribute<span class="op">(</span>ctx<span class="op">,</span></span>
-<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">[]</span>scheduler<span class="op">.</span>ContainerRequirements<span class="op">{</span></span>
-<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;web&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;nginx:latest&quot;</span><span class="op">},</span></span>
-<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;cache&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;redis:latest&quot;</span><span class="op">},</span></span>
-<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
-<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Local: %d, Remote: %d</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
-<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">.</span>LocalContainers<span class="op">,</span> summary<span class="op">.</span>RemoteContainers<span class="op">)</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/distribution&quot;</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/envconfig&quot;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/scheduler&quot;</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">// Load remote host configuration from .env</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>cfg<span class="op">,</span> _ <span class="op">:=</span> envconfig<span class="op">.</span>LoadFromEnv<span class="op">()</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>hosts <span class="op">:=</span> cfg<span class="op">.</span>ToRemoteHosts<span class="op">()</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">// Create host manager and register hosts</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>hm <span class="op">:=</span> remote<span class="op">.</span>NewDefaultHostManager<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">())</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> _<span class="op">,</span> h <span class="op">:=</span> <span class="kw">range</span> hosts <span class="op">{</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    hm<span class="op">.</span>AddHost<span class="op">(</span>h<span class="op">)</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Create distributor</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>dist <span class="op">:=</span> distribution<span class="op">.</span>NewDistributor<span class="op">(</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithScheduler<span class="op">(</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>        scheduler<span class="op">.</span>NewDefaultScheduler<span class="op">(</span>hm<span class="op">),</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithHostManager<span class="op">(</span>hm<span class="op">),</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>    distribution<span class="op">.</span>WithExecutor<span class="op">(</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>        remote<span class="op">.</span>NewSSHExecutor<span class="op">(</span>remote<span class="op">.</span>DefaultOptions<span class="op">()),</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>    <span class="op">),</span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a><span class="co">// Distribute containers</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>summary<span class="op">,</span> _ <span class="op">:=</span> dist<span class="op">.</span>Distribute<span class="op">(</span>ctx<span class="op">,</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="op">[]</span>scheduler<span class="op">.</span>ContainerRequirements<span class="op">{</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;web&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;nginx:latest&quot;</span><span class="op">},</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>        <span class="op">{</span>Name<span class="op">:</span> <span class="st">&quot;cache&quot;</span><span class="op">,</span> Image<span class="op">:</span> <span class="st">&quot;redis:latest&quot;</span><span class="op">},</span></span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="op">},</span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Local: %d, Remote: %d</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span></span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>    summary<span class="op">.</span>LocalContainers<span class="op">,</span> summary<span class="op">.</span>RemoteContainers<span class="op">)</span></span></code></pre></div>
 <h2 id="service-orchestrator">Service Orchestrator</h2>
 <p>Auto-discover and manage all containerized services with automatic
 remote distribution:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/orchestrator&quot;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/compose&quot;</span></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create orchestrator with local compose and optional remote support</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> orchestrator<span class="op">.</span>New<span class="op">(</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithLocalOrchestrator<span class="op">(</span>composeOrch<span class="op">),</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithRemoteExecutor<span class="op">(</span>remoteExec<span class="op">),</span>  <span class="co">// optional</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithHostManager<span class="op">(</span>hostMgr<span class="op">),</span>         <span class="co">// optional</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithProjectDir<span class="op">(</span><span class="st">&quot;/path/to/project&quot;</span><span class="op">),</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">// Auto-discover all docker-compose files in docker/ directory</span></span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>DiscoverServices<span class="op">(</span><span class="st">&quot;docker&quot;</span><span class="op">)</span></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Or manually add services</span></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>AddService<span class="op">(</span>orchestrator<span class="op">.</span>Service<span class="op">{</span></span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>        <span class="st">&quot;mcp&quot;</span><span class="op">,</span></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>    ComposeFile<span class="op">:</span> <span class="st">&quot;docker/mcp/docker-compose.mcp-servers.yml&quot;</span><span class="op">,</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    Description<span class="op">:</span> <span class="st">&quot;MCP servers (32+ servers)&quot;</span><span class="op">,</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">// Start all services (remote if configured, local otherwise)</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartAll<span class="op">(</span>ctx<span class="op">)</span></span>
-<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">// Start a specific service</span></span>
-<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartService<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;mcp&quot;</span><span class="op">)</span></span>
-<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a><span class="co">// List discovered services</span></span>
-<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>services <span class="op">:=</span> orch<span class="op">.</span>ListServices<span class="op">()</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/orchestrator&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/compose&quot;</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create orchestrator with local compose and optional remote support</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>orch <span class="op">:=</span> orchestrator<span class="op">.</span>New<span class="op">(</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithLocalOrchestrator<span class="op">(</span>composeOrch<span class="op">),</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithRemoteExecutor<span class="op">(</span>remoteExec<span class="op">),</span>  <span class="co">// optional</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithHostManager<span class="op">(</span>hostMgr<span class="op">),</span>         <span class="co">// optional</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    orchestrator<span class="op">.</span>WithProjectDir<span class="op">(</span><span class="st">&quot;/path/to/project&quot;</span><span class="op">),</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">// Auto-discover all docker-compose files in docker/ directory</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>DiscoverServices<span class="op">(</span><span class="st">&quot;docker&quot;</span><span class="op">)</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="co">// Or manually add services</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>orch<span class="op">.</span>AddService<span class="op">(</span>orchestrator<span class="op">.</span>Service<span class="op">{</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    Name<span class="op">:</span>        <span class="st">&quot;mcp&quot;</span><span class="op">,</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>    ComposeFile<span class="op">:</span> <span class="st">&quot;docker/mcp/docker-compose.mcp-servers.yml&quot;</span><span class="op">,</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    Description<span class="op">:</span> <span class="st">&quot;MCP servers (32+ servers)&quot;</span><span class="op">,</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="op">})</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co">// Start all services (remote if configured, local otherwise)</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartAll<span class="op">(</span>ctx<span class="op">)</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="co">// Start a specific service</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>err <span class="op">:=</span> orch<span class="op">.</span>StartService<span class="op">(</span>ctx<span class="op">,</span> <span class="st">&quot;mcp&quot;</span><span class="op">)</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="co">// List discovered services</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>services <span class="op">:=</span> orch<span class="op">.</span>ListServices<span class="op">()</span></span></code></pre></div>
 <p>When remote distribution is enabled (both <code>RemoteExecutor</code>
 and <code>HostManager</code> provided), all services are automatically
 deployed to the remote host with automatic fallback to local.</p>
 <h2 id="container-monitoring-ctop">Container Monitoring (ctop)</h2>
 <p>Real-time container monitoring with top/htop-style display for local
 and remote containers:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/ctop&quot;</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create collector with optional remote host support</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>collector <span class="op">:=</span> ctop<span class="op">.</span>NewCollector<span class="op">(</span><span class="st">&quot;podman&quot;</span><span class="op">,</span> hostManager<span class="op">)</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Collect container data</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>list<span class="op">,</span> _ <span class="op">:=</span> collector<span class="op">.</span>Collect<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Containers: %d running, %d stopped</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> list<span class="op">.</span>Running<span class="op">,</span> list<span class="op">.</span>Stopped<span class="op">)</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">// Create interactive display</span></span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>display <span class="op">:=</span> ctop<span class="op">.</span>NewDisplay<span class="op">(</span>collector<span class="op">,</span> ctop<span class="op">.</span>DefaultDisplayConfig<span class="op">())</span></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="co">// Run interactive TUI (blocks until quit)</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>display<span class="op">.</span>Run<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get a snapshot</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>snapshot<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderSnapshot<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>snapshot<span class="op">)</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get JSON output</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>json<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderJSON<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>json<span class="op">)</span></span></code></pre></div>
-<h3 id="cli-usage">CLI Usage</h3>
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the ctop CLI</span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install digital.vasic.containers/cmd/ctop@latest</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run interactive monitoring</span></span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span></span>
+<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;context&quot;</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/ctop&quot;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;digital.vasic.containers/pkg/remote&quot;</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
 <span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co"># One-time snapshot</span></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--once</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">// Create collector with optional remote host support</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>collector <span class="op">:=</span> ctop<span class="op">.</span>NewCollector<span class="op">(</span><span class="st">&quot;podman&quot;</span><span class="op">,</span> hostManager<span class="op">)</span></span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># JSON output</span></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--json</span></span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter by host</span></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--host</span> thinker</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by memory</span></span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--sort</span> mem</span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Show stopped containers</span></span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--all</span></span></code></pre></div>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">// Collect container data</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>list<span class="op">,</span> _ <span class="op">:=</span> collector<span class="op">.</span>Collect<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Printf<span class="op">(</span><span class="st">&quot;Containers: %d running, %d stopped</span><span class="ch">\n</span><span class="st">&quot;</span><span class="op">,</span> list<span class="op">.</span>Running<span class="op">,</span> list<span class="op">.</span>Stopped<span class="op">)</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">// Create interactive display</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>display <span class="op">:=</span> ctop<span class="op">.</span>NewDisplay<span class="op">(</span>collector<span class="op">,</span> ctop<span class="op">.</span>DefaultDisplayConfig<span class="op">())</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">// Run interactive TUI (blocks until quit)</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>display<span class="op">.</span>Run<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get a snapshot</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>snapshot<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderSnapshot<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>snapshot<span class="op">)</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">// Or get JSON output</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>json<span class="op">,</span> _ <span class="op">:=</span> display<span class="op">.</span>RenderJSON<span class="op">(</span>context<span class="op">.</span>Background<span class="op">())</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>fmt<span class="op">.</span>Println<span class="op">(</span>json<span class="op">)</span></span></code></pre></div>
+<h3 id="cli-usage">CLI Usage</h3>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Install the ctop CLI</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install digital.vasic.containers/cmd/ctop@latest</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Run interactive monitoring</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co"># One-time snapshot</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--once</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># JSON output</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--json</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter by host</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--host</span> gpu-node-1</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by memory</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--sort</span> mem</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Show stopped containers</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="ex">ctop</span> <span class="at">--all</span></span></code></pre></div>
 <h3 id="display-features">Display Features</h3>
 <ul>
 <li><strong>Color-coded resource usage</strong>: Green (low) → Yellow
@@ -539,20 +670,20 @@ hosts</li>
 <li><strong>Remote support</strong>: Integrates with HostManager for
 distributed monitoring</li>
 </ul>
-<h2 id="anti-bluff-guarantees-const-035-114-round-299">Anti-Bluff
+<h2 id="anti-bluff-guarantees-const-035-11.4-round-299">Anti-Bluff
 Guarantees (CONST-035, §11.4, round-299)</h2>
 <blockquote>
-<p>Verbatim 2026-05-19 operator mandate (CONST-049 §11.4.17): <em>&quot;all
+<p>Verbatim 2026-05-19 operator mandate (CONST-049 §11.4.17): <em>“all
 existing tests and Challenges do work in anti-bluff manner - they MUST
 confirm that all tested codebase really works as expected! We had been
 in position that all tests do execute with success and all Challenges as
-well, but in reality the most of the features does not work and can&#39;t be
+well, but in reality the most of the features does not work and can’t be
 used! This MUST NOT be the case and execution of tests and Challenges
 MUST guarantee the quality, the completition and full usability by end
-users of the product!&quot;</em></p>
+users of the product!”</em></p>
 </blockquote>
-<p>This repository&#39;s PASS bar is &quot;users can use the feature,&quot; NOT &quot;tests
-pass.&quot; Every passing test or challenge MUST carry positive runtime
+<p>This repository’s PASS bar is “users can use the feature,” NOT “tests
+pass.” Every passing test or challenge MUST carry positive runtime
 evidence captured during execution; metadata-only / configuration-only /
 absence-of-error / grep-without-runtime PASS is a §11.4 critical defect
 regardless of how green the summary line looks.</p>
@@ -560,12 +691,14 @@ regardless of how green the summary line looks.</p>
 <li><strong>CONST-050(B) — 100% test-type coverage.</strong> Unit (mocks
 allowed only in <code>*_test.go</code>), integration (real
 Docker/Podman), e2e (real SSH targets), security, stress, benchmark,
-plus 12 challenges under <a href="challenges/scripts/">challenges/scripts/</a>. Per-symbol ledger
+plus 12 challenges under <a
+href="challenges/scripts/">challenges/scripts/</a>. Per-symbol ledger
 lives at <a href="docs/test-coverage.md">docs/test-coverage.md</a>.</li>
 <li><strong>Paired-mutation discipline (§1.1).</strong> Every gate has a
 paired mutation that deliberately breaks the production code path and
 asserts the gate fails. A gate that survives mutation is a bluff gate.
-The round-299 paired-mutation script <a href="challenges/scripts/containers_describe_challenge.sh"><code>challenges/scripts/containers_describe_challenge.sh</code></a>
+The round-299 paired-mutation script <a
+href="challenges/scripts/containers_describe_challenge.sh"><code>challenges/scripts/containers_describe_challenge.sh</code></a>
 ships with both <code>--mutate</code> mode (exit 99 = mutation
 witnessed) and a normal mode (exit 0 = all five conditions PASS).</li>
 <li><strong>Remote distribution — CONST-045 .env-driven only.</strong>
@@ -580,7 +713,7 @@ failure, but skip is loud).</li>
 Production code under <code>pkg/</code>, <code>cmd/</code>,
 <code>internal/buildpkg/</code> MUST NOT import from any
 <code>internal/mocks/</code> path. Mocks / stubs / <code>TODO</code> /
-<code>FIXME</code> / &quot;for now&quot; / &quot;in production this would&quot; patterns
+<code>FIXME</code> / “for now” / “in production this would” patterns
 exist ONLY inside <code>*_test.go</code>.</li>
 <li><strong>i18n / CONST-046 — no hardcoded human-readable
 strings.</strong> User-facing text is loaded from
@@ -591,15 +724,183 @@ exits 99 when any bundle is removed.</li>
 </ul>
 <h3 id="run-the-round-299-challenge-locally">Run the round-299 challenge
 locally</h3>
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Normal mode — must exit 0; emits PASS for every condition</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/containers_describe_challenge.sh</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Paired-mutation mode — must exit 99; restores the working tree on EXIT trap</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/containers_describe_challenge.sh <span class="at">--mutate</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Normal mode — must exit 0; emits PASS for every condition</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/containers_describe_challenge.sh</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Paired-mutation mode — must exit 99; restores the working tree on EXIT trap</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> challenges/scripts/containers_describe_challenge.sh <span class="at">--mutate</span></span></code></pre></div>
 <p>The challenge respects the host-power-management hard ban (CONST-033
 / §12), performs no sudo / suspend / hibernate / poweroff calls, never
 echoes secrets (§11.4.10), and runs in O(seconds) without any container
 start.</p>
+<h2 id="android-emulator-pkgemulator">Android Emulator
+(pkg/emulator)</h2>
+<p><code>pkg/emulator</code> provides multi-target Android emulator
+orchestration satisfying parent project’s clauses 6.I (Multi-Emulator
+Container Matrix), 6.K (Builds-Inside-Containers Mandate), 6.V
+(Container Emulators Mandate), and 6.X (Container-Submodule Emulator
+Wiring Mandate).</p>
+<h3 id="emulator-variants">Emulator variants</h3>
+<table>
+<thead>
+<tr>
+<th>Host OS</th>
+<th>Acceleration</th>
+<th>Runner</th>
+<th style="text-align: center;">Gate-eligible</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Linux x86_64</td>
+<td>KVM (<code>/dev/kvm</code>)</td>
+<td><code>containerized</code></td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>macOS arm64</td>
+<td>HVF (host-only API)</td>
+<td><code>host-direct</code></td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td>Windows</td>
+<td>WHPX (host-only API)</td>
+<td><code>host-direct</code></td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
+<p><code>AccelProfileForOS(runtime.GOOS)</code> returns the
+deterministic OS-correct profile.
+<code>ResolveRunner("auto", runtime.GOOS)</code> picks the OS-correct
+runner. See <code>pkg/emulator/accel.go</code> for the complete
+rationale.</p>
+<h3 id="boot-reliability-features">Boot reliability features</h3>
+<ul>
+<li><strong>Pre-boot ADB hygiene</strong> (added 2026-06-03):
+<code>Boot()</code> calls <code>ResetADBHygiene()</code> before
+launching the emulator. This disconnects any phantom TCP entries (e.g.
+<code>localhost:5555 offline</code>) that wedge adb’s device tracking,
+then cycles <code>adb kill-server</code> / <code>adb start-server</code>
+so the daemon starts from a clean state. Forensic anchor: a phantom
+<code>localhost:5555 offline</code> entry caused
+<code>discoverNewSerial</code> to never observe the new emulator,
+producing boot-timeout on every attempt even after the emulator had
+started.</li>
+<li><strong>Pre-boot zombie cleanup</strong>: <code>runOne</code> calls
+<code>Cleanup()</code> before every emulator boot to remove stale
+<code>qemu-system-*</code> processes left by interrupted runs. This
+prevents ADB-port collisions on multi-AVD matrix iterations.</li>
+<li><strong>AVD lock clearing</strong>:
+<code>clearAVDLock(avdName)</code> removes
+<code>$HOME/.android/avd/&lt;name&gt;.avd/&lt;name&gt;.lock</code>
+before boot so an unclean previous shutdown cannot block the next
+boot.</li>
+<li><strong>Configurable boot timeout</strong>:
+<code>MatrixConfig.BootTimeout</code> / <code>--boot-timeout</code> flag
+is honored on both the host-direct and containerized paths.</li>
+<li><strong>Reap on boot-timeout</strong> (added 2026-06-03): when
+<code>Boot()</code> port-discovery times out, <code>Cleanup()</code>
+reaps any orphaned <code>qemu-system-*</code> processes to prevent hot
+zombies consuming CPU/RAM and holding AVD lock files. When
+<code>WaitForBoot()</code> times out,
+<code>KillByPort(consolePort)</code> terminates the specific emulator by
+its console-port argv token; if that matches zero processes,
+<code>Cleanup()</code> is the fallback. Forensic anchor: an unreapped
+emulator was observed at ~370% CPU after a matrix FAIL row, causing the
+next boot to also time out (CPU starvation).</li>
+<li><strong>Offline transport classification</strong> (added
+2026-06-03): <code>ParseADBDevicesLine</code> classifies
+<code>adb devices</code> lines into <code>ADBStateDevice</code>,
+<code>ADBStateOffline</code>, <code>ADBStatePhantomTCP</code>, and
+<code>ADBStateUnauthorized</code>. TCP endpoints in offline state
+(<code>ADBStatePhantomTCP</code>) are explicitly disconnected by
+<code>ResetADBHygiene</code> before kill-server so they cannot re-wedge
+the daemon immediately after restart.</li>
+<li><strong>Boot diagnostic capture</strong> (added 2026-06-03): on
+<code>Boot()</code> or <code>WaitForBoot()</code> timeout,
+<code>CaptureBootDiagnostic()</code> captures <code>adb devices</code>
+output and a <code>getprop</code> snapshot into a
+<code>boot-diag-&lt;ts&gt;.json</code> file in the per-AVD evidence
+directory. The <code>BootResult.BootDiag</code> field (non-nil only on
+error paths) surfaces this diagnostic to the matrix runner for embedding
+in the attestation row — satisfying clause 6.I Group-B <code>diag</code>
+intent.</li>
+<li><strong>Reliable teardown</strong>: <code>Teardown</code> polls
+<code>adb devices</code> until the emulator transitions out of “device”
+state before returning, preventing the next boot from colliding with a
+still-running emulator. <code>KillByPort</code> provides a port-strict
+SIGTERM/SIGKILL fast-path for stuck processes.</li>
+</ul>
+<h3 id="release-cold-start-canary-cmdemulator-canary">Release cold-start
+canary (<code>cmd/emulator-canary</code>)</h3>
+<p>The canary closes the §6.Z tooling gap: debug-signed
+<code>androidTest</code> APKs cannot test release-signed APKs (signature
+mismatch), so the canary uses <code>adb shell am start</code> + logcat
+to exercise the release build directly.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">emulator-canary</span> <span class="dt">\</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--android-sdk-root</span> <span class="va">$ANDROID_SDK_ROOT</span> <span class="dt">\</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--apk</span> releases/1.2.36/android-release/app-release.apk <span class="dt">\</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--package</span> digital.vasic.app.client <span class="dt">\</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--activity</span> .MainActivity <span class="dt">\</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--avd</span> Pixel_8:35:phone <span class="dt">\</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--evidence-dir</span> .ci-evidence/canary-1.2.36 <span class="dt">\</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cold-boot</span></span></code></pre></div>
+<p>Exit codes: - <code>0</code> — activity reached RESUMED state AND no
+FATAL in logcat (canary PASS) - <code>1</code> — activity did not resume
+OR FATAL crash detected (canary FAIL) - <code>2</code> — configuration
+error</p>
+<p>The canary writes a <code>canary-attestation.json</code> and
+<code>logcat.txt</code> under <code>--evidence-dir</code>. The primary
+anti-bluff assertion is on user-visible state: “activity resumed AND
+logcat FATAL-free” — NOT “APK installed without error”.</p>
+<h3 id="matrix-runner-cmdemulator-matrix">Matrix runner
+(<code>cmd/emulator-matrix</code>)</h3>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">emulator-matrix</span> <span class="dt">\</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--android-sdk-root</span> /opt/android-sdk <span class="dt">\</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--apk</span> releases/1.2.36/android-debug/app-debug.apk <span class="dt">\</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--test-class</span> app.example.challenges.Challenge01AppLaunchAndTrackerSelectionTest <span class="dt">\</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--evidence-dir</span> .ci-evidence/1.2.36 <span class="dt">\</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">--avds</span> Pixel_8:35:phone,Pixel_Tablet:34:tablet <span class="dt">\</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">--runner</span> auto <span class="dt">\</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">--cold-boot</span></span></code></pre></div>
+<p><code>--runner auto</code> selects the OS-correct runner:
+<code>containerized</code> on Linux (requires
+<code>--container-image</code>), <code>host-direct</code> on
+macOS/Windows.</p>
+<h2
+id="ota-device-emulator-imagesota-device-emu-cmdota-device-emu-boot">OTA
+Device Emulator (images/ota-device-emu + cmd/ota-device-emu-boot)</h2>
+<p><code>images/ota-device-emu/</code> provides a podman/docker
+<strong>OTA device-emulator runtime image</strong>: a minimal Alpine +
+CA-certs base that runs a consumer-supplied static
+<code>ota-device-emu</code> Go binary impersonating one OTA target
+device against an OTA control plane — for <strong>Tier-1 control-plane
+protocol testing in place of live hardware</strong>. The binary is built
+in the consuming project and supplied via volume mount or a derived
+image (see the env-var contract in
+<code>images/ota-device-emu/entrypoint.sh</code>).</p>
+<p><code>cmd/ota-device-emu-boot</code> is the on-demand bring-up
+recipe: it composes <code>pkg/boot</code> + <code>pkg/health</code> to
+start a control-plane + emulator stack and health-check it (HTTP health
+for the control plane; runtime <code>running</code>-state for the
+emulator). No manual <code>compose up</code> (Constitution
+§11.4.76).</p>
+<p>Honest boundary: this is Tier-1 (control-plane protocol) only. The
+real Android A/B <code>update_engine</code> + AVB/dm-verity apply flow
+needs Cuttlefish-on-Linux-KVM and is NOT this image’s job. Full design:
+<a
+href="docs/ota-device-emulation.md">docs/ota-device-emulation.md</a>.</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> build <span class="at">-f</span> images/ota-device-emu/Dockerfile <span class="dt">\</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> ota-device-emu:dev images/ota-device-emu/</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">podman</span> run <span class="at">--rm</span> ota-device-emu:dev <span class="at">--help</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> run ./cmd/ota-device-emu-boot <span class="dt">\</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">--compose</span> images/ota-device-emu/docker-compose.example.yml</span></code></pre></div>
 <h2 id="license">License</h2>
 <p>MIT</p>
 </body>
