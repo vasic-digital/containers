@@ -4,6 +4,21 @@
 
 (Nothing yet.)
 
+## [1.2.1] - 2026-10-27 (prepared, NOT tagged)
+
+Tag `containers-1.2.1` (to be cut by the operator). Code delta versus
+`containers-1.2.0` (cb5c727): NONE; `origin/main` == `containers-1.2.0` at
+preparation time. This release adds `MIGRATION.md` (every breaking signature
+change since `helixcode-v1.1.0`, verified with `apidiff` + consumer scan) and
+corrects the release metadata.
+
+**SemVer deviation (operator decision):** the breaking Go API changes listed in
+`MIGRATION.md` were first shipped in `containers-1.2.0` (a minor bump). Strict
+SemVer requires a major bump (2.0.0). The operator chose a patch release
+`1.2.1` to attach the migration guide without renumbering the already-published
+1.2.0 line; consumers MUST NOT assume 1.2.x patch releases are source-compatible
+with 1.1.x. See `MIGRATION.md` and `RELEASE_NOTES_1.2.1.md`.
+
 ## [1.2.0] - 2026-10-27
 
 Tag `containers-1.2.0` (project-prefixed per section 11.4.151). Range:

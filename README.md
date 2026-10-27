@@ -6,7 +6,7 @@
 | Created | 2026-04-30 |
 | Last modified | 2026-10-27 |
 | Status | active |
-| Documented state | release `containers-1.2.0` (2026-10-27), 159 commits after tag `helixcode-v1.1.0`; SemVer-strict would be 2.0.0 (owner picked 1.2.0, decision pending) |
+| Documented state | release `containers-1.2.1` (prepared 2026-10-27; code identical to `containers-1.2.0`), 159 commits after tag `helixcode-v1.1.0`; BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); SemVer deviation: breaking change shipped in 1.2.0/1.2.1 instead of 2.0.0 (operator decision) |
 | Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |
