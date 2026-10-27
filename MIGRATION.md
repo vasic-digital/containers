@@ -55,9 +55,10 @@ hub llmctl copy adds 11 duplicates). `constitution/submodules/containers` and
 the changed symbols (grep): llmctl `internal/registry/registry.go` calls
 `serviceregistry` `Unregister`/`UpdateHealth` and `internal/vantage` uses
 `runtime.ContainerRuntime`. **Status (verified 2026-10-27): llmctl needs no
-further change.** llmctl `v3.3.0` (7cc9e83) already consumes the new API: every
-`sr.Unregister(...)` call checks the returned `error`
-(`internal/registry/registry.go` lines 366, 552, 565, 594), `UpdateHealth` is
+further change.** llmctl `v3.3.0` (7cc9e83) already consumes the new API: each
+`sr.Unregister(...)` call either checks the returned `error` (lines 366, 552,
+565, 594) or returns it to the caller (line 382), all in
+`internal/registry/registry.go`; `UpdateHealth` is
 returned to the caller (line 326), and `internal/vantage` compiles against
 `runtime.ContainerRuntime`. Evidence: `go build ./...` rc=0 and
 `go test -count=1 ./internal/registry ./internal/vantage ./internal/gateway`
