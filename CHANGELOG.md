@@ -7,7 +7,7 @@
 ## [1.2.3] - 2026-10-27 (test hygiene; no production-code change)
 
 Tag `containers-1.2.3`. Production (non-`_test.go`) code delta versus
-`containers-1.2.2` (4f507ca): NONE. Public API and `MIGRATION.md` unchanged.
+`containers-1.2.2` (4f507ca): NONE. Public API unchanged (`MIGRATION.md` gains only a note).
 
 - test: `make anti-bluff-scan` reported 17 pre-existing `BLUFF-G-001`
   (`t.Skip` without exempt marker) hits. Each was classified by reading the

@@ -287,6 +287,8 @@ func TestParseLabelsString_NoCommaInValue_Unaffected(t *testing.T) {
 const rtRace1WorkerEnv = "CONTAINERS_RTRACE1_WORKER"
 
 func TestRTRace1_DirectAccessRacesWithSetRuntimePriority(t *testing.T) {
+	// Worker mode: set only by the parent below. Never export this variable
+	// in a real environment, or a plain -race run executes the racy body.
 	if os.Getenv(rtRace1WorkerEnv) == "1" {
 		origPriority := GetRuntimePriority()
 		done := make(chan struct{})
@@ -314,10 +316,15 @@ func TestRTRace1_DirectAccessRacesWithSetRuntimePriority(t *testing.T) {
 	out, err := cmd.CombinedOutput()
 
 	require.Error(t, err, "the child must exit non-zero when the detector fires; output:\n%s", out)
-	assert.Contains(t, string(out), "WARNING: DATA RACE",
-		"the child must report the known RT-RACE-1 data race")
-	assert.Contains(t, string(out), "SetRuntimePriority",
-		"the reported race must involve SetRuntimePriority")
+	report := string(out)
+	i := strings.Index(report, "WARNING: DATA RACE")
+	require.GreaterOrEqual(t, i, 0, "the child must report the known RT-RACE-1 data race; output:\n%s", report)
+	// Only the text AFTER the detector marker counts: the test's own name
+	// also appears elsewhere in the output and must not satisfy this.
+	assert.Contains(t, report[i:], "runtime.SetRuntimePriority(",
+		"the reported race must involve the SetRuntimePriority frame")
+	assert.Contains(t, report[i:], "detect.go:",
+		"the reported race must point into detect.go")
 }
 
 // --- RT-DOCKER-1 (fixed) -----------------------------------------------------
