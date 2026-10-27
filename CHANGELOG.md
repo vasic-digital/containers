@@ -22,8 +22,9 @@ Tag `containers-1.2.3`. Production (non-`_test.go`) code delta versus
   evidence never executed. It is now a real test: under `go test -race` it
   re-executes the test binary as a worker that performs the racy direct read
   of the exported `RuntimePriority` against `SetRuntimePriority` and asserts
-  the child really reported `WARNING: DATA RACE` involving
-  `SetRuntimePriority`. Without `-race` it skips for that concrete reason.
+  the child really reported `WARNING: DATA RACE` with a
+  `runtime.SetRuntimePriority(` frame in `detect.go`. Without `-race` it skips
+  for that concrete reason.
   Mutation check: making the worker use `GetRuntimePriority()` (race-free)
   makes the test fail. The underlying race is still flagged, not fixed (the
   clean fix removes an exported symbol and needs an operator API decision).

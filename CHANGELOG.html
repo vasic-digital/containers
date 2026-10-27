@@ -204,9 +204,10 @@ executed. It is now a real test: under <code>go test -race</code> it
 re-executes the test binary as a worker that performs the racy direct
 read of the exported <code>RuntimePriority</code> against
 <code>SetRuntimePriority</code> and asserts the child really reported
-<code>WARNING: DATA RACE</code> involving
-<code>SetRuntimePriority</code>. Without <code>-race</code> it skips for
-that concrete reason. Mutation check: making the worker use
+<code>WARNING: DATA RACE</code> with a
+<code>runtime.SetRuntimePriority(</code> frame in
+<code>detect.go</code>. Without <code>-race</code> it skips for that
+concrete reason. Mutation check: making the worker use
 <code>GetRuntimePriority()</code> (race-free) makes the test fail. The
 underlying race is still flagged, not fixed (the clean fix removes an
 exported symbol and needs an operator API decision). New helper files:
