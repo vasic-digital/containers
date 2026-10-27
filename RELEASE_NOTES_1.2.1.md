@@ -1,4 +1,4 @@
-# containers 1.2.1 (prepared, not tagged)
+# containers 1.2.1 (tagged `containers-1.2.1`)
 
 - Tag to cut: `containers-1.2.1` on top of this branch (`release/containers-1.2.1`).
 - Code delta vs `containers-1.2.0` (cb5c727): none. Adds `MIGRATION.md`, CHANGELOG

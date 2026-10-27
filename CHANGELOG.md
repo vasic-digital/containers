@@ -2,18 +2,22 @@
 
 ## [Unreleased]
 
-### 1.2.2 (docs-only, not yet released)
+(Nothing yet.)
+
+## [1.2.2] - 2026-10-27 (docs-only)
+
+Tag `containers-1.2.2`. Code delta versus `containers-1.2.1` (06a0b52): NONE.
 
 - docs: `MIGRATION.md` no longer says llmctl must be updated. Verified
-  2026-10-27: llmctl `v3.3.0` (7cc9e83) and llmctl `origin/main` (81645ab)
+  2026-10-27: llmctl `v3.3.0` (7cc9e83) and llmctl local `main` (81645ab)
   both build (`go build ./...` rc=0) and pass their `internal/registry`,
   `internal/vantage`, `internal/gateway` tests against `containers-1.2.1`
   (06a0b52); llmctl already handles the `error` returns of `Unregister` /
   `UpdateHealth`. No code change in this repository.
 
-## [1.2.1] - 2026-10-27 (prepared, NOT tagged)
+## [1.2.1] - 2026-10-27
 
-Tag `containers-1.2.1` (to be cut by the operator). Code delta versus
+Tag `containers-1.2.1`. Code delta versus
 `containers-1.2.0` (cb5c727): NONE; `origin/main` == `containers-1.2.0` at
 preparation time. This release adds `MIGRATION.md` (every breaking signature
 change since `helixcode-v1.1.0`, verified with `apidiff` + consumer scan) and

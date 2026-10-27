@@ -4,9 +4,9 @@
 |---|---|
 | Revision | 4 |
 | Created | 2026-04-30 |
-| Last modified | 2026-10-27 (docs correction after `containers-1.2.1`) |
+| Last modified | 2026-10-27 (release `containers-1.2.2`) |
 | Status | active |
-| Documented state | release `containers-1.2.1` (prepared 2026-10-27; code identical to `containers-1.2.0`), 159 commits after tag `helixcode-v1.1.0`; BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); SemVer deviation: breaking change shipped in 1.2.0/1.2.1 instead of 2.0.0 (operator decision); llmctl `v3.3.0` already consumes the new API, see MIGRATION.md |
+| Documented state | release `containers-1.2.2` (docs-only; 2026-10-27; code identical to `containers-1.2.1` and `containers-1.2.0`), 159 commits after tag `helixcode-v1.1.0` (count at 1.2.0); BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); SemVer deviation: breaking change shipped in 1.2.0/1.2.1 instead of 2.0.0 (operator decision); llmctl `v3.3.0` already consumes the new API, see MIGRATION.md |
 | Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |

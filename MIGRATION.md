@@ -62,7 +62,7 @@ further change.** llmctl `v3.3.0` (7cc9e83) already consumes the new API: each
 returned to the caller (line 326), and `internal/vantage` compiles against
 `runtime.ContainerRuntime`. Evidence: `go build ./...` rc=0 and
 `go test -count=1 ./internal/registry ./internal/vantage ./internal/gateway`
-all `ok` for BOTH llmctl `v3.3.0` and llmctl `origin/main` (81645ab), each built
+all `ok` for BOTH llmctl `v3.3.0` and llmctl local `main` (81645ab), each built
 against this repository at `containers-1.2.1` (06a0b52), wired through
 `replace digital.vasic.containers => ./submodules/containers`. llmctl no longer
 vendors `containers` as a gitlink (since `v3.3.0` it is resolved from the hub via
