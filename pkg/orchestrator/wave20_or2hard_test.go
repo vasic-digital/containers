@@ -43,6 +43,7 @@ import (
 func TestWave20_OR2Hard_OR1_StartRemote_ProfileInjectionNeutralised(t *testing.T) {
 	sh, err := osexec.LookPath("sh")
 	if err != nil {
+		// SKIP-OK: conditional topology skip, exec.LookPath found no POSIX sh on PATH; runs wherever sh exists
 		t.Skip("SKIP-with-reason (§11.4.3): no POSIX /bin/sh available")
 	}
 
@@ -413,6 +414,7 @@ func (l *or7CapturingLogger) warnCount() int {
 // logged, not swallowed.
 func TestWave20_OR2Hard_OR7_DiscoverServices_LogsWalkErrorsInsteadOfSwallowing(t *testing.T) {
 	if os.Getuid() == 0 {
+		// SKIP-OK: conditional environment skip, root bypasses the unreadable-directory permission denial (Getuid==0 check above); runs as any non-root user
 		t.Skip("SKIP-with-reason (§11.4.3): running as root — the unreadable-directory permission trick does not deny root")
 	}
 

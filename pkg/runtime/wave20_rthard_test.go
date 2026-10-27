@@ -46,9 +46,11 @@ package runtime
 import (
 	"context"
 	"io"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -270,37 +272,52 @@ func TestParseLabelsString_NoCommaInValue_Unaffected(t *testing.T) {
 // TestRTRace1_DirectAccessRacesWithSetRuntimePriority reproduces, under
 // `-race`, the data race between direct unsynchronized access to the
 // exported RuntimePriority var and a concurrent SetRuntimePriority call.
-// This is captured as EVIDENCE for the flagged finding, not fixed here: the
-// only clean fix (unexporting RuntimePriority) removes a public symbol
-// (§11.4.122) and requires an explicit operator API-break decision — see
-// detect.go's doc comment on the var for the flagged recommendation.
+// The finding is flagged, not fixed: the only clean fix (unexporting
+// RuntimePriority) removes a public symbol (§11.4.122) and requires an
+// explicit operator API-break decision — see detect.go's doc comment.
 //
-// Skipped by default: this package's standing `-race` suite (which this
-// same hardening batch must keep GREEN, per DoD) would otherwise be made to
-// fail by a known, deliberately-flagged-not-fixed finding. Run manually
-// (`go test -race -run TestRTRace1 -v ./pkg/runtime/... `, with the t.Skip
-// below commented out) to capture the "WARNING: DATA RACE" report cited as
-// evidence in the conductor's RT-RACE-1 finding.
+// To keep the standing `-race` suite GREEN while still RUNNING the evidence
+// for real (it was previously an unconditional t.Skip that never executed),
+// the racy body runs in a re-executed child test binary
+// (rtRace1WorkerEnv=1). The parent asserts the child really reported
+// "WARNING: DATA RACE" naming SetRuntimePriority. If the race is ever fixed
+// the child exits clean and this test fails, telling the maintainer to
+// convert it into a plain regression test. Without -race the detector is
+// absent, so the test is skipped for that concrete reason.
+const rtRace1WorkerEnv = "CONTAINERS_RTRACE1_WORKER"
+
 func TestRTRace1_DirectAccessRacesWithSetRuntimePriority(t *testing.T) {
-	t.Skip("RT-RACE-1 evidence-only: intentionally races against the " +
-		"exported RuntimePriority var to document the flagged (not fixed) " +
-		"finding; see detect.go's doc comment. Left skipped so the standing " +
-		"`-race` suite stays GREEN for this hardening batch's DoD.")
+	if os.Getenv(rtRace1WorkerEnv) == "1" {
+		origPriority := GetRuntimePriority()
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			SetRuntimePriority([]string{"docker", "podman"})
+		}()
+		// Direct, unsynchronized read of the exported var — races with the
+		// SetRuntimePriority goroutine's write.
+		_ = RuntimePriority
+		<-done
+		SetRuntimePriority(origPriority)
+		return
+	}
+	if !raceEnabled {
+		// SKIP-OK: conditional environment skip, the race detector is not compiled in (no -race); runs under go test -race
+		t.Skip("RT-RACE-1 needs the race detector; run with go test -race")
+	}
 
-	origPriority := GetRuntimePriority()
-	t.Cleanup(func() { SetRuntimePriority(origPriority) })
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, os.Args[0],
+		"-test.run=^TestRTRace1_DirectAccessRacesWithSetRuntimePriority$", "-test.count=1")
+	cmd.Env = append(os.Environ(), rtRace1WorkerEnv+"=1")
+	out, err := cmd.CombinedOutput()
 
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		SetRuntimePriority([]string{"docker", "podman"})
-	}()
-
-	// Direct, unsynchronized read of the exported var — races with the
-	// SetRuntimePriority goroutine's write under `go test -race`.
-	_ = RuntimePriority
-
-	<-done
+	require.Error(t, err, "the child must exit non-zero when the detector fires; output:\n%s", out)
+	assert.Contains(t, string(out), "WARNING: DATA RACE",
+		"the child must report the known RT-RACE-1 data race")
+	assert.Contains(t, string(out), "SetRuntimePriority",
+		"the reported race must involve SetRuntimePriority")
 }
 
 // --- RT-DOCKER-1 (fixed) -----------------------------------------------------

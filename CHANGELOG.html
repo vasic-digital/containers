@@ -180,6 +180,40 @@
 <h1 id="changelog">Changelog</h1>
 <h2 id="unreleased">[Unreleased]</h2>
 <p>(Nothing yet.)</p>
+<h2 id="test-hygiene-no-production-code-change">[1.2.3] - 2026-10-27
+(test hygiene; no production-code change)</h2>
+<p>Tag <code>containers-1.2.3</code>. Production
+(non-<code>_test.go</code>) code delta versus
+<code>containers-1.2.2</code> (4f507ca): NONE. Public API and
+<code>MIGRATION.md</code> unchanged.</p>
+<ul>
+<li>test: <code>make anti-bluff-scan</code> reported 17 pre-existing
+<code>BLUFF-G-001</code> (<code>t.Skip</code> without exempt marker)
+hits. Each was classified by reading the surrounding code. 16 were
+genuine conditional skips with a concrete environmental reason (no POSIX
+shell / Windows, no <code>/dev/kvm</code>, no
+<code>systemd --user</code>, running as root, <code>-short</code>, QEMU
+absent, or an inert subprocess worker) and now carry the exact
+<code>// SKIP-OK: &lt;reason&gt;</code> marker the scanner accepts. They
+still run on every capable host.</li>
+<li>test: the 17th was a genuine violation:
+<code>TestRTRace1_DirectAccessRacesWithSetRuntimePriority</code>
+(<code>pkg/runtime</code>) was an unconditional <code>t.Skip</code>
+since its introduction in b325a83, so the RT-RACE-1 evidence never
+executed. It is now a real test: under <code>go test -race</code> it
+re-executes the test binary as a worker that performs the racy direct
+read of the exported <code>RuntimePriority</code> against
+<code>SetRuntimePriority</code> and asserts the child really reported
+<code>WARNING: DATA RACE</code> involving
+<code>SetRuntimePriority</code>. Without <code>-race</code> it skips for
+that concrete reason. Mutation check: making the worker use
+<code>GetRuntimePriority()</code> (race-free) makes the test fail. The
+underlying race is still flagged, not fixed (the clean fix removes an
+exported symbol and needs an operator API decision). New helper files:
+<code>pkg/runtime/race_on_test.go</code>,
+<code>race_off_test.go</code>.</li>
+<li><code>make anti-bluff-scan</code>: 17 hits -&gt; 0.</li>
+</ul>
 <h2 id="docs-only">[1.2.2] - 2026-10-27 (docs-only)</h2>
 <p>Tag <code>containers-1.2.2</code>. Code delta versus
 <code>containers-1.2.1</code> (06a0b52): NONE.</p>

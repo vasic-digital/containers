@@ -161,6 +161,7 @@ func TestXB3_1_HostDirect_IntermediateSymlinkWithinSourceDirStillWorks(t *testin
 
 func TestXB3_2_AppleContainerImageExists_KillsWholeProcessGroupOnTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, process-group kill is Unix-only (GOOS check above); runs on every Unix host
 		t.Skip("XB3-2: process-group kill (SysProcAttr.Setpgid + negative-pid SIGKILL) is Unix-only; " +
 			"configureProcessGroup is a documented no-op on this GOOS (§11.4.3 topology SKIP)")
 	}
@@ -207,6 +208,7 @@ func TestXB3_2_AppleContainerImageExists_KillsWholeProcessGroupOnTimeout(t *test
 
 func TestXB3_3_ContainerRunnerImageExists_KillsWholeProcessGroupOnTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, process-group kill is Unix-only (GOOS check above); runs on every Unix host
 		t.Skip("XB3-3: process-group kill (SysProcAttr.Setpgid + negative-pid SIGKILL) is Unix-only; " +
 			"configureProcessGroup is a documented no-op on this GOOS (§11.4.3 topology SKIP)")
 	}

@@ -4,6 +4,32 @@
 
 (Nothing yet.)
 
+## [1.2.3] - 2026-10-27 (test hygiene; no production-code change)
+
+Tag `containers-1.2.3`. Production (non-`_test.go`) code delta versus
+`containers-1.2.2` (4f507ca): NONE. Public API and `MIGRATION.md` unchanged.
+
+- test: `make anti-bluff-scan` reported 17 pre-existing `BLUFF-G-001`
+  (`t.Skip` without exempt marker) hits. Each was classified by reading the
+  surrounding code. 16 were genuine conditional skips with a concrete
+  environmental reason (no POSIX shell / Windows, no `/dev/kvm`, no
+  `systemd --user`, running as root, `-short`, QEMU absent, or an inert
+  subprocess worker) and now carry the exact `// SKIP-OK: <reason>` marker the
+  scanner accepts. They still run on every capable host.
+- test: the 17th was a genuine violation:
+  `TestRTRace1_DirectAccessRacesWithSetRuntimePriority` (`pkg/runtime`) was an
+  unconditional `t.Skip` since its introduction in b325a83, so the RT-RACE-1
+  evidence never executed. It is now a real test: under `go test -race` it
+  re-executes the test binary as a worker that performs the racy direct read
+  of the exported `RuntimePriority` against `SetRuntimePriority` and asserts
+  the child really reported `WARNING: DATA RACE` involving
+  `SetRuntimePriority`. Without `-race` it skips for that concrete reason.
+  Mutation check: making the worker use `GetRuntimePriority()` (race-free)
+  makes the test fail. The underlying race is still flagged, not fixed (the
+  clean fix removes an exported symbol and needs an operator API decision).
+  New helper files: `pkg/runtime/race_on_test.go`, `race_off_test.go`.
+- `make anti-bluff-scan`: 17 hits -> 0.
+
 ## [1.2.2] - 2026-10-27 (docs-only)
 
 Tag `containers-1.2.2`. Code delta versus `containers-1.2.1` (06a0b52): NONE.

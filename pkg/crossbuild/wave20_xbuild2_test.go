@@ -229,6 +229,7 @@ func countArg(args []string, want string) int {
 // positional. Unix-only (shell shim).
 func TestWave20_XBUILD2_ContainerRunArgs_ImageBehindEndOfOptions(t *testing.T) {
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, argv-recording shim is a POSIX shell script (GOOS check above); runs on every Unix host
 		t.Skip("XBUILD2-2: the argv-recording shim is a POSIX shell script; skipping on Windows (§11.4.3 topology SKIP)")
 	}
 
@@ -286,6 +287,7 @@ func TestWave20_XBUILD2_ContainerRunArgs_ImageBehindEndOfOptions(t *testing.T) {
 
 func TestWave20_XBUILD2_NestedFifoArtifactRefusedNotHung(t *testing.T) {
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, FIFOs and mkfifo are POSIX only (GOOS check above); runs on every Unix host
 		t.Skip("XBUILD2-3: FIFO/named-pipe special files + `mkfifo` are a POSIX concept; " +
 			"skipping on Windows (§11.4.3 topology SKIP)")
 	}

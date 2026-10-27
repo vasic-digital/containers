@@ -71,6 +71,7 @@ import (
 // is SKIPPED with a clear reason rather than fake-passing (§11.4.3).
 func TestXB2_1_HostDirect_KillsWholeProcessGroupOnTimeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, process-group kill is Unix-only (GOOS check above); runs on every Unix host
 		t.Skip("XB2-1: process-group kill (SysProcAttr.Setpgid + negative-pid SIGKILL) is Unix-only; " +
 			"configureProcessGroup is a documented no-op on this GOOS (§11.4.3 topology SKIP)")
 	}

@@ -41,6 +41,7 @@ const (
 // the contained outcome (or dies with a stack overflow on the unfixed code).
 func TestLazyOrchestrator_CycleWorker(t *testing.T) {
 	if os.Getenv(cycleWorkerEnv) != "1" {
+		// SKIP-OK: subprocess worker, inert unless the parent test sets the worker env var; the parent test drives it for real
 		t.Skip("subprocess worker; inert unless " + cycleWorkerEnv + "=1")
 	}
 

@@ -4,6 +4,8 @@ Baseline: tag `helixcode-v1.1.0` (the last release before the project-prefixed
 `containers-` scheme; `containers-1.2.0` is the first `containers-*` tag, so no
 earlier `containers-*` tag exists to diff against). 1.2.1 has zero code delta
 versus 1.2.0 (verified: `origin/main` == `containers-1.2.0`, cb5c727).
+Note: `containers-1.2.2` (docs-only) and `containers-1.2.3` (test hygiene, no
+production-code change) add no API change; this guide applies to them unchanged.
 
 Method: `golang.org/x/exp/cmd/apidiff -incompatible` per package, old tree =
 `helixcode-v1.1.0`, new tree = this release; exported symbols only
