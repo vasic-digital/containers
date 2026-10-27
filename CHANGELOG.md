@@ -4,14 +4,23 @@
 
 (Nothing yet.)
 
-## [1.2.0] - 2026-10-26
+## [1.2.0] - 2026-10-27
 
-Proposed tag `containers-1.2.0` (NOT yet created; tagging, the containerised
-full-suite retest and independent review are still owed). Range:
-`helixcode-v1.1.0..919ad1e` = 159 commits (21 first-parent), 399 files
-changed, +45683 / -2371 lines (`git diff --stat`). Commit-type counts by
+Tag `containers-1.2.0` (project-prefixed per section 11.4.151). Range:
+`helixcode-v1.1.0..919ad1e` + release-docs commit = 159 commits (21 first-parent),
+399 files changed, +45683 / -2371 lines (`git diff --stat`). Commit-type counts by
 conventional-commit prefix: fix 82, hardening 54, feat 8, docs 4, govern 2,
 chore 2, test 1, style 1, remainder merges/WIP.
+
+Verification run for this release (host-run, NOT containerised; see Known
+limitations): `go vet ./...` rc=0; `go test -count=1 -race -p 1 ./...` over 56
+packages = 43 ok, 12 with no test files, 1 FAIL (`pkg/remote`, root-caused to
+the test environment, see Fixed) and, after the test-only fix, `pkg/remote`
+passes (`ok ... 15.4s`) under the default umask 0002.
+
+**Versioning decision (pending owner confirmation):** strict SemVer would call
+this release 2.0.0 because exported signatures changed (see BREAKING). The owner
+picked 1.2.0 by default; that decision is recorded as PENDING, not final.
 
 ### BREAKING (Go API, source-level) - verified against `git diff` of non-test code
 
@@ -31,7 +40,7 @@ exported signatures changed since `helixcode-v1.1.0`:
 
 Callers of the changed signatures must be updated; this is why the proposed
 version is a minor bump on a 1.x line only if the maintainers accept the
-signature changes (decision pending, see UNCONFIRMED in the release notes).
+signature changes (decision pending).
 
 ### Added
 - `emulator-matrix`: `--build-type` and `--gradle-property` flags to close the
@@ -91,6 +100,28 @@ signature changes (decision pending, see UNCONFIRMED in the release notes).
   commit naming several packages counts for each): remote 8, lifecycle 8,
   vm 7, serviceregistry 7, network 7, emulator 7, distribution 7, volume 6,
   scheduler 5, runtime 5, health 5, event 5, and further packages (`git log`).
+
+- Tests: `pkg/remote` now pins umask 0022 in `TestMain`
+  (`main_umask_unix_test.go`). Under umask 0002 `t.TempDir()` is 0775 and the
+  pool's hardening (refuse a pre-existing group/other-writable control-socket
+  dir) rejected it; `TestNewConnectionPool` then dereferenced a nil pool and the
+  panic aborted the whole package. Test-only change, no product code touched.
+
+### Known limitations / imperfections
+- `internal/buildpkg/executor.go` `LaunchLocalBuild` is a stub that returns an
+  error ("local builds are handled by the shell pipeline, not the Go executor");
+  the design question is open in `docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md`.
+- Test run was on the local host, not inside a build container (the repository
+  ships no containerised test target); section 11.4.173 compliance for this
+  release is therefore NOT claimed.
+- The test-only umask fix has not had an independent review (section 11.4.142 /
+  11.4.209); it is owed.
+- Tag naming in this repository is inconsistent: `helixcode-v1.1.0`,
+  `helix_translate-2.3.x`, `1.0.2-dev-0.0.2`, `1.1.0-dev`, `1.1.1-dev-0.0.x`,
+  `yole-1.0.0-0.0.0.0.6-dev`. `containers-1.2.0` follows section 11.4.151
+  (`<prefix>-<version>`); no `v1.2.0` alias was created because no existing tag
+  uses a bare `vX.Y.Z` form.
+- HTML/PDF twins of README/CHANGELOG/docs are stale (no exporter in the repo).
 
 ### Notes
 - The former `[Unreleased]` entries (Apple `container` crossbuild backend,

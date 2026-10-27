@@ -4,9 +4,9 @@
 |---|---|
 | Revision | 3 |
 | Created | 2026-04-30 |
-| Last modified | 2026-10-26 |
+| Last modified | 2026-10-27 |
 | Status | active |
-| Documented state | HEAD 919ad1e (2026-10-15), 159 commits after tag `helixcode-v1.1.0`; release `containers-1.2.0` proposed, NOT tagged |
+| Documented state | release `containers-1.2.0` (2026-10-27), 159 commits after tag `helixcode-v1.1.0`; SemVer-strict would be 2.0.0 (owner picked 1.2.0, decision pending) |
 | Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |
