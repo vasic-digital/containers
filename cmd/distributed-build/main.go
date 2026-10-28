@@ -203,6 +203,16 @@ func main() {
 		result, err := buildExec.LaunchRemoteBuild(ctx, *host, a.Component.Name, *version, *skipTests)
 		if err != nil {
 			log.Printf("build %s on %s failed: %v", a.Component.Name, a.Host, err)
+			if result == nil {
+				// LaunchRemoteBuild returns a nil result when the host is
+				// unreachable; record the failure rather than dereferencing nil.
+				result = &buildpkg.BuildResult{
+					Component: a.Component.Name,
+					Host:      a.Host,
+					Status:    buildpkg.BuildStatusFailed,
+					Error:     err.Error(),
+				}
+			}
 			results = append(results, *result)
 			continue
 		}

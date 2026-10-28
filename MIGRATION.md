@@ -19,7 +19,8 @@ adds one more breaking change, RT-RACE-1, in the section right after this note.
 Why: the variable was written under a mutex by `SetRuntimePriority` but could be
 read directly without it, a genuine data race under `-race`. Removing the
 exported symbol is the only fix that makes the race unrepresentable. No file in
-Catalogizer, helix_qa or llmctl references the symbol (grep-verified).
+Catalogizer, helix_qa, challenges or llmctl references the symbol
+(grep-verified; independently confirmed by review).
 
 ## Go module path and the 2.0.0 tag
 
@@ -36,9 +37,12 @@ was deliberately NOT created: Go would reject it for a module whose path lacks
 
 `cmd/distributed-build`: components planned for the local host are no longer
 silently skipped; they are reported as FAILED (`ErrLocalBuildUnsupported`) and
-the process exits non-zero.
+the process exits non-zero. Any shell pipeline that relied on exit 0 for mixed
+local/remote plans will now fail, by design. An unreachable remote host is now
+reported as FAILED instead of causing a nil dereference.
 
-Method: `golang.org/x/exp/cmd/apidiff -incompatible` per package, old tree =
+Method (1.2.x changes only; the RT-RACE-1 row above is hand-added, apidiff was
+not re-run for 2.0.0): `golang.org/x/exp/cmd/apidiff -incompatible` per package, old tree =
 `helixcode-v1.1.0`, new tree = this release; exported symbols only
 (`internal/*` is not importable and excluded).
 
