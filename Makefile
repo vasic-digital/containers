@@ -41,6 +41,10 @@ fmt:
 
 vet:
 	go vet ./...
+	# Every build-tag set must vet clean (a tag-gated file referencing a symbol
+	# defined only under another tag broke `-tags integration` unnoticed).
+	go vet -tags integration ./...
+	go vet -tags 'integration e2e security stress' ./...
 
 lint:
 	@command -v golangci-lint >/dev/null 2>&1 || { echo "golangci-lint not installed"; exit 1; }

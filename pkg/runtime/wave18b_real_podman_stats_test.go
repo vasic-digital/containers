@@ -1,3 +1,5 @@
+//go:build !integration
+
 package runtime
 
 // Wave-18b RT-F1 — real `podman stats --format json` output decoding.
