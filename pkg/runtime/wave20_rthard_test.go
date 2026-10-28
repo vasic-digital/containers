@@ -35,22 +35,15 @@ package runtime
 // package; the test below documents the KNOWN behavior rather than
 // asserting a (nonexistent) fix.
 //
-// RT-RACE-1 (MED, FLAGGED — not fixed): detect.go's exported RuntimePriority
-// var can be read/written directly, bypassing priorityMu, racing
-// GetRuntimePriority/SetRuntimePriority. The only clean fix (unexporting)
-// removes a public symbol (§11.4.122) and is NOT applied here; see
-// TestRTRace1_DirectAccessRacesWithSetRuntimePriority (skipped by default,
-// run manually with -race to capture the race) and detect.go's doc comment
-// for the flagged recommendation.
+// RT-RACE-1 (MED, FIXED in containers-2.0.0): the exported RuntimePriority
+// var was unexported; see priority_api_test.go.
 
 import (
 	"context"
 	"io"
-	"os"
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -267,65 +260,10 @@ func TestParseLabelsString_NoCommaInValue_Unaffected(t *testing.T) {
 	assert.Equal(t, "frontend", got["tier"])
 }
 
-// --- RT-RACE-1 (flagged — not fixed; reproduces the race as evidence) ------
-
-// TestRTRace1_DirectAccessRacesWithSetRuntimePriority reproduces, under
-// `-race`, the data race between direct unsynchronized access to the
-// exported RuntimePriority var and a concurrent SetRuntimePriority call.
-// The finding is flagged, not fixed: the only clean fix (unexporting
-// RuntimePriority) removes a public symbol (§11.4.122) and requires an
-// explicit operator API-break decision — see detect.go's doc comment.
+// --- RT-RACE-1 (FIXED in containers-2.0.0) ---------------------------------
 //
-// To keep the standing `-race` suite GREEN while still RUNNING the evidence
-// for real (it was previously an unconditional t.Skip that never executed),
-// the racy body runs in a re-executed child test binary
-// (rtRace1WorkerEnv=1). The parent asserts the child really reported
-// "WARNING: DATA RACE" naming SetRuntimePriority. If the race is ever fixed
-// the child exits clean and this test fails, telling the maintainer to
-// convert it into a plain regression test. Without -race the detector is
-// absent, so the test is skipped for that concrete reason.
-const rtRace1WorkerEnv = "CONTAINERS_RTRACE1_WORKER"
-
-func TestRTRace1_DirectAccessRacesWithSetRuntimePriority(t *testing.T) {
-	// Worker mode: set only by the parent below. Never export this variable
-	// in a real environment, or a plain -race run executes the racy body.
-	if os.Getenv(rtRace1WorkerEnv) == "1" {
-		origPriority := GetRuntimePriority()
-		done := make(chan struct{})
-		go func() {
-			defer close(done)
-			SetRuntimePriority([]string{"docker", "podman"})
-		}()
-		// Direct, unsynchronized read of the exported var — races with the
-		// SetRuntimePriority goroutine's write.
-		_ = RuntimePriority
-		<-done
-		SetRuntimePriority(origPriority)
-		return
-	}
-	if !raceEnabled {
-		// SKIP-OK: conditional environment skip, the race detector is not compiled in (no -race); runs under go test -race
-		t.Skip("RT-RACE-1 needs the race detector; run with go test -race")
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, os.Args[0],
-		"-test.run=^TestRTRace1_DirectAccessRacesWithSetRuntimePriority$", "-test.count=1")
-	cmd.Env = append(os.Environ(), rtRace1WorkerEnv+"=1")
-	out, err := cmd.CombinedOutput()
-
-	require.Error(t, err, "the child must exit non-zero when the detector fires; output:\n%s", out)
-	report := string(out)
-	i := strings.Index(report, "WARNING: DATA RACE")
-	require.GreaterOrEqual(t, i, 0, "the child must report the known RT-RACE-1 data race; output:\n%s", report)
-	// Only the text AFTER the detector marker counts: the test's own name
-	// also appears elsewhere in the output and must not satisfy this.
-	assert.Contains(t, report[i:], "runtime.SetRuntimePriority(",
-		"the reported race must involve the SetRuntimePriority frame")
-	assert.Contains(t, report[i:], "detect.go:",
-		"the reported race must point into detect.go")
-}
+// The exported RuntimePriority var is now the unexported runtimePriority;
+// the regression guards live in priority_api_test.go.
 
 // --- RT-DOCKER-1 (fixed) -----------------------------------------------------
 //
