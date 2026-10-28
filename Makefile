@@ -1,7 +1,7 @@
 # Containers - A generic, reusable Go module for container orchestration, health checking, lifecycle management, and service discovery. Supports Docker, Podman, and Kubernetes runtimes.
 # Module: digital.vasic.containers
 
-.PHONY: build test test-race test-short test-integration test-bench test-coverage fmt vet lint clean help \
+.PHONY: build test test-race test-short test-integration test-e2e test-security test-stress test-bench test-coverage fmt vet lint clean help \
 	anti-bluff anti-bluff-scan anti-bluff-anchors anti-bluff-mutation anti-bluff-mutation-changed \
 	update-baseline qa-all challenge
 
@@ -25,8 +25,20 @@ test-race:
 test-short:
 	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -short -p 1 ./...
 
+# Non-unit suites run against the real system (no mocks, §11.4.27). Failures
+# are NOT swallowed; tests that need an unavailable remote host or platform
+# SKIP with an explicit "// SKIP-OK:" reason.
 test-integration:
-	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 ./tests/integration/... 2>/dev/null || echo "No integration tests"
+	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 -tags integration ./tests/integration/...
+
+test-e2e:
+	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 -tags e2e ./tests/e2e/...
+
+test-security:
+	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 -tags security ./tests/security/...
+
+test-stress:
+	GOMAXPROCS=$(GOMAXPROCS) go test -count=1 -race -p 1 -tags stress ./tests/stress/...
 
 test-bench:
 	GOMAXPROCS=$(GOMAXPROCS) go test -bench=. -benchmem ./tests/benchmark/... 2>/dev/null || echo "No benchmarks"
