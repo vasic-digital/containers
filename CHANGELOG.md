@@ -4,6 +4,42 @@
 
 (Nothing yet.)
 
+## [2.0.0] - 2026-10-28 (RT-RACE-1 API fix; test and tooling hygiene)
+
+Tag `containers-2.0.0`. Module path unchanged (`digital.vasic.containers`); see
+`MIGRATION.md` for why no `/v2` path or bare `v2.0.0` tag exists.
+
+### Breaking
+- `pkg/runtime`: exported variable `RuntimePriority` removed (RT-RACE-1). Use
+  `GetRuntimePriority()` (copy) and `SetRuntimePriority()`. This fixes the data
+  race that 1.2.3 could only flag. Replaced the child-process race-evidence test
+  with `priority_api_test.go` (AST check that no exported mutable
+  `RuntimePriority` exists, concurrent-accessor race test, copy-semantics test;
+  each verified to fail under a mutation).
+
+### Fixed
+- `go vet -tags integration ./...` failed: `wave18b_real_podman_stats_test.go`
+  used `mockExecutor` (defined only under `!integration`) without the matching
+  build tag. Added `//go:build !integration`. `make vet` now vets the default,
+  `integration`, and `integration e2e security stress` tag sets.
+- `make test-integration` swallowed failures (`2>/dev/null || echo`) and ran
+  without `-tags integration`. Real, non-swallowing `test-integration`,
+  `test-e2e`, `test-security`, `test-stress` targets added.
+- `tests/integration/remote_deployment_test.go` lacked its `integration` tag;
+  `TestDistributor_WithMockHosts` renamed `TestDistributor_NoSchedulerErrors`
+  (it never used a mock).
+- `cmd/distributed-build`: local assignments were printed and silently never
+  built. They now yield FAILED results (`ErrLocalBuildUnsupported`), non-zero
+  exit. `LaunchLocalBuild` returns the sentinel error.
+- Stale comments in `pkg/vm` claiming the SSH/QMP clients are stubs corrected.
+
+### Known limitations
+- Local-host build target remains unimplemented (open operator decisions in
+  `docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md`).
+- No LICENSE file in the tree (README says MIT; copyright holder not recorded).
+- Remote-deployment integration tests SKIP honestly without a configured host.
+- HTML/PDF twins not regenerated unless stated in the release notes.
+
 ## [1.2.3] - 2026-10-27 (test hygiene; no production-code change)
 
 Tag `containers-1.2.3`. Production (non-`_test.go`) code delta versus

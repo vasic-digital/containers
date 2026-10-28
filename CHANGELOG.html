@@ -180,6 +180,60 @@
 <h1 id="changelog">Changelog</h1>
 <h2 id="unreleased">[Unreleased]</h2>
 <p>(Nothing yet.)</p>
+<h2 id="rt-race-1-api-fix-test-and-tooling-hygiene">[2.0.0] - 2026-10-28
+(RT-RACE-1 API fix; test and tooling hygiene)</h2>
+<p>Tag <code>containers-2.0.0</code>. Module path unchanged
+(<code>digital.vasic.containers</code>); see <code>MIGRATION.md</code>
+for why no <code>/v2</code> path or bare <code>v2.0.0</code> tag
+exists.</p>
+<h3 id="breaking">Breaking</h3>
+<ul>
+<li><code>pkg/runtime</code>: exported variable
+<code>RuntimePriority</code> removed (RT-RACE-1). Use
+<code>GetRuntimePriority()</code> (copy) and
+<code>SetRuntimePriority()</code>. This fixes the data race that 1.2.3
+could only flag. Replaced the child-process race-evidence test with
+<code>priority_api_test.go</code> (AST check that no exported mutable
+<code>RuntimePriority</code> exists, concurrent-accessor race test,
+copy-semantics test; each verified to fail under a mutation).</li>
+</ul>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><code>go vet -tags integration ./...</code> failed:
+<code>wave18b_real_podman_stats_test.go</code> used
+<code>mockExecutor</code> (defined only under <code>!integration</code>)
+without the matching build tag. Added
+<code>//go:build !integration</code>. <code>make vet</code> now vets the
+default, <code>integration</code>, and
+<code>integration e2e security stress</code> tag sets.</li>
+<li><code>make test-integration</code> swallowed failures
+(<code>2&gt;/dev/null || echo</code>) and ran without
+<code>-tags integration</code>. Real, non-swallowing
+<code>test-integration</code>, <code>test-e2e</code>,
+<code>test-security</code>, <code>test-stress</code> targets added.</li>
+<li><code>tests/integration/remote_deployment_test.go</code> lacked its
+<code>integration</code> tag; <code>TestDistributor_WithMockHosts</code>
+renamed <code>TestDistributor_NoSchedulerErrors</code> (it never used a
+mock).</li>
+<li><code>cmd/distributed-build</code>: local assignments were printed
+and silently never built. They now yield FAILED results
+(<code>ErrLocalBuildUnsupported</code>), non-zero exit.
+<code>LaunchLocalBuild</code> returns the sentinel error.</li>
+<li>Stale comments in <code>pkg/vm</code> claiming the SSH/QMP clients
+are stubs corrected.</li>
+</ul>
+<h3 id="known-limitations">Known limitations</h3>
+<ul>
+<li>Local-host build target remains unimplemented (open operator
+decisions in
+<code>docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md</code>).</li>
+<li>No LICENSE file in the tree (README says MIT; copyright holder not
+recorded).</li>
+<li>Remote-deployment integration tests SKIP honestly without a
+configured host.</li>
+<li>HTML/PDF twins not regenerated unless stated in the release
+notes.</li>
+</ul>
 <h2 id="test-hygiene-no-production-code-change">[1.2.3] - 2026-10-27
 (test hygiene; no production-code change)</h2>
 <p>Tag <code>containers-1.2.3</code>. Production

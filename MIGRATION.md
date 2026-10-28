@@ -1,11 +1,42 @@
-# Migration guide: helixcode-v1.1.0 -> containers-1.2.1
+# Migration guide: helixcode-v1.1.0 -> containers-2.0.0
 
 Baseline: tag `helixcode-v1.1.0` (the last release before the project-prefixed
 `containers-` scheme; `containers-1.2.0` is the first `containers-*` tag, so no
 earlier `containers-*` tag exists to diff against). 1.2.1 has zero code delta
 versus 1.2.0 (verified: `origin/main` == `containers-1.2.0`, cb5c727).
 Note: `containers-1.2.2` (docs-only) and `containers-1.2.3` (test hygiene, no
-production-code change) add no API change; this guide applies to them unchanged.
+production-code change) add no API change. `containers-2.0.0` is the first
+release whose version number reflects the breaking changes listed below (they
+were shipped inside 1.2.0/1.2.1, a SemVer deviation that 2.0.0 resolves) and it
+adds one more breaking change, RT-RACE-1, in the section right after this note.
+
+## containers-2.0.0: RT-RACE-1 (exported variable removed)
+
+| Package | Change | Fix in consumer |
+|---|---|---|
+| `pkg/runtime` | exported variable `RuntimePriority` removed (now unexported `runtimePriority`) | read with `runtime.GetRuntimePriority()` (returns a copy), write with `runtime.SetRuntimePriority([]string{...})` |
+
+Why: the variable was written under a mutex by `SetRuntimePriority` but could be
+read directly without it, a genuine data race under `-race`. Removing the
+exported symbol is the only fix that makes the race unrepresentable. No file in
+Catalogizer, helix_qa or llmctl references the symbol (grep-verified).
+
+## Go module path and the 2.0.0 tag
+
+The module path stays `digital.vasic.containers` (no `/v2` suffix) and the
+release tag is `containers-2.0.0`. Go only resolves semantic-version tags named
+`vX.Y.Z`; the project-prefixed `containers-*` tags (section 11.4.151) are not
+resolvable by `go get`, and every known consumer uses a `replace` directive to a
+local checkout, so the `/v2` import-path rule never applies. A bare `v2.0.0` tag
+was deliberately NOT created: Go would reject it for a module whose path lacks
+`/v2`. If a consumer ever needs `go get`-resolvable versions, adopting
+`digital.vasic.containers/v2` is a separate, import-rewriting change.
+
+## Behaviour change in 2.0.0 (internal tooling)
+
+`cmd/distributed-build`: components planned for the local host are no longer
+silently skipped; they are reported as FAILED (`ErrLocalBuildUnsupported`) and
+the process exits non-zero.
 
 Method: `golang.org/x/exp/cmd/apidiff -incompatible` per package, old tree =
 `helixcode-v1.1.0`, new tree = this release; exported symbols only

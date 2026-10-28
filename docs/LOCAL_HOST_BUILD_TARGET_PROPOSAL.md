@@ -15,7 +15,9 @@ targets remote hosts. The Go executor's local entry point is a stub:
 `BuildExecutor.LaunchLocalBuild` (`internal/buildpkg/executor.go`) returns the
 error "local builds are handled by the shell pipeline, not the Go executor", and
 `cmd/distributed-build` prints "local (local builds handled by shell pipeline)"
-for local assignments. A consumer that wants to run the build container on the
+for local assignments. (As of containers-2.0.0 the stub returns the sentinel
+`ErrLocalBuildUnsupported` and the CLI reports local assignments as FAILED
+instead of silently skipping them; the build capability itself is still absent.) A consumer that wants to run the build container on the
 machine it is already on (for example when no remote build host is reachable)
 has no first-class, configuration-driven way to do so through this module.
 

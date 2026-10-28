@@ -2,11 +2,11 @@
 
 | Field | Value |
 |---|---|
-| Revision | 5 |
+| Revision | 6 |
 | Created | 2026-04-30 |
-| Last modified | 2026-10-27 (release `containers-1.2.3`) |
+| Last modified | 2026-10-28 (release `containers-2.0.0`) |
 | Status | active |
-| Documented state | release `containers-1.2.3` (test hygiene; 2026-10-27; production code identical to `containers-1.2.2`, `containers-1.2.1` and `containers-1.2.0`), 159 commits after tag `helixcode-v1.1.0` (count at 1.2.0); BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); SemVer deviation: breaking change shipped in 1.2.0/1.2.1 instead of 2.0.0 (operator decision); llmctl `v3.3.0` already consumes the new API, see MIGRATION.md |
+| Documented state | release `containers-2.0.0` (2026-10-28): removes exported `runtime.RuntimePriority` (RT-RACE-1), fixes `go vet -tags integration`, honest non-unit test targets; BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); llmctl `v3.3.0` already consumes the 1.2 API |
 | Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |
