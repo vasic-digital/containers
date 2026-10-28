@@ -2,6 +2,7 @@ package buildpkg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -129,8 +130,33 @@ func (e *BuildExecutor) LaunchRemoteBuild(ctx context.Context, host remote.Remot
 	}, nil
 }
 
+// ErrLocalBuildUnsupported is returned for any build assigned to the local
+// host. The Go executor deliberately has no local path yet: whether a local
+// build target is allowed at all (distributed-build mandate), its host-safety
+// limits and the rootless-runtime default are open operator decisions recorded
+// in docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md. Callers must treat this as a
+// hard failure, never as "built".
+var ErrLocalBuildUnsupported = errors.New("local builds are not supported by the Go executor")
+
+// LaunchLocalBuild always fails with ErrLocalBuildUnsupported.
 func (e *BuildExecutor) LaunchLocalBuild(_ context.Context, _ remote.RemoteHost, _, _ string, _ bool) (*BuildResult, error) {
-	return nil, fmt.Errorf("local builds are handled by the shell pipeline, not the Go executor")
+	return nil, ErrLocalBuildUnsupported
+}
+
+// LocalAssignmentResults converts every local assignment of plan into a FAILED
+// BuildResult carrying ErrLocalBuildUnsupported, so a local assignment can
+// never be silently dropped from a build run.
+func LocalAssignmentResults(plan BuildPlan) []BuildResult {
+	var out []BuildResult
+	for _, a := range plan.LocalAssignments() {
+		out = append(out, BuildResult{
+			Component: a.Component.Name,
+			Host:      "local",
+			Status:    BuildStatusFailed,
+			Error:     ErrLocalBuildUnsupported.Error(),
+		})
+	}
+	return out
 }
 
 func truncateString(s string, maxLen int) string {
