@@ -9,12 +9,10 @@
 // Anti-bluff posture (clauses 6.J/6.L inherited from Containers' parent):
 // every public function has at least one falsifiability-rehearsed test.
 // The hermetic unit tests in this directory drive QEMUVM via the
-// processRunner / sshClient / qmpClient injection seams; production
-// uses os/exec + golang.org/x/crypto/ssh + a real QMP socket. The
-// real SSH/QMP impls are stubbed with explicit "not implemented in
-// v0.1" errors — see clients.go — so any caller reaching them sees
-// an honest signal. Real-impls land in a follow-up cycle; the
-// operator's end-to-end matrix run is the v0.1 gate.
+// processRunner / sshClient / qmpClient injection seams (unit tests only);
+// production uses os/exec + golang.org/x/crypto/ssh + a real QMP socket.
+// The real SSH/QMP clients are implemented in clients.go and exercised
+// against in-process SSH / QMP servers in clients_test.go.
 package vm
 
 import (
