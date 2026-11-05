@@ -2,11 +2,13 @@
 
 | Field | Value |
 |---|---|
-| Revision | 1 |
+| Revision | 2 |
 | Created | 2026-05-19 |
-| Last modified | 2026-05-19 |
+| Last modified | 2026-10-26 |
 | Status | active |
-| Round | 299 (template mirror of round-220/295/298) |
+| Round | 299 (template mirror of round-220/295/298); header refreshed 2026-10-26 |
+| Measured facts (2026-10-26, HEAD 919ad1e, no tests executed) | 56 packages from `go list ./...`; 183 non-test `.go` files; 323 `*_test.go` files; 33 `pkg/` dirs; 12 `cmd/` binaries; 16 files in `challenges/scripts/` |
+| Ledger rows below | NOT re-audited since 2026-05-19; they may lag the 159 commits after `helixcode-v1.1.0` (new packages such as `pkg/cuttlefish`, `pkg/egress`, `pkg/remoteexec`, `pkg/applesim` have no row). No pass/fail or coverage percentage is claimed here. |
 | Anti-bluff anchor | §11.4 + CONST-035 + CONST-050(B) |
 
 > Verbatim 2026-05-19 operator mandate (CONST-049 §11.4.17): *"all existing

@@ -87,11 +87,11 @@ func (v *QEMUVM) Teardown(ctx context.Context, monitorPort, sshPort int) error {
 	v.guestMu.Unlock()
 
 	// Stage 2: wait for graceful exit. We can't directly observe the
-	// QEMU process from here without a process handle; we sleep.
-	// Production gets a richer signal from QMP's SHUTDOWN event;
-	// implementation TBD when the real QMP client lands. For now,
-	// the unit-test path uses teardownGracePeriod=200ms and the
-	// production path uses 30s; the sleep is honest about that.
+	// QEMU process from here without a process handle; we wait a fixed
+	// grace period. The real QMP client (clients.go) exists, but this
+	// stage does not yet subscribe to its SHUTDOWN event, so the wait is
+	// time-based, not event-driven. The unit-test path uses
+	// teardownGracePeriod=200ms and the production path uses 30s.
 	deadline := time.Now().Add(teardownGracePeriod)
 	for time.Now().Before(deadline) {
 		select {

@@ -3,9 +3,26 @@
 package crossbuild
 
 import (
+	"errors"
+	"fmt"
 	"os/exec"
 	"syscall"
 )
+
+// errUnsafeProcessGroup is returned when a process-group signal is
+// refused because the pid is <= 1 (constitution §11.4.263): kill(-1, sig)
+// signals every process the caller may signal, kill(0, sig) signals the
+// caller's own group, and kill(-pid) for pid <= 0 is never a child group.
+var errUnsafeProcessGroup = errors.New("crossbuild: refusing process-group signal for pid <= 1")
+
+// killProcessGroup sends sig to the process group led by pid (kill(-pid,
+// sig)) through kill, and refuses — without calling kill — when pid <= 1.
+func killProcessGroup(pid int, sig syscall.Signal, kill func(int, syscall.Signal) error) error {
+	if pid <= 1 {
+		return fmt.Errorf("%w (pid=%d)", errUnsafeProcessGroup, pid)
+	}
+	return kill(-pid, sig)
+}
 
 // configureProcessGroup arranges for cmd's ENTIRE process group to be
 // killed when its context is cancelled or its WaitDelay expires — not
@@ -36,7 +53,14 @@ func configureProcessGroup(cmd *exec.Cmd) {
 			return nil
 		}
 		// A negative pid targets the whole process GROUP per kill(2).
-		if err := syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL); err != nil {
+		// killProcessGroup refuses a pid <= 1 (§11.4.263). Such a pid is
+		// never a started child, so nothing is signalled at all (not even
+		// the single-process fallback, which for pid 1 would signal init).
+		pid := cmd.Process.Pid
+		if err := killProcessGroup(pid, syscall.SIGKILL, syscall.Kill); err != nil {
+			if errors.Is(err, errUnsafeProcessGroup) {
+				return err
+			}
 			// Fall back to killing just the direct child so Cancel
 			// still makes forward progress even if, e.g., the group
 			// has already exited (ESRCH) or Setpgid could not apply

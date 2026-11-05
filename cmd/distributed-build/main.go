@@ -188,11 +188,12 @@ func main() {
 		syncedHosts[a.Host] = true
 	}
 
-	for _, a := range plan.LocalAssignments() {
-		fmt.Printf("  %s -> local (local builds handled by shell pipeline)\n", a.Component.Name)
+	// Local assignments are not supported by the Go executor; they are
+	// reported as failures (non-zero exit) instead of being silently skipped.
+	results := buildpkg.LocalAssignmentResults(*plan)
+	for _, r := range results {
+		fmt.Printf("  %s -> local: NOT BUILT (%s)\n", r.Component, r.Error)
 	}
-
-	var results []buildpkg.BuildResult
 	for _, a := range plan.RemoteAssignments() {
 		host, err := hostMgr.GetHost(a.Host)
 		if err != nil {
@@ -202,6 +203,16 @@ func main() {
 		result, err := buildExec.LaunchRemoteBuild(ctx, *host, a.Component.Name, *version, *skipTests)
 		if err != nil {
 			log.Printf("build %s on %s failed: %v", a.Component.Name, a.Host, err)
+			if result == nil {
+				// LaunchRemoteBuild returns a nil result when the host is
+				// unreachable; record the failure rather than dereferencing nil.
+				result = &buildpkg.BuildResult{
+					Component: a.Component.Name,
+					Host:      a.Host,
+					Status:    buildpkg.BuildStatusFailed,
+					Error:     err.Error(),
+				}
+			}
 			results = append(results, *result)
 			continue
 		}

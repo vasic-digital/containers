@@ -10,33 +10,20 @@ import (
 // for testing.
 type RuntimeFactory func() []ContainerRuntime
 
-// RuntimePriority defines the order of runtime detection.
+// runtimePriority defines the order of runtime detection.
 // Podman is preferred over Docker for its rootless capabilities.
 // Containerd/nerdctl is preferred for Kubernetes-native environments.
 //
-// Access it through GetRuntimePriority / SetRuntimePriority, which serialise
-// reads and writes under priorityMu. AutoDetect consults the current value, so
-// SetRuntimePriority genuinely reorders subsequent AutoDetect calls.
-//
-// RT-RACE-1 (§11.4.6 honest documentation, flagged not fixed): reading or
-// assigning this exported var DIRECTLY (`runtime.RuntimePriority`) bypasses
-// priorityMu and is a genuine data race against concurrent
-// GetRuntimePriority/SetRuntimePriority calls from another goroutine — `go
-// test -race` on a synthetic direct-read-during-SetRuntimePriority scenario
-// reproduces it. There is no non-breaking fix: Go cannot make a plain
-// exported `[]string` package var itself race-safe against direct access
-// without either changing its type (e.g. to an atomic.Pointer[[]string],
-// which breaks every existing `for _, x := range runtime.RuntimePriority`-
-// style caller) or unexporting it (RuntimePriority -> runtimePriority, which
-// removes a public symbol outright, §11.4.122). Both are breaking public-API
-// changes and are NOT applied here unilaterally; this is an operator
-// decision item. Recommendation: unexport to `runtimePriority` and keep
-// Get/SetRuntimePriority as the sole accessors, in a deliberate, announced
-// API-break window (major-version bump / CHANGELOG entry), NOT a silent
-// patch-level edit.
+// It is deliberately unexported (containers-2.0.0, RT-RACE-1): the former
+// exported var RuntimePriority could be read or assigned directly by any
+// caller, bypassing priorityMu and racing GetRuntimePriority /
+// SetRuntimePriority. Access is now only through GetRuntimePriority (returns
+// a copy) and SetRuntimePriority (stores a copy), both serialised under
+// priorityMu. AutoDetect consults the current value, so SetRuntimePriority
+// genuinely reorders subsequent AutoDetect calls. See MIGRATION.md.
 var (
 	priorityMu      sync.RWMutex
-	RuntimePriority = []string{
+	runtimePriority = []string{
 		"podman",
 		"docker",
 		"nerdctl",
@@ -95,10 +82,10 @@ func detectAllWith(
 	return available
 }
 
-// AutoDetect tries runtimes in the current RuntimePriority order (default:
+// AutoDetect tries runtimes in the current runtime priority order (default:
 // Podman → Docker → nerdctl → CRI-O → LXD → Kubernetes) and returns the first
 // available container runtime. It honours SetRuntimePriority — previously it
-// ignored RuntimePriority and always used the hardcoded factory order, so
+// ignored the priority list and always used the hardcoded factory order, so
 // SetRuntimePriority had no effect on AutoDetect despite documenting that it
 // would.
 func AutoDetect(ctx context.Context) (ContainerRuntime, error) {
@@ -171,7 +158,7 @@ func DetectByPriority(ctx context.Context, priority []string) []ContainerRuntime
 func GetRuntimePriority() []string {
 	priorityMu.RLock()
 	defer priorityMu.RUnlock()
-	return append([]string{}, RuntimePriority...)
+	return append([]string{}, runtimePriority...)
 }
 
 // SetRuntimePriority sets a custom runtime priority order.
@@ -179,5 +166,5 @@ func GetRuntimePriority() []string {
 func SetRuntimePriority(priority []string) {
 	priorityMu.Lock()
 	defer priorityMu.Unlock()
-	RuntimePriority = append([]string{}, priority...)
+	runtimePriority = append([]string{}, priority...)
 }

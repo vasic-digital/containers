@@ -26,9 +26,11 @@ func init() { e2eQemuPort.Store(14444) }
 func TestQE2E(t *testing.T) {
 	qemuBin := "/usr/bin/qemu-system-x86_64"
 	if testing.Short() {
+		// SKIP-OK: conditional mode skip, QEMU boot test is excluded only under go test -short; runs in the full suite
 		t.Skip("skipping QEMU e2e test in short mode")
 	}
 	if _, err := os.Stat(qemuBin); err != nil {
+		// SKIP-OK: conditional topology skip, qemu-system-x86_64 binary absent (os.Stat check above); runs wherever QEMU is installed
 		t.Skipf("qemu binary not found at %s: %v", qemuBin, err)
 	}
 
