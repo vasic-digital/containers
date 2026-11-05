@@ -175,7 +175,7 @@ class TestComposeFiles(unittest.TestCase):
     def test_files_discovered(self) -> None:
         assert len(self.files) > 30, "expected at least 30 user-owned compose files"
 
-    # oracle: INVARIANT (every service in every user-owned compose file carries all of ac.CAP_KEYS; oracle is the compose YAML as parsed by ruamel, independent of apply_caps)
+    # oracle: INVARIANT (every service in every user-owned compose file carries every key of ac.CAP_KEYS; the YAML side is read by ruamel independently of apply_caps, but the expected key set is taken from the code under test, so only the YAML half is independent)
     def test_every_service_has_all_caps(self) -> None:
         missing: list[tuple[str, str, list[str]]] = []
         for path in self.files:
@@ -195,7 +195,7 @@ class TestComposeFiles(unittest.TestCase):
             sample = "\n".join(f"  {p}::{s}  missing={l}" for p, s, l in missing[:20])
             self.fail(f"{len(missing)} service(s) missing caps. Sample:\n{sample}")
 
-    # oracle: INVARIANT (mem in [128m,32g], pids in [128,8192], oom_score_adj in [100,1000] for every service)
+    # oracle: CHARACTERIZATION (the ranges mem 128m-32g, pids 128-8192, oom_score_adj 100-1000 are sanity thresholds chosen by the test author, not stated in policy.yaml; they pin the observed envelope)
     def test_cap_values_are_sane(self) -> None:
         """Memory caps must be in [128m, 32g], pids in [128, 8192],
         oom_score_adj in [100, 1000]."""
@@ -374,7 +374,7 @@ services:
 
 
 class TestSmoke(unittest.TestCase):
-    # oracle: METAMORPHIC (relation: apply twice == apply once; plus all CAP_KEYS present after the first apply, read back by an independent YAML loader)
+    # oracle: METAMORPHIC (relation: apply twice == apply once; plus all CAP_KEYS present after the first apply, read back with ruamel, the same library apply_caps uses, so the read-back is not an independent loader)
     def test_apply_then_validate_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
