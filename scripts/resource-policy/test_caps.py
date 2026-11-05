@@ -84,12 +84,14 @@ class TestPolicyMatching(unittest.TestCase):
     def setUp(self) -> None:
         self.policy = ac.load_policy(POLICY_PATH)
 
+    # oracle: SPECIFIED (policy.yaml header/defaults block states the default 2g/1024/500; matcher is the code under test)
     def test_default_cap(self) -> None:
         cap = self.policy.cap_for("totally-unknown-service-name")
         assert cap.mem == "2g"
         assert cap.pids == 1024
         assert cap.oom_adj == 500
 
+    # oracle: GOLDEN_MASTER (pins the current policy.yaml postgres cap of 4g; a deliberate policy change must update this literal)
     def test_postgres_pattern(self) -> None:
         cap = self.policy.cap_for("postgres")
         assert cap.mem == "4g"
@@ -98,24 +100,28 @@ class TestPolicyMatching(unittest.TestCase):
         cap = self.policy.cap_for("helixagent-postgres")
         assert cap.mem == "4g"
 
+    # oracle: GOLDEN_MASTER (pins the current policy.yaml redis cap of 1g)
     def test_redis_pattern(self) -> None:
         cap = self.policy.cap_for("redis")
         assert cap.mem == "1g"
         cap = self.policy.cap_for("redis-test")
         assert cap.mem == "1g"
 
+    # oracle: GOLDEN_MASTER (pins the current policy.yaml mcp-* cap of 1g)
     def test_mcp_generic_pattern(self) -> None:
         cap = self.policy.cap_for("mcp-fetch")
         assert cap.mem == "1g"
         cap = self.policy.cap_for("mcp-some-new-server")
         assert cap.mem == "1g"
 
+    # oracle: SPECIFIED (policy.yaml: first match wins, most-specific pattern on top; browser MCPs must get 3g/4096 not the generic mcp-* cap)
     def test_mcp_browser_specific_takes_priority(self) -> None:
         for name in ("mcp-puppeteer", "mcp-playwright", "mcp-browserbase"):
             cap = self.policy.cap_for(name)
             assert cap.mem == "3g", name
             assert cap.pids == 4096, name
 
+    # oracle: GOLDEN_MASTER (pins the current policy.yaml LLM-inference caps of 12g/2048)
     def test_llm_pattern(self) -> None:
         cap = self.policy.cap_for("ollama")
         assert cap.mem == "12g"
@@ -123,6 +129,7 @@ class TestPolicyMatching(unittest.TestCase):
         cap = self.policy.cap_for("vllm-runner")
         assert cap.mem == "12g"
 
+    # oracle: GOLDEN_MASTER (pins the current policy.yaml helix app-server caps of 4g/2048)
     def test_helix_app_servers(self) -> None:
         cap = self.policy.cap_for("helixagent")
         assert cap.mem == "4g"
@@ -130,18 +137,21 @@ class TestPolicyMatching(unittest.TestCase):
         cap = self.policy.cap_for("helixllm-server")
         assert cap.mem == "4g"
 
+    # oracle: SPECIFIED (policy.yaml header: service names are normalised to lowercase before matching)
     def test_case_insensitive(self) -> None:
         cap = self.policy.cap_for("POSTGRES")
         assert cap.mem == "4g"
         cap = self.policy.cap_for("Redis-Cache")
         assert cap.mem == "1g"
 
+    # oracle: SPECIFIED (policy.yaml header: a positive oom_adj makes the container a preferred OOM victim, protecting the user manager)
     def test_oom_adj_always_positive(self) -> None:
         for name in ("postgres", "redis", "mcp-fetch", "ollama", "elasticsearch",
                      "unknown-svc"):
             cap = self.policy.cap_for(name)
             assert cap.oom_adj > 0, f"{name} oom_adj must be >0 to protect user manager"
 
+    # oracle: INVARIANT (cgroup semantics: memory+swap total can never be below the memory limit, for every matched service)
     def test_memswap_never_smaller_than_mem(self) -> None:
         """memswap is the TOTAL memory + swap budget; in cgroup v2 semantics
         memswap_limit must be >= mem_limit."""
@@ -161,9 +171,11 @@ class TestComposeFiles(unittest.TestCase):
         if not cls.files:
             raise unittest.SkipTest("no compose files found")
 
+    # oracle: CHARACTERIZATION (pins an observed lower bound of >30 compose files so a broken discovery that finds nothing cannot pass the other tests vacuously)
     def test_files_discovered(self) -> None:
         assert len(self.files) > 30, "expected at least 30 user-owned compose files"
 
+    # oracle: INVARIANT (every service in every user-owned compose file carries all of ac.CAP_KEYS; oracle is the compose YAML as parsed by ruamel, independent of apply_caps)
     def test_every_service_has_all_caps(self) -> None:
         missing: list[tuple[str, str, list[str]]] = []
         for path in self.files:
@@ -183,6 +195,7 @@ class TestComposeFiles(unittest.TestCase):
             sample = "\n".join(f"  {p}::{s}  missing={l}" for p, s, l in missing[:20])
             self.fail(f"{len(missing)} service(s) missing caps. Sample:\n{sample}")
 
+    # oracle: INVARIANT (mem in [128m,32g], pids in [128,8192], oom_score_adj in [100,1000] for every service)
     def test_cap_values_are_sane(self) -> None:
         """Memory caps must be in [128m, 32g], pids in [128, 8192],
         oom_score_adj in [100, 1000]."""
@@ -206,6 +219,7 @@ class TestComposeFiles(unittest.TestCase):
         if bad:
             self.fail("Out-of-range caps:\n  " + "\n  ".join(bad[:20]))
 
+    # oracle: INVARIANT (memswap_limit >= mem_limit in every compose service)
     def test_memswap_at_least_mem(self) -> None:
         bad: list[str] = []
         for path in self.files:
@@ -222,6 +236,7 @@ class TestComposeFiles(unittest.TestCase):
         if bad:
             self.fail("memswap < mem in some services:\n  " + "\n  ".join(bad[:20]))
 
+    # oracle: INVARIANT (oom_score_adj > 0 for every container that sets it)
     def test_oom_score_adj_protects_user_manager(self) -> None:
         """Every container must have oom_score_adj > 0 so the kernel/oomd
         prefers killing the container over the user systemd manager."""
@@ -264,6 +279,7 @@ class TestTotalBudget(unittest.TestCase):
         "docker-compose.mcp-servers.yml",
     }
 
+    # oracle: INVARIANT (summed mem_limit of a non-profile compose file stays within the host budget; sums computed by the test from the YAML)
     def test_single_file_fits_budget(self) -> None:
         """If you `up` an entire compose file (no profile filter), its
         total caps shouldn't exceed the host budget. Exception: files
@@ -291,6 +307,7 @@ class TestTotalBudget(unittest.TestCase):
                       + "\n  → either lower per-service caps, split into "
                       + "profiles, or add the file to PROFILE_HEAVY_FILES.")
 
+    # oracle: CHARACTERIZATION (pins that the exemption list names at least one real compose file, so it cannot go stale silently)
     def test_profile_heavy_files_exist(self) -> None:
         """Sanity: at least one of the profile-heavy files exists in the
         repo — the exemption list shouldn't be a list of phantom names."""
@@ -306,6 +323,7 @@ class TestPlacement(unittest.TestCase):
     """Caps must be inserted *near the top* of the service block, not at
     the end where trailing comments can corrupt the diff."""
 
+    # oracle: INVARIANT (the first cap key lies within 25 lines of the service header; oracle is a raw text scan independent of the ruamel writer)
     def test_caps_appear_near_top_of_service(self) -> None:
         """For each service the FIRST cap field this script wrote
         (oom_score_adj is unique to us — no upstream sets it) should
@@ -356,6 +374,7 @@ services:
 
 
 class TestSmoke(unittest.TestCase):
+    # oracle: METAMORPHIC (relation: apply twice == apply once; plus all CAP_KEYS present after the first apply, read back by an independent YAML loader)
     def test_apply_then_validate_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
@@ -379,6 +398,7 @@ class TestSmoke(unittest.TestCase):
             doc2 = load_compose(f)
             assert doc == doc2, "second run was not idempotent"
 
+    # oracle: SPECIFIED (policy.yaml patterns: postgres 4g, redis 1g; some-mcp does not match the left-anchored mcp-* pattern so it falls to the 2g default)
     def test_pattern_matches_correct_pid_limits(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             tdp = Path(td)
