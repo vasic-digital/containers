@@ -25,12 +25,18 @@ func kindOf(m fs.FileMode) Kind {
 	return "other"
 }
 
-func escapes(from, target string) bool {
+// escapes reports whether a live symlink target leaves the tree. It resolves
+// the target component by component through the manifest's own symlinks, so a
+// ".." after a symlinked directory is applied to the resolved directory.
+func escapes(kinds map[string]ManifestEntry, from, target string) bool {
 	if strings.HasPrefix(target, "/") {
 		return true
 	}
-	r := path.Join(path.Dir(from), target)
-	return r == ".." || strings.HasPrefix(r, "../")
+	_, r := resolveTarget(func(p string) (Kind, string, bool) {
+		e, ok := kinds[p]
+		return e.Kind, e.Target, ok
+	}, from, target, true)
+	return r == resEscape || r == resLoop
 }
 
 // VerifyDir verifies a local directory. The directory is opened through
@@ -56,6 +62,14 @@ func VerifyDir(root string, m Manifest, opt Options) (Report, error) {
 // protocol. Entries are examined with Lstat semantics and never followed.
 func Verify(fsys fs.FS, m Manifest, opt Options) Report {
 	rep := Report{Diffs: []Diff{}, Counts: Counts{ByCode: map[Code]int{}}}
+	if _, ok := fsys.(fs.ReadLinkFS); !ok {
+		// Without ReadLinkFS, fs.Lstat degrades to Stat and a regular file
+		// where a symlink belongs is indistinguishable: refuse to judge.
+		rep.Diffs = append(rep.Diffs, Diff{Path: ".", Code: CodeReadError, Detail: "fs.FS does not implement fs.ReadLinkFS; symlinks cannot be told from their targets"})
+		rep.Counts.ByCode[CodeReadError]++
+		rep.Result = ResultError
+		return rep
+	}
 	add := func(p string, c Code, format string, a ...any) {
 		rep.Diffs = append(rep.Diffs, Diff{Path: p, Code: c, Detail: fmt.Sprintf(format, a...)})
 		rep.Counts.ByCode[c]++
@@ -63,12 +77,15 @@ func Verify(fsys fs.FS, m Manifest, opt Options) Report {
 	entries := append([]ManifestEntry(nil), m.Entries...)
 	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
 	exp := map[string]bool{}
+	kinds := make(map[string]ManifestEntry, len(entries))
+	for _, e := range entries {
+		kinds[e.Path] = e
+	}
 	bad := map[string]bool{}
 	for _, e := range entries {
 		exp[e.Path] = true
 		if opt.SkipSymlinks && e.Kind == KindSymlink {
 			rep.Counts.SkippedSymlinks++
-			continue
 		}
 		switch e.Kind {
 		case KindDir:
@@ -77,7 +94,9 @@ func Verify(fsys fs.FS, m Manifest, opt Options) Report {
 			rep.Counts.Files++
 			rep.Counts.Bytes += e.Size
 		case KindSymlink:
-			rep.Counts.Symlinks++
+			if !opt.SkipSymlinks {
+				rep.Counts.Symlinks++
+			}
 		}
 		parentBad := false
 		for a := path.Dir(e.Path); a != "."; a = path.Dir(a) {
@@ -91,7 +110,7 @@ func Verify(fsys fs.FS, m Manifest, opt Options) Report {
 			add(e.Path, CodeParentInvalid, "an ancestor failed verification; not read")
 			continue
 		}
-		checkEntry(fsys, e, opt, add, bad)
+		checkEntry(fsys, e, opt, kinds, add, bad)
 	}
 	walkErr := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -125,7 +144,7 @@ func Verify(fsys fs.FS, m Manifest, opt Options) Report {
 	return rep
 }
 
-func checkEntry(fsys fs.FS, e ManifestEntry, opt Options, add func(string, Code, string, ...any), bad map[string]bool) {
+func checkEntry(fsys fs.FS, e ManifestEntry, opt Options, kinds map[string]ManifestEntry, add func(string, Code, string, ...any), bad map[string]bool) {
 	info, err := fs.Lstat(fsys, e.Path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -142,11 +161,14 @@ func checkEntry(fsys fs.FS, e ManifestEntry, opt Options, add func(string, Code,
 		return
 	}
 	if e.Kind == KindSymlink {
+		if opt.SkipSymlinks {
+			return // kind already confirmed; target comparison skipped (counted)
+		}
 		tgt, err := fs.ReadLink(fsys, e.Path)
 		switch {
 		case err != nil:
 			add(e.Path, CodeReadError, "readlink: %v", err)
-		case escapes(e.Path, tgt):
+		case escapes(kinds, e.Path, tgt):
 			add(e.Path, CodeSymlinkEscape, "target %q leaves the tree", tgt)
 		case tgt != e.Target:
 			add(e.Path, CodeTargetMismatch, "want %q, found %q", e.Target, tgt)

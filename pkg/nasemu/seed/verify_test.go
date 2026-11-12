@@ -1,8 +1,10 @@
 package seed
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"testing/fstest"
 	"time"
@@ -155,7 +157,8 @@ func fixtureManifest(t *testing.T) (Manifest, fstest.MapFS) {
 		{Path: "l", Kind: KindSymlink, Target: "a.bin"},
 	}}
 	root, m := gen(t, s)
-	fsys := fstest.MapFS{"d": {Mode: 0o755 | 1<<31, ModTime: time.Unix(1700000000, 0)}}
+	fsys := fstest.MapFS{"d": {Mode: 0o755 | 1<<31, ModTime: time.Unix(1700000000, 0)},
+		"l": {Data: []byte("a.bin"), Mode: fs.ModeSymlink | 0o777}}
 	for _, e := range m.Entries {
 		if e.Kind == KindFile {
 			b, _ := os.ReadFile(filepath.Join(root, e.Path))
@@ -193,9 +196,14 @@ func TestVerifierGoldenFixtures(t *testing.T) {
 			t.Errorf("golden-bad %s: diff not reported at path: %+v", want, r.Diffs)
 		}
 	}
-	// Without SkipSymlinks a symlink-blind FS cannot confirm the link.
-	if r := Verify(good, m, Options{}); r.Result != ResultFail || !hasCode(r, "l", CodeMissing) {
-		t.Fatalf("symlink on blind FS: %+v", r)
+	// Without SkipSymlinks the link is checked too.
+	if r := Verify(good, m, Options{CheckMtime: true}); r.Result != ResultPass || r.Counts.Symlinks != 1 {
+		t.Fatalf("symlink checked: %+v", r)
+	}
+	_, noLink := fixtureManifest(t)
+	delete(noLink, "l")
+	if r := Verify(noLink, m, Options{}); r.Result != ResultFail || !hasCode(r, "l", CodeMissing) {
+		t.Fatalf("missing symlink: %+v", r)
 	}
 }
 
@@ -205,5 +213,136 @@ func TestVerifyReadErrorIsError(t *testing.T) {
 	r := Verify(f, m, Options{SkipSymlinks: true})
 	if r.Result != ResultError || !hasCode(r, "a.bin", CodeReadError) {
 		t.Fatalf("%+v", r)
+	}
+}
+
+// F1: a ".." after a symlinked directory is applied by the kernel to the
+// RESOLVED directory. Lexically t -> x/y/s/../.. is x (inside the spec), but
+// really it is the parent of the root.
+func escapeSpec() Spec {
+	return Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{
+		{Path: "z", Kind: KindDir},
+		{Path: "x/y", Kind: KindDir},
+		{Path: "x/y/s", Kind: KindSymlink, Target: "../../z"},
+		{Path: "t", Kind: KindSymlink, Target: "x/y/s/../.."},
+	}}
+}
+
+func TestF1SpecRejectsKernelLevelSymlinkEscape(t *testing.T) {
+	if _, err := Normalize(escapeSpec()); err == nil || !strings.Contains(err.Error(), "escapes") {
+		t.Fatalf("kernel-level escape accepted by Normalize: %v", err)
+	}
+	if _, err := Generate(escapeSpec(), filepath.Join(t.TempDir(), "tree")); err == nil {
+		t.Fatal("Generate wrote a tree with an escaping symlink")
+	}
+}
+
+func TestF1VerifierFlagsKernelLevelSymlinkEscape(t *testing.T) {
+	base := t.TempDir()
+	root := filepath.Join(base, "root")
+	for _, d := range []string{"z", "x/y"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.Symlink("../../z", filepath.Join(root, "x/y/s")); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("x/y/s/../..", filepath.Join(root, "t")); err != nil {
+		t.Fatal(err)
+	}
+	// Real filesystem fact the fix relies on: the kernel lands outside root.
+	if got, err := filepath.EvalSymlinks(filepath.Join(root, "t")); err != nil || got != base {
+		t.Fatalf("premise: EvalSymlinks(t) = %q, %v; want %q", got, err, base)
+	}
+	m := Manifest{Schema: ManifestSchema, Entries: []ManifestEntry{
+		{Path: "t", Kind: KindSymlink, Mode: "0777", Target: "x/y/s/../.."},
+		{Path: "x", Kind: KindDir, Mode: "0755"},
+		{Path: "x/y", Kind: KindDir, Mode: "0755"},
+		{Path: "x/y/s", Kind: KindSymlink, Mode: "0777", Target: "../../z"},
+		{Path: "z", Kind: KindDir, Mode: "0755"},
+	}}
+	r := mustVerify(t, root, m, Options{})
+	if r.Result != ResultFail || !hasCode(r, "t", CodeSymlinkEscape) {
+		t.Fatalf("escape not flagged: %+v", r)
+	}
+	if hasCode(r, "x/y/s", CodeSymlinkEscape) {
+		t.Fatalf("benign link flagged: %+v", r.Diffs)
+	}
+}
+
+// A benign ".." after a symlink that stays in the tree is still accepted.
+func TestF1BenignDotDotAfterSymlinkAccepted(t *testing.T) {
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{
+		{Path: "a/b", Kind: KindDir},
+		{Path: "a/b/f", Kind: KindFile},
+		{Path: "a/l", Kind: KindSymlink, Target: "b"},
+		{Path: "m", Kind: KindSymlink, Target: "a/l/../b/f"},
+	}}
+	root, man := gen(t, s)
+	if r := mustVerify(t, root, man, Options{}); r.Result != ResultPass {
+		t.Fatalf("%+v", r)
+	}
+}
+
+func TestF1SymlinkLoopRejected(t *testing.T) {
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{
+		{Path: "a", Kind: KindSymlink, Target: "b"},
+		{Path: "b", Kind: KindSymlink, Target: "a"},
+	}}
+	if _, err := Normalize(s); err == nil {
+		t.Fatal("loop accepted")
+	}
+}
+
+// F3: a bare fs.FS (no ReadLinkFS) must not produce a false PASS for a
+// regular file sitting where a symlink belongs.
+func TestF3VerifyRefusesFSWithoutReadLink(t *testing.T) {
+	m, good := fixtureManifest(t)
+	good["l"] = &fstest.MapFile{Data: []byte("a.bin"), Mode: 0o644} // file where a link belongs
+	r := Verify(noLinkFS{good}, m, Options{})
+	if r.Result != ResultError || !hasCode(r, ".", CodeReadError) {
+		t.Fatalf("want ERROR/read_error, got %+v", r)
+	}
+	r = Verify(noLinkFS{good}, m, Options{SkipSymlinks: true})
+	if r.Result != ResultError {
+		t.Fatalf("skip-symlinks must not bypass: %+v", r)
+	}
+	// With ReadLinkFS the same tampering is a kind mismatch.
+	if r := Verify(good, m, Options{}); r.Result != ResultFail || !hasCode(r, "l", CodeKindMismatch) {
+		t.Fatalf("%+v", r)
+	}
+}
+
+// F4: SkipSymlinks must not hide a regular file where a symlink belongs.
+func TestF4SkipSymlinksStillChecksKind(t *testing.T) {
+	root, m := gen(t, sampleSpec())
+	p := filepath.Join(root, "link-to-song")
+	os.Remove(p)
+	write(t, p, []byte("regular"))
+	r := mustVerify(t, root, m, Options{SkipSymlinks: true})
+	if r.Result != ResultFail || !hasCode(r, "link-to-song", CodeKindMismatch) || r.Counts.SkippedSymlinks != 1 {
+		t.Fatalf("%+v", r)
+	}
+	os.Remove(p)
+	if r := mustVerify(t, root, m, Options{SkipSymlinks: true}); !hasCode(r, "link-to-song", CodeMissing) {
+		t.Fatalf("missing skipped symlink not reported: %+v", r)
+	}
+	// A retargeted link is exactly what SkipSymlinks is allowed to ignore.
+	os.Symlink("zeros.bin", p)
+	if r := mustVerify(t, root, m, Options{SkipSymlinks: true}); r.Result != ResultPass {
+		t.Fatalf("%+v", r)
+	}
+}
+
+// N16: an absolute live target must fail with symlink_escape specifically.
+func TestAbsoluteLiveTargetIsEscapeNotMismatch(t *testing.T) {
+	root, m := gen(t, sampleSpec())
+	p := filepath.Join(root, "link-to-song")
+	os.Remove(p)
+	os.Symlink("/etc/passwd", p)
+	r := mustVerify(t, root, m, Options{})
+	if !hasCode(r, "link-to-song", CodeSymlinkEscape) || hasCode(r, "link-to-song", CodeTargetMismatch) {
+		t.Fatalf("%+v", r.Diffs)
 	}
 }

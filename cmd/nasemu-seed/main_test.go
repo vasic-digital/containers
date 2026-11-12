@@ -57,8 +57,17 @@ func TestCLITamperAndGuards(t *testing.T) {
 	if c, _, _ := runCLI("verify", "-manifest", mpath, "-manifest-sha256", strings.Repeat("0", 64), "-root", tree); c != 2 {
 		t.Fatalf("wrong manifest hash exit %d", c)
 	}
-	if c, _, _ := runCLI("verify", "-manifest", mpath, "-root", tree); c != 2 {
+	if c, _, _ := runCLI("verify", "-manifest", mpath, "-root", tree); c != 64 {
 		t.Fatalf("missing hash exit %d", c)
+	}
+	if c, _, _ := runCLI("verify", "-manifest", mpath, "-manifest-sha256", hash, "-root", tree, "extra"); c != 64 {
+		t.Fatalf("extra positional exit %d", c)
+	}
+	if c, _, _ := runCLI("verify", "-manifest", mpath, "-manifest-sha256", hash, "-root", tree, "-label", "l"); c != 64 {
+		t.Fatalf("label without evidence-dir exit %d", c)
+	}
+	if c, _, _ := runCLI("verify", "-manifest", mpath, "-manifest-sha256", hash, "-root", tree, "-evidence-dir", t.TempDir()); c != 64 {
+		t.Fatalf("evidence-dir without label exit %d", c)
 	}
 	if c, _, _ := runCLI("bogus"); c != 64 {
 		t.Fatalf("usage exit %d", c)
@@ -87,5 +96,42 @@ func TestCLIRefusesManifestOverwriteAndNonEmptyRoot(t *testing.T) {
 	os.WriteFile(filepath.Join(d, "full", "x"), []byte("x"), 0o644)
 	if c, _, _ := runCLI("generate", "-spec", spec, "-out", filepath.Join(d, "full"), "-manifest-out", filepath.Join(d, "m2.json")); c != 2 {
 		t.Fatalf("non-empty root exit %d", c)
+	}
+}
+
+func TestCLIGenerateRejectsExtraArgsAndChecksManifestFirst(t *testing.T) {
+	d := t.TempDir()
+	spec := filepath.Join(d, "spec.json")
+	os.WriteFile(spec, []byte(specJSON), 0o644)
+	if c, _, _ := runCLI("generate", "-spec", spec, "-out", filepath.Join(d, "t"), "-manifest-out", filepath.Join(d, "m.json"), "extra"); c != 64 {
+		t.Fatalf("extra positional exit %d", c)
+	}
+	m := filepath.Join(d, "m.json")
+	os.WriteFile(m, []byte("keep"), 0o644)
+	tree := filepath.Join(d, "tree")
+	if c, _, _ := runCLI("generate", "-spec", spec, "-out", tree, "-manifest-out", m); c != 2 {
+		t.Fatalf("exit %d", c)
+	}
+	if _, err := os.Lstat(tree); err == nil {
+		t.Fatal("tree written although the manifest file already existed")
+	}
+}
+
+func TestCLIEscapesHostilePathsInOutput(t *testing.T) {
+	tree, mpath, hash, _ := setup(t)
+	evil := filepath.Join(tree, "a", "b.bin")
+	os.Remove(evil)
+	os.Mkdir(filepath.Join(tree, "line\nbreak\tname"), 0o755)
+	c, out, _ := runCLI("verify", "-manifest", mpath, "-manifest-sha256", hash, "-root", tree)
+	if c != 1 {
+		t.Fatalf("exit %d", c)
+	}
+	if strings.Contains(out, "line\nbreak") || !strings.Contains(out, `"line\nbreak\tname"`) {
+		t.Fatalf("path not escaped: %q", out)
+	}
+	for _, l := range strings.Split(strings.TrimSpace(out), "\n")[1:] {
+		if strings.Count(l, "\t") != 2 {
+			t.Fatalf("line injection: %q", l)
+		}
 	}
 }

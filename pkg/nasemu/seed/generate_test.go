@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -248,5 +249,116 @@ func TestImplicitParentsInManifest(t *testing.T) {
 	}
 	if strings.Join(paths, ",") != "a,a/b,a/b/c.txt" {
 		t.Fatalf("got %v", paths)
+	}
+}
+
+func fileEntry(p string) Entry { return Entry{Path: p, Kind: KindFile, Size: 1, Pattern: PatternZero} }
+
+// F2: the template length is checked before {n} expansion allocates anything.
+func TestF2TemplateLengthCheckedBeforeExpansion(t *testing.T) {
+	tpl := strings.Repeat("a", 60000) + "{n}"
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{{Path: tpl, Kind: KindFile, Pattern: PatternZero, Count: 2000}}}
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err := Normalize(s)
+	runtime.ReadMemStats(&after)
+	if err == nil || !strings.Contains(err.Error(), "invalid spec") {
+		t.Fatalf("accepted: %v", err)
+	}
+	if d := after.TotalAlloc - before.TotalAlloc; d > 8<<20 {
+		t.Fatalf("allocated %d bytes before rejecting", d)
+	}
+}
+
+func TestF2ParseSpecInputCap(t *testing.T) {
+	big := []byte(`{"version":1,"entries":[],"pad":"` + strings.Repeat("x", MaxSpecBytes) + `"}`)
+	if _, err := ParseSpec(big); err == nil || !strings.Contains(err.Error(), "larger than") {
+		t.Fatalf("oversized spec: %v", err)
+	}
+}
+
+func TestF2EntryCountCheckedBeforeExpansion(t *testing.T) {
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{
+		{Path: "a{n}", Kind: KindFile, Pattern: PatternZero, Count: MaxEntries},
+		{Path: "b{n}", Kind: KindFile, Pattern: PatternZero, Count: MaxEntries},
+	}}
+	if _, err := Normalize(s); err == nil {
+		t.Fatal("accepted")
+	}
+}
+
+// F5: invisible / spoofing / non-composed characters in names.
+func TestF5HostileNames(t *testing.T) {
+	f := func(p string) Spec { return Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{fileEntry(p)}} }
+	bad := map[string]string{
+		"c1":        "a\u0085b",
+		"c1-9f":     "a\u009fb",
+		"rlo":       "a\u202eb.txt",
+		"lro":       "a\u202db",
+		"isolate":   "a\u2066b",
+		"isolate-e": "a\u2069b",
+		"zwsp":      "a\u200bb",
+		"zwj":       "a\u200db",
+		"wordjoin":  "a\u2060b",
+		"bom":       "\ufeffa",
+		"lsep":      "a\u2028b",
+		"nfd":       "cafe\u0301",
+	}
+	for n, p := range bad {
+		if _, err := Normalize(f(p)); err == nil {
+			t.Errorf("%s: accepted %q", n, p)
+		}
+	}
+	if _, err := Normalize(f("caf\u00e9 日本語")); err != nil {
+		t.Errorf("NFC name rejected: %v", err)
+	}
+	// case folding beyond ASCII
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{fileEntry("É.txt"), fileEntry("é.txt")}}
+	if _, err := Normalize(s); err == nil {
+		t.Error("non-ASCII case collision accepted")
+	}
+	// symlink targets are screened too
+	sl := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{fileEntry("a"), {Path: "l", Kind: KindSymlink, Target: "a\u200b"}}}
+	if _, err := Normalize(sl); err == nil {
+		t.Error("hostile symlink target accepted")
+	}
+}
+
+// N02: implicit parent directories take part in case-fold collision checks.
+func TestImplicitParentCaseCollision(t *testing.T) {
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{fileEntry("Dir/a"), fileEntry("dir/b")}}
+	if _, err := Normalize(s); err == nil || !strings.Contains(err.Error(), "collide") {
+		t.Fatalf("implicit-parent case collision accepted: %v", err)
+	}
+}
+
+// N05: the total-bytes cap is enforced across files, not only per file.
+func TestTotalBytesCapAcrossFiles(t *testing.T) {
+	half := MaxTotalBytes/2 + 1
+	s := Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{
+		{Path: "a", Kind: KindFile, Size: half, Pattern: PatternZero},
+		{Path: "b", Kind: KindFile, Size: half, Pattern: PatternZero},
+	}}
+	if _, err := Normalize(s); err == nil || !strings.Contains(err.Error(), "total file bytes") {
+		t.Fatalf("total cap not enforced: %v", err)
+	}
+}
+
+// N13 / N14 and neighbours: field combinations that must be refused.
+func TestEntryFieldCombinationsRefused(t *testing.T) {
+	f := func(e Entry) Spec { return Spec{Version: 1, Seed: 1, MtimeUnix: 1, Entries: []Entry{e}} }
+	cases := map[string]Entry{
+		"dir-pattern":    {Path: "d", Kind: KindDir, Pattern: PatternZero},
+		"dir-data":       {Path: "d", Kind: KindDir, Data: "x"},
+		"dir-target":     {Path: "d", Kind: KindDir, Target: "x"},
+		"neg-count-nopl": {Path: "a", Kind: KindFile, Count: -1},
+		"neg-count-n":    {Path: "a{n}", Kind: KindFile, Count: -1},
+		"huge-count":     {Path: "a{n}", Kind: KindFile, Count: MaxEntries + 1},
+		"file-target":    {Path: "a", Kind: KindFile, Target: "x"},
+	}
+	for n, e := range cases {
+		if _, err := Normalize(f(e)); err == nil {
+			t.Errorf("%s accepted", n)
+		}
 	}
 }

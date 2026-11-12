@@ -48,9 +48,13 @@ func generate(args []string, out, errw io.Writer) int {
 	mpath := fs.String("manifest-out", "", "manifest output file (must not exist)")
 	evDir := fs.String("evidence-dir", "", "write evidence JSON here")
 	label := fs.String("label", "", "evidence label")
-	if fs.Parse(args) != nil || *specPath == "" || *dir == "" || *mpath == "" || (*evDir != "") != (*label != "") {
+	if fs.Parse(args) != nil || fs.NArg() != 0 || *specPath == "" || *dir == "" || *mpath == "" || (*evDir != "") != (*label != "") {
 		fmt.Fprintln(errw, "generate: -spec, -out, -manifest-out required; -evidence-dir and -label go together")
 		return exitUsage
+	}
+	if _, err := os.Lstat(*mpath); err == nil {
+		fmt.Fprintf(errw, "manifest output %q already exists; refusing before writing the tree\n", *mpath)
+		return exitError
 	}
 	raw, err := os.ReadFile(*specPath)
 	if err != nil {
@@ -111,7 +115,7 @@ func verify(args []string, out, errw io.Writer) int {
 	skipSym := fs.Bool("skip-symlinks", false, "do not check symlink entries (counted as skipped)")
 	evDir := fs.String("evidence-dir", "", "write evidence JSON here")
 	label := fs.String("label", "", "evidence label")
-	if fs.Parse(args) != nil || *mpath == "" || *root == "" || (*evDir != "") != (*label != "") {
+	if fs.Parse(args) != nil || fs.NArg() != 0 || *want == "" || *mpath == "" || *root == "" || (*evDir != "") != (*label != "") {
 		fmt.Fprintln(errw, "verify: -manifest, -manifest-sha256, -root required; -evidence-dir and -label go together")
 		return exitUsage
 	}
@@ -132,7 +136,7 @@ func verify(args []string, out, errw io.Writer) int {
 	}
 	fmt.Fprintf(out, "result=%s diffs=%d\n", rep.Result, len(rep.Diffs))
 	for _, d := range rep.Diffs {
-		fmt.Fprintf(out, "%s\t%s\t%s\n", d.Code, d.Path, d.Detail)
+		fmt.Fprintf(out, "%s\t%q\t%q\n", d.Code, d.Path, d.Detail)
 	}
 	if *evDir != "" {
 		ev, err := seed.NewVerifyEvidence(*label, seed.ManifestSHA256(mb), rep)

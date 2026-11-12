@@ -12,6 +12,7 @@ const (
 	EvidenceSchema   = "nasemu.seed.evidence/1"
 	MaxEntries       = 100000
 	MaxTotalBytes    = int64(1) << 30
+	MaxSpecBytes     = 16 << 20
 	maxComponentLen  = 255
 	maxPathLen       = 4096
 	defaultFileMode  = fs.FileMode(0o644)

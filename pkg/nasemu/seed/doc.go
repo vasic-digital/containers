@@ -34,7 +34,11 @@
 // target_mismatch, symlink_escape, parent_invalid, read_error. Mode and mtime
 // are compared only when requested (Options), because many protocols do not
 // preserve them; SkipSymlinks exists for the same reason and is counted, not
-// hidden.
+// hidden. A skipped symlink entry still gets its kind checked (a regular file
+// where a link belongs is a kind_mismatch); only the target comparison is
+// skipped. Symlink targets are resolved component by component through the
+// spec's (or manifest's) own symlinks, so ".." after a symlinked directory is
+// applied to the resolved directory and cannot be used to leave the tree.
 //
 // # Evidence
 //
@@ -49,8 +53,17 @@
 //
 // The verifier proves a tree matches the manifest, not that the manifest is
 // right; the manifest hash must come from a trusted channel. Verification of a
-// local directory has a check-then-read race window against a concurrent
-// writer. Symlink verification needs an fs.FS that implements fs.ReadLinkFS.
+// local directory has a check-then-read race window (TOCTOU) against a
+// concurrent writer, and Generate assumes nothing else writes the root while it
+// runs: the caller owns the root and must keep it private. Verify returns
+// ERROR for an fs.FS that does not implement fs.ReadLinkFS, because a file
+// where a symlink belongs would otherwise pass. Names are refused if they
+// contain C1 controls, bidi controls, zero-width characters, BOM, or the
+// combining diacritics U+0300..U+036F (so Latin names must be NFC); other
+// non-NFC forms and case-fold equivalences beyond simple Unicode upper/lower
+// mapping are UNCONFIRMED. Windows-hostile names (reserved device names,
+// trailing dots or spaces, characters such as :*?"<>|) are not rejected and
+// their behaviour on Windows or SMB clients is UNCONFIRMED.
 // This package does not start any server; it supplies the corpus and the
 // oracle for the NAS emulator profiles.
 package seed

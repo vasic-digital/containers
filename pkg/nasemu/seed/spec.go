@@ -21,6 +21,9 @@ func badSpec(format string, args ...any) error {
 
 // ParseSpec decodes a spec strictly: unknown fields and trailing data are errors.
 func ParseSpec(data []byte) (Spec, error) {
+	if len(data) > MaxSpecBytes {
+		return Spec{}, badSpec("spec larger than %d bytes", MaxSpecBytes)
+	}
 	var s Spec
 	dec := json.NewDecoder(bytes.NewReader(data))
 	dec.DisallowUnknownFields()
@@ -51,9 +54,35 @@ func validText(s string, what string) error {
 		if r < 0x20 || r == 0x7f || r == '\\' {
 			return fmt.Errorf("%s contains a control character or backslash", what)
 		}
+		if hostileRune(r) {
+			return fmt.Errorf("%s contains a C1 control, bidi control, zero-width, line-separator or combining-diacritic character (U+%04X)", what, r)
+		}
 	}
 	return nil
 }
+
+// hostileRune reports runes that are refused in names: C1 controls, bidi
+// controls (visual spoofing), zero-width characters and BOM (invisible
+// collisions), line/paragraph separators, and the combining diacritical marks
+// block U+0300..U+036F (the usual way an NFD name differs from its NFC twin;
+// names must therefore be composed). Other non-NFC forms (for example Hangul
+// jamo or Indic sequences) are NOT detected: UNCONFIRMED, no x/text dependency.
+func hostileRune(r rune) bool {
+	switch {
+	case r >= 0x80 && r <= 0x9f:
+		return true
+	case r == 0x061c, r == 0x200b, r == 0x200c, r == 0x200d, r == 0x200e, r == 0x200f,
+		r == 0x2028, r == 0x2029, r == 0x2060, r == 0xfeff:
+		return true
+	case r >= 0x202a && r <= 0x202e, r >= 0x2066 && r <= 0x2069:
+		return true
+	case r >= 0x0300 && r <= 0x036f:
+		return true
+	}
+	return false
+}
+
+func foldKey(p string) string { return strings.ToLower(strings.ToUpper(p)) }
 
 // ValidatePath checks a tree-relative slash path: no traversal, no absolute
 // form, no empty or dot components, bounded lengths.
@@ -114,6 +143,20 @@ func expand(s Spec) ([]Entry, error) {
 		case e.Count == 0 && has:
 			return nil, badSpec("path %q has {n} but count is 0", e.Path)
 		}
+		if has {
+			digits := 1
+			if e.Count > 0 {
+				digits = len(strconv.Itoa(e.Count - 1))
+			}
+			if n := strings.Count(e.Path, "{n}"); len(e.Path)+n*(digits-3) > maxPathLen {
+				return nil, badSpec("expanded path template longer than %d bytes", maxPathLen)
+			}
+		} else if len(e.Path) > maxPathLen {
+			return nil, badSpec("path longer than %d bytes", maxPathLen)
+		}
+		if len(out)+max(e.Count, 1) > MaxEntries {
+			return nil, badSpec("more than %d entries", MaxEntries)
+		}
 		if e.Count == 0 {
 			out = append(out, e)
 		} else {
@@ -148,10 +191,10 @@ func Normalize(s Spec) ([]Resolved, error) {
 	fold := map[string]string{}
 	var total int64
 	claim := func(p string) error {
-		if prev, ok := fold[strings.ToLower(p)]; ok && prev != p {
+		if prev, ok := fold[foldKey(p)]; ok && prev != p {
 			return badSpec("paths %q and %q collide case-insensitively", prev, p)
 		}
-		fold[strings.ToLower(p)] = p
+		fold[foldKey(p)] = p
 		return nil
 	}
 	for _, e := range entries {
@@ -238,12 +281,25 @@ func Normalize(s Spec) ([]Resolved, error) {
 		if strings.HasPrefix(r.Target, "/") {
 			return nil, badSpec("symlink %q: absolute target", r.Path)
 		}
-		res := path.Join(path.Dir(r.Path), r.Target)
-		if res == "." || res == ".." || strings.HasPrefix(res, "../") {
-			return nil, badSpec("symlink %q escapes the tree", r.Path)
+		if strings.Contains(r.Target, "//") || strings.HasSuffix(r.Target, "/") {
+			return nil, badSpec("symlink %q: empty target component", r.Path)
 		}
-		if _, ok := byPath[res]; !ok {
-			return nil, badSpec("symlink %q target %q is not in the spec", r.Path, res)
+		_, res := resolveTarget(func(p string) (Kind, string, bool) {
+			x, ok := byPath[p]
+			if !ok {
+				return "", "", false
+			}
+			return x.Kind, x.Target, true
+		}, r.Path, r.Target, false)
+		switch res {
+		case resEscape:
+			return nil, badSpec("symlink %q escapes the tree (resolved through the spec's own symlinks)", r.Path)
+		case resMissing:
+			return nil, badSpec("symlink %q target %q is not in the spec", r.Path, r.Target)
+		case resNotDir:
+			return nil, badSpec("symlink %q target %q passes through a non-directory", r.Path, r.Target)
+		case resLoop:
+			return nil, badSpec("symlink %q target %q loops or is too deep", r.Path, r.Target)
 		}
 	}
 	out := make([]Resolved, 0, len(byPath))
@@ -252,4 +308,72 @@ func Normalize(s Spec) ([]Resolved, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
 	return out, nil
+}
+
+type linkRes int
+
+const (
+	resOK linkRes = iota
+	resEscape
+	resMissing
+	resNotDir
+	resLoop
+)
+
+const maxLinkHops = 40
+
+// resolveTarget resolves a symlink target the way the kernel does: component
+// by component, expanding every symlink met on the way (so ".." applies to the
+// RESOLVED directory, not to the lexical prefix). lookup describes the tree
+// (spec or manifest). With lenient set, a component unknown to lookup is
+// treated as a plain directory (used by the verifier on live link targets).
+func resolveTarget(lookup func(string) (Kind, string, bool), from, target string, lenient bool) (string, linkRes) {
+	var stack []string
+	if d := path.Dir(from); d != "." {
+		stack = strings.Split(d, "/")
+	}
+	queue := strings.Split(target, "/")
+	hops := 0
+	for len(queue) > 0 {
+		c := queue[0]
+		queue = queue[1:]
+		switch c {
+		case "", ".":
+			continue
+		case "..":
+			if len(stack) == 0 {
+				return "", resEscape
+			}
+			stack = stack[:len(stack)-1]
+			continue
+		}
+		stack = append(stack, c)
+		k, tgt, ok := lookup(strings.Join(stack, "/"))
+		if !ok {
+			if lenient {
+				continue
+			}
+			return "", resMissing
+		}
+		switch k {
+		case KindSymlink:
+			hops++
+			if hops > maxLinkHops {
+				return "", resLoop
+			}
+			if strings.HasPrefix(tgt, "/") {
+				return "", resEscape
+			}
+			stack = stack[:len(stack)-1]
+			queue = append(strings.Split(tgt, "/"), queue...)
+		case KindFile:
+			if len(queue) > 0 {
+				return "", resNotDir
+			}
+		}
+	}
+	if len(stack) == 0 {
+		return "", resEscape
+	}
+	return strings.Join(stack, "/"), resOK
 }
