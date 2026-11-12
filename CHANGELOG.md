@@ -2,7 +2,16 @@
 
 ## [Unreleased]
 
-(Nothing yet.)
+### Added (PROVISIONAL)
+- `pkg/nasemu/seed` and `cmd/nasemu-seed` (BG-NASEMU NE-3): deterministic
+  seed-corpus generator driven by spec DATA, golden manifest writer/parser
+  (manifest sha256 mandatory), `io/fs`-based verifier with a closed result and
+  diff-code vocabulary (symlinks never followed, parent-symlink escapes
+  detected), and path-safe machine-written evidence JSON without wall-clock
+  fields. Tests cover 3-run byte identity, tamper cases, verifier
+  golden-good/golden-bad fixtures and 21 paired mutants
+  (`scripts/nasemu_seed_mutants.sh`, cmp-verified restore). Linux/amd64 only;
+  other platforms UNCONFIRMED.
 
 ## [2.0.0] - 2026-10-28 (RT-RACE-1 API fix; test and tooling hygiene)
 
