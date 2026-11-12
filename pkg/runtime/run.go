@@ -6,8 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
+	"os"
 	"os/exec"
+	"path"
+	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -85,6 +91,262 @@ type runOptions struct {
 	Env        map[string]string
 	Volumes    []string
 	ExtraArgs  []string
+
+	// Typed host-safety options (G1, CAT-DEVEMU). Raw values are recorded by
+	// the With* options and validated together in validateRunOptions, so a
+	// bad value can never reach an argv.
+	Memory           int64
+	memorySet        bool
+	MemorySwap       int64
+	memorySwapSet    bool
+	CPUs             float64
+	cpusSet          bool
+	PidsLimit        int64
+	pidsSet          bool
+	Devices          []runDevice
+	Userns           string
+	Publishes        []runPublish
+	PublishAllIfaces bool
+	Labels           map[string]string
+	RequireDigest    bool
+
+	// runtimeName is set by runViaCLI ("podman", "docker", "nerdctl"); empty
+	// for the runtime-agnostic ResolveRunSpec.
+	runtimeName string
+}
+
+type runDevice struct {
+	Path  string
+	Allow []string
+}
+
+type runPublish struct {
+	HostIP   string
+	HostPort int
+	CtrPort  int
+	Proto    string
+}
+
+// Typed errors of the run builder. All are sentinels for errors.Is.
+var (
+	// ErrRunForbiddenOption: the request asks for a host-escalating form
+	// (--privileged, host namespaces, ALL capabilities, unconfined security
+	// options, an image reference that parses as a flag). Never overridable.
+	ErrRunForbiddenOption = errors.New("run option is forbidden (host-escalating)")
+	// ErrRunUnsupportedOption: the option exists but the selected runtime
+	// cannot honour it (for example --userns=keep-id on docker).
+	ErrRunUnsupportedOption = errors.New("run option is not supported by this runtime")
+	// ErrRunInvalidOption: a typed option carries an out-of-range or
+	// malformed value.
+	ErrRunInvalidOption = errors.New("run option has an invalid value")
+)
+
+// deviceUsable is the seam that proves a device can really be used. For
+// /dev/kvm it opens the node O_RDWR (a stat does not prove usability: ACL-only
+// access, see pkg/emulator). Package var so tests can inject.
+var deviceUsable = func(p string) error {
+	if p == "/dev/kvm" {
+		f, err := os.OpenFile(p, os.O_RDWR, 0)
+		if err != nil {
+			return err
+		}
+		return f.Close()
+	}
+	_, err := os.Stat(p)
+	return err
+}
+
+var digestRef = regexp.MustCompile(`@sha256:[0-9a-f]{64}$`)
+
+// WithRunMemory caps container memory in bytes (--memory). Swap defaults to the
+// same value (no swap) unless WithRunMemorySwap is given.
+func WithRunMemory(bytes int64) RunOption {
+	return func(o *runOptions) { o.Memory, o.memorySet = bytes, true }
+}
+
+// WithRunMemorySwap sets --memory-swap (total memory+swap) in bytes. Requires
+// WithRunMemory and must be >= the memory value.
+func WithRunMemorySwap(bytes int64) RunOption {
+	return func(o *runOptions) { o.MemorySwap, o.memorySwapSet = bytes, true }
+}
+
+// WithRunCPUs limits CPUs (--cpus), must be > 0.
+func WithRunCPUs(cpus float64) RunOption {
+	return func(o *runOptions) { o.CPUs, o.cpusSet = cpus, true }
+}
+
+// WithRunPidsLimit sets --pids-limit, must be > 0 (unlimited is refused).
+func WithRunPidsLimit(n int64) RunOption {
+	return func(o *runOptions) { o.PidsLimit, o.pidsSet = n, true }
+}
+
+// WithRunDevice passes one host device (--device). path must be a clean
+// absolute path below /dev and must be in the caller-supplied allowlist; the
+// device must be usable (/dev/kvm is opened O_RDWR).
+func WithRunDevice(devPath string, allow ...string) RunOption {
+	return func(o *runOptions) {
+		o.Devices = append(o.Devices, runDevice{Path: devPath, Allow: allow})
+	}
+}
+
+// WithRunUserns sets the user namespace mode. Only "keep-id" is modelled and
+// only podman honours it.
+func WithRunUserns(mode string) RunOption {
+	return func(o *runOptions) { o.Userns = mode }
+}
+
+// WithRunPublish publishes a port (-p hostIP:hostPort:ctrPort/proto). hostIP is
+// REQUIRED and must be a literal IP; a wildcard address needs
+// WithRunPublishAllInterfaces.
+func WithRunPublish(hostIP string, hostPort, ctrPort int, proto string) RunOption {
+	return func(o *runOptions) {
+		o.Publishes = append(o.Publishes, runPublish{hostIP, hostPort, ctrPort, proto})
+	}
+}
+
+// WithRunPublishAllInterfaces is the explicit opt-in to publish on 0.0.0.0/::.
+func WithRunPublishAllInterfaces() RunOption {
+	return func(o *runOptions) { o.PublishAllIfaces = true }
+}
+
+// WithRunLabel adds a container label (--label k=v).
+func WithRunLabel(key, value string) RunOption {
+	return func(o *runOptions) {
+		if o.Labels == nil {
+			o.Labels = make(map[string]string)
+		}
+		o.Labels[key] = value
+	}
+}
+
+// WithRunImageDigest requires the image reference to be pinned by a sha256
+// digest (name@sha256:<64 hex>); a mutable tag is refused.
+func WithRunImageDigest() RunOption {
+	return func(o *runOptions) { o.RequireDigest = true }
+}
+
+func invalid(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", ErrRunInvalidOption, fmt.Sprintf(format, a...))
+}
+
+func forbidden(format string, a ...any) error {
+	return fmt.Errorf("%w: %s", ErrRunForbiddenOption, fmt.Sprintf(format, a...))
+}
+
+// hostNamespaceFlags are the flags whose value "host" shares a host namespace.
+var hostNamespaceFlags = map[string]bool{
+	"--network": true, "--net": true, "--userns": true, "--pid": true,
+	"--ipc": true, "--uts": true, "--cgroupns": true,
+}
+
+// forbiddenArg inspects one flag (+ optional next token) of free-form args and
+// reports whether it is a host-escalating form.
+func forbiddenArg(flag, next string) (string, bool) {
+	name, val, hasVal := strings.Cut(flag, "=")
+	if !hasVal {
+		val = next
+	}
+	lv := strings.ToLower(strings.TrimSpace(val))
+	switch {
+	case name == "--privileged":
+		return "--privileged", true
+	case hostNamespaceFlags[name] && lv == "host":
+		return name + "=host", true
+	case name == "--cap-add" && (lv == "all" || lv == "sys_admin" || lv == "cap_sys_admin"):
+		return "--cap-add=" + val, true
+	case name == "--security-opt" && (strings.Contains(lv, "unconfined") || lv == "label=disable"):
+		return "--security-opt=" + val, true
+	}
+	return "", false
+}
+
+// validateRunOptions checks every typed option plus the free-form forms and
+// returns the first problem. It runs before any argv is built.
+func validateRunOptions(o *runOptions, image string) error {
+	if strings.HasPrefix(image, "-") {
+		return forbidden("image reference %q parses as a flag", image)
+	}
+	if o.Network != "" {
+		if _, bad := forbiddenArg("--network", o.Network); bad {
+			return forbidden("network %q shares the host network namespace", o.Network)
+		}
+	}
+	for i, a := range o.ExtraArgs {
+		next := ""
+		if i+1 < len(o.ExtraArgs) {
+			next = o.ExtraArgs[i+1]
+		}
+		if what, bad := forbiddenArg(a, next); bad {
+			return forbidden("extra arg %s", what)
+		}
+	}
+	if o.memorySet && o.Memory <= 0 {
+		return invalid("memory must be > 0 bytes, got %d", o.Memory)
+	}
+	if o.memorySwapSet {
+		if !o.memorySet {
+			return invalid("memory-swap requires memory")
+		}
+		if o.MemorySwap < o.Memory {
+			return invalid("memory-swap %d is below memory %d", o.MemorySwap, o.Memory)
+		}
+	}
+	if o.cpusSet && !(o.CPUs > 0) {
+		return invalid("cpus must be > 0, got %g", o.CPUs)
+	}
+	if o.pidsSet && o.PidsLimit <= 0 {
+		return invalid("pids-limit must be > 0, got %d", o.PidsLimit)
+	}
+	for _, d := range o.Devices {
+		if d.Path != path.Clean(d.Path) || !strings.HasPrefix(d.Path, "/dev/") ||
+			strings.ContainsAny(d.Path, ":, \t\n") {
+			return invalid("device %q is not a clean absolute path below /dev", d.Path)
+		}
+		allowed := false
+		for _, a := range d.Allow {
+			if a == d.Path {
+				allowed = true
+			}
+		}
+		if !allowed {
+			return invalid("device %q is not in the caller allowlist", d.Path)
+		}
+		if err := deviceUsable(d.Path); err != nil {
+			return fmt.Errorf("device %s is not usable: %w", d.Path, err)
+		}
+	}
+	if o.Userns != "" {
+		if o.Userns != "keep-id" {
+			return invalid("userns %q is not modelled (only keep-id)", o.Userns)
+		}
+		if o.runtimeName != "" && o.runtimeName != "podman" {
+			return fmt.Errorf("%w: --userns=keep-id on %s", ErrRunUnsupportedOption, o.runtimeName)
+		}
+	}
+	for _, p := range o.Publishes {
+		ip := net.ParseIP(p.HostIP)
+		if ip == nil {
+			return invalid("publish host ip %q is not a literal IP", p.HostIP)
+		}
+		if ip.IsUnspecified() && !o.PublishAllIfaces {
+			return invalid("publish on %s needs WithRunPublishAllInterfaces", p.HostIP)
+		}
+		if p.Proto != "tcp" && p.Proto != "udp" {
+			return invalid("publish proto %q", p.Proto)
+		}
+		if p.CtrPort < 1 || p.CtrPort > 65535 || p.HostPort < 0 || p.HostPort > 65535 {
+			return invalid("publish ports %d:%d out of range", p.HostPort, p.CtrPort)
+		}
+	}
+	for k := range o.Labels {
+		if k == "" || strings.Contains(k, "=") {
+			return invalid("label key %q", k)
+		}
+	}
+	if o.RequireDigest && !digestRef.MatchString(image) {
+		return invalid("image %q is not pinned by @sha256:<64 hex>", image)
+	}
+	return nil
 }
 
 // RunOption configures one-shot container execution.
@@ -218,6 +480,37 @@ func buildRunArgs(o *runOptions, image string, cmd []string) []string {
 	if o.Network != "" {
 		args = append(args, "--network", o.Network)
 	}
+	if o.memorySet {
+		args = append(args, "--memory", strconv.FormatInt(o.Memory, 10))
+		swap := o.Memory
+		if o.memorySwapSet {
+			swap = o.MemorySwap
+		}
+		args = append(args, "--memory-swap", strconv.FormatInt(swap, 10))
+	}
+	if o.cpusSet {
+		args = append(args, "--cpus", strconv.FormatFloat(o.CPUs, 'g', -1, 64))
+	}
+	if o.pidsSet {
+		args = append(args, "--pids-limit", strconv.FormatInt(o.PidsLimit, 10))
+	}
+	for _, d := range o.Devices {
+		args = append(args, "--device", d.Path)
+	}
+	if o.Userns != "" {
+		args = append(args, "--userns", o.Userns)
+	}
+	for _, p := range o.Publishes {
+		args = append(args, "-p", fmt.Sprintf("%s:%d:%d/%s", p.HostIP, p.HostPort, p.CtrPort, p.Proto))
+	}
+	lkeys := make([]string, 0, len(o.Labels))
+	for k := range o.Labels {
+		lkeys = append(lkeys, k)
+	}
+	sort.Strings(lkeys)
+	for _, k := range lkeys {
+		args = append(args, "--label", k+"="+o.Labels[k])
+	}
 	keys := make([]string, 0, len(o.Env))
 	for k := range o.Env {
 		keys = append(keys, k)
@@ -250,12 +543,19 @@ type RunSpec struct {
 	Args []string
 	// Stdin is the reader supplied by WithRunStdin, or nil.
 	Stdin io.Reader
+	// Err is non-nil when the options were refused (typed: ErrRunForbiddenOption,
+	// ErrRunUnsupportedOption, ErrRunInvalidOption). Args is nil then; a caller
+	// MUST check Err before executing Args.
+	Err error
 }
 
 // ResolveRunSpec applies the given RunOptions and returns the resolved argv and
 // stdin reader. See RunSpec.
 func ResolveRunSpec(image string, cmd []string, opts []RunOption) RunSpec {
 	o := applyRunOptions(opts)
+	if err := validateRunOptions(o, image); err != nil {
+		return RunSpec{Err: err}
+	}
 	return RunSpec{Args: buildRunArgs(o, image, cmd), Stdin: o.Stdin}
 }
 
@@ -276,6 +576,10 @@ func runViaCLI(
 		return nil, fmt.Errorf("%s run: image is required", name)
 	}
 	o := applyRunOptions(opts)
+	o.runtimeName = name
+	if err := validateRunOptions(o, image); err != nil {
+		return nil, fmt.Errorf("%s run %s: %w", name, image, err)
+	}
 	args := buildRunArgs(o, image, cmd)
 
 	var (

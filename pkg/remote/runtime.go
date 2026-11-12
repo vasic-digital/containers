@@ -237,6 +237,9 @@ func (r *RemoteRuntime) Run(
 		return nil, fmt.Errorf("remote run: image is required")
 	}
 	spec := runtime.ResolveRunSpec(image, cmd, opts)
+	if spec.Err != nil {
+		return nil, fmt.Errorf("remote run %s on %s: %w", image, r.host.Name, spec.Err)
+	}
 	if spec.Stdin != nil {
 		return nil, fmt.Errorf(
 			"remote run %s on %s: %w",
