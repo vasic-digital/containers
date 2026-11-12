@@ -2,7 +2,44 @@
 
 ## [Unreleased]
 
-(Nothing yet.)
+CAT-DEVEMU, gaps G1, G2 and G11 of the device-emulation plan. **PROVISIONAL**:
+unit-tested with paired mutants; one rootless-podman cgroup read-back test
+(alpine, no pull). No emulator was booted and no live Android/Tauri run exists.
+
+### Added
+- `pkg/runtime` (G1): typed run options `WithRunMemory`, `WithRunMemorySwap`
+  (swap defaults to memory), `WithRunCPUs`, `WithRunPidsLimit`, `WithRunDevice`
+  (clean path below `/dev`, caller allowlist, `/dev/kvm` opened read-write),
+  `WithRunUserns("keep-id")` (podman only; docker/nerdctl get
+  `ErrRunUnsupportedOption`), `WithRunPublish` (literal host IP required,
+  wildcard needs `WithRunPublishAllInterfaces`), `WithRunLabel`,
+  `WithRunImageDigest` (refuses a tag). New sentinels `ErrRunForbiddenOption`,
+  `ErrRunUnsupportedOption`, `ErrRunInvalidOption`; `RunSpec.Err`.
+- `pkg/hostbudget` (G2): `Admit(Need, Policy, Probe)` returning
+  `fits | does_not_fit | undetermined` from `/proc` (60% memory ceiling, free
+  reserve, memory/CPU PSI, load per CPU, RLIMIT_NPROC) and an open-for-write
+  `KVMUsable` probe; JSON evidence.
+- `pkg/emulator` (G2): `ContainerizedConfig.Memory/CPUs/PidsLimit/Admit/EvidenceDir`;
+  `Boot` refuses with `ErrHostBudget` before anything is started when the verdict
+  is not `fits`; the emulator container and the AVD-listing probe container now
+  always carry `--memory`, `--memory-swap` (= memory), `--cpus`, `--pids-limit`.
+- `pkg/emulator` (G11): `ReachableAPI` resolves the host-service URL a target can
+  reach (Android emulator `10.0.2.2`, container gateway name per runtime, bridge
+  IP, host) with optional in-target probes (`ADBProbe`, `ContainerProbe`) and a
+  `Reachable` evidence record.
+
+### Changed
+- `pkg/emulator`: `kvmAvailable` opens `/dev/kvm` read-write instead of `stat`
+  (it now agrees with `pkg/vm`, which delegates to the same
+  `hostbudget.KVMUsable`).
+- `pkg/remote` `RemoteRuntime.Run` returns `RunSpec.Err` instead of executing a
+  refused option set.
+
+### Known gaps
+- `pkg/cuttlefish` still builds a `--privileged` / `--network host` run argv by
+  design (excluded from the rootless emulation path); it is not changed here.
+- Default emulator memory (5 GiB), pids (4096) and the `nc -z` in-device probe
+  are unmeasured starting points.
 
 ## [2.0.0] - 2026-10-28 (RT-RACE-1 API fix; test and tooling hygiene)
 

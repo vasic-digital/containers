@@ -391,6 +391,18 @@ The challenge respects the host-power-management hard ban (CONST-033 / §12),
 performs no sudo / suspend / hibernate / poweroff calls, never echoes secrets
 (§11.4.10), and runs in O(seconds) without any container start.
 
+## Host budget and resource envelope (pkg/hostbudget, pkg/runtime, pkg/emulator)
+
+PROVISIONAL (CAT-DEVEMU G1/G2/G11; see `CHANGELOG.md`). `hostbudget.Admit` asks
+whether the live host (`/proc`: memory ceiling and reserve, PSI, load, RLIMIT_NPROC,
+read-write `/dev/kvm`) has room for a workload and answers `fits`, `does_not_fit`
+or `undetermined`; `undetermined` is never treated as `fits`. `Containerized.Boot`
+calls it first and refuses with `ErrHostBudget`, and every emulator container now
+carries `--memory`, `--memory-swap`, `--cpus`, `--pids-limit`. `pkg/runtime` run
+options gained typed resource, device, publish, label and digest options that
+refuse `--privileged` and host namespaces. `emulator.ReachableAPI` resolves which
+URL an emulator, container or bridge client must use to reach a host service.
+
 ## Android Emulator (pkg/emulator)
 
 `pkg/emulator` provides multi-target Android emulator orchestration satisfying
