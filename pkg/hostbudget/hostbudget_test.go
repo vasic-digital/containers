@@ -23,7 +23,10 @@ type fx struct {
 	load1                  string
 	memSome, memFull       string // "avg10" values; "" => file absent/unreadable
 	cpuSome                string
-	procs                  int
+	procs                  int // processes owned by uid 1000, 1 thread each unless ownThreads set
+	ownThreads             int
+	otherProcs             int // processes owned by uid 0
+	otherThreads           int
 }
 
 func writeProc(t *testing.T, f fx) string {
@@ -42,8 +45,18 @@ func writeProc(t *testing.T, f fx) string {
 	if f.cpuSome != "" {
 		w("pressure/cpu", "some avg10="+f.cpuSome+" avg60=0.00 avg300=0.00 total=1\nfull avg10=0.00 avg60=0.00 avg300=0.00 total=0\n")
 	}
-	for i := 1; i <= f.procs; i++ {
-		require.NoError(t, os.MkdirAll(filepath.Join(root, itoa(int64(i))), 0o755))
+	thr := f.ownThreads
+	if thr == 0 {
+		thr = 1
+	}
+	pid := 1
+	for i := 0; i < f.procs; i++ {
+		w(itoa(int64(pid))+"/status", "Name:\tx\nUid:\t1000\t1000\t1000\t1000\nThreads:\t"+itoa(int64(thr))+"\n")
+		pid++
+	}
+	for i := 0; i < f.otherProcs; i++ {
+		w(itoa(int64(pid))+"/status", "Name:\ty\nUid:\t0\t0\t0\t0\nThreads:\t"+itoa(int64(f.otherThreads))+"\n")
+		pid++
 	}
 	return root
 }
@@ -56,7 +69,7 @@ func goodFx() fx {
 }
 
 func probe(root string) Probe {
-	return Probe{ProcRoot: root, NumCPU: func() int { return 16 }, KVMPath: "",
+	return Probe{ProcRoot: root, NumCPU: func() int { return 16 }, KVMPath: "", UID: func() int { return 1000 },
 		PidsLimit: func() (uint64, bool, error) { return 100000, true, nil }}
 }
 
@@ -231,4 +244,115 @@ func TestAdmit_RealHostSmoke(t *testing.T) {
 	ev := Admit(Need{MemBytes: gib}, DefaultPolicy(), Probe{})
 	assert.Contains(t, []Verdict{Fits, DoesNotFit, Undetermined}, ev.Verdict)
 	assert.Greater(t, ev.Inputs.MemTotalBytes, int64(0))
+}
+
+// ---- round-2 review fixes ----
+
+func TestR2_F7_PidsCountTasksOfCurrentUIDOnly(t *testing.T) {
+	f := goodFx()
+	f.procs, f.ownThreads = 10, 1         // 10 own tasks
+	f.otherProcs, f.otherThreads = 500, 4 // 2000 tasks of root: must NOT count
+	p := probe(writeProc(t, f))
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	ev := Admit(Need{MemBytes: gib, Pids: 30}, DefaultPolicy(), p)
+	assert.Equal(t, Fits, ev.Verdict, "%v", ev.Reasons)
+	assert.Equal(t, 10, ev.Inputs.ProcCount)
+}
+
+func TestR2_F7_ThreadsCountAsTasks(t *testing.T) {
+	f := goodFx()
+	f.procs, f.ownThreads = 5, 8 // 40 tasks
+	p := probe(writeProc(t, f))
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: gib, Pids: 20}, DefaultPolicy(), p).Verdict)
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib, Pids: 10}, DefaultPolicy(), p).Verdict)
+}
+
+func TestR2_F7_PidsExactBoundary(t *testing.T) {
+	p := probe(writeProc(t, goodFx())) // 10 own tasks
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib, Pids: 40}, DefaultPolicy(), p).Verdict, "limit-running == need fits")
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: gib, Pids: 41}, DefaultPolicy(), p).Verdict)
+}
+
+func TestR2_F7_UnparsableProcessTableIsUndetermined(t *testing.T) {
+	f := goodFx()
+	root := writeProc(t, f)
+	// every pid dir loses its status file
+	ents, _ := os.ReadDir(root)
+	for _, e := range ents {
+		if e.IsDir() && e.Name() != "pressure" {
+			_ = os.Remove(filepath.Join(root, e.Name(), "status"))
+		}
+	}
+	p := probe(root)
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	assert.Equal(t, Undetermined, Admit(Need{MemBytes: gib, Pids: 5}, DefaultPolicy(), p).Verdict)
+}
+
+func TestR2_F11_ReserveFloorBinds(t *testing.T) {
+	// total 10 GiB: 15% = 1.5 GiB < floor 4 GiB, so the floor is the reserve.
+	f := fx{memTotalKB: 10 * 1024 * 1024, memAvailKB: 8 * 1024 * 1024, load1: "1", memSome: "0", memFull: "0", cpuSome: "0", procs: 1}
+	root := writeProc(t, f)
+	assert.Equal(t, Fits, Admit(Need{MemBytes: 4 * gib}, DefaultPolicy(), probe(root)).Verdict, "left exactly 4 GiB == floor")
+	ev := Admit(Need{MemBytes: 4*gib + 1}, DefaultPolicy(), probe(root))
+	assert.Equal(t, DoesNotFit, ev.Verdict)
+	assert.Contains(t, strings.Join(ev.Reasons, "|"), "reserve")
+}
+
+func TestR2_F11_ReservePercentBindsWithLooserCeiling(t *testing.T) {
+	pol := DefaultPolicy()
+	pol.MemCeilingPct = 95
+	f := fx{memTotalKB: 100 * 1024 * 1024, memAvailKB: 20 * 1024 * 1024, load1: "1", memSome: "0", memFull: "0", cpuSome: "0", procs: 1}
+	root := writeProc(t, f)
+	assert.Equal(t, Fits, Admit(Need{MemBytes: 5 * gib}, pol, probe(root)).Verdict, "left 15 GiB == 15%")
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: 6 * gib}, pol, probe(root)).Verdict)
+}
+
+func TestR2_F11_PSIAndLoadBoundaries(t *testing.T) {
+	f := goodFx()
+	f.memSome = "10.00"
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict, "== limit is not over it")
+	f.memSome = "10.01"
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict)
+	f = goodFx()
+	f.memFull = "2.00"
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict, "full == limit")
+	f.memFull = "2.01"
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict)
+	f = goodFx()
+	f.load1 = "12.00" // 16 * 0.75
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict)
+	f.load1 = "12.01"
+	assert.Equal(t, DoesNotFit, Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, f))).Verdict)
+}
+
+func TestR2_F12_NegativeNeedIsRefusedNotFits(t *testing.T) {
+	root := writeProc(t, goodFx())
+	for name, n := range map[string]Need{
+		"neg mem":  {MemBytes: -1},
+		"neg cpus": {MemBytes: gib, CPUs: -1},
+		"neg pids": {MemBytes: gib, Pids: -5},
+	} {
+		ev := Admit(n, DefaultPolicy(), probe(root))
+		assert.Equal(t, Undetermined, ev.Verdict, name)
+		assert.Contains(t, strings.Join(ev.Reasons, "|"), "invalid need", name)
+	}
+}
+
+func TestR2_F12_WriteJSONDoesNotFollowSymlinkOrOverwrite(t *testing.T) {
+	ev := Admit(Need{MemBytes: gib}, DefaultPolicy(), probe(writeProc(t, goodFx())))
+	dir := t.TempDir()
+	victim := filepath.Join(t.TempDir(), "victim")
+	require.NoError(t, os.WriteFile(victim, []byte("keep"), 0o600))
+	require.NoError(t, os.Symlink(victim, filepath.Join(dir, "hostbudget-x.json")))
+	_, err := ev.WriteJSON(dir, "x")
+	assert.Error(t, err, "an existing path (symlink) must be refused, not followed")
+	b, _ := os.ReadFile(victim)
+	assert.Equal(t, "keep", string(b))
+	// existing regular file is not overwritten either
+	_, err = ev.WriteJSON(dir, "y")
+	require.NoError(t, err)
+	_, err = ev.WriteJSON(dir, "y")
+	assert.Error(t, err)
 }

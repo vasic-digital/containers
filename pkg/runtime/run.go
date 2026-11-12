@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -239,8 +240,15 @@ var hostNamespaceFlags = map[string]bool{
 	"--ipc": true, "--uts": true, "--cgroupns": true,
 }
 
+// dangerousCaps are refused in --cap-add (any element of a comma list, with or
+// without the CAP_ prefix, any case).
+var dangerousCaps = map[string]bool{
+	"ALL": true, "SYS_ADMIN": true, "SYS_MODULE": true, "SYS_RAWIO": true, "SYS_PTRACE": true,
+}
+
 // forbiddenArg inspects one flag (+ optional next token) of free-form args and
-// reports whether it is a host-escalating form.
+// reports whether it is a host-escalating form. It does not look at volumes
+// (see scanExtraArgs).
 func forbiddenArg(flag, next string) (string, bool) {
 	name, val, hasVal := strings.Cut(flag, "=")
 	if !hasVal {
@@ -250,14 +258,136 @@ func forbiddenArg(flag, next string) (string, bool) {
 	switch {
 	case name == "--privileged":
 		return "--privileged", true
-	case hostNamespaceFlags[name] && lv == "host":
-		return name + "=host", true
-	case name == "--cap-add" && (lv == "all" || lv == "sys_admin" || lv == "cap_sys_admin"):
-		return "--cap-add=" + val, true
-	case name == "--security-opt" && (strings.Contains(lv, "unconfined") || lv == "label=disable"):
-		return "--security-opt=" + val, true
+	case name == "--device" || name == "--device-cgroup-rule":
+		return name + " (use WithRunDevice with an allowlist)", true
+	case hostNamespaceFlags[name]:
+		// "host" shares the namespace; "ns:<path>" joins any namespace the
+		// caller can name; "container:<id>" joins another container's.
+		// Policy: all three are refused by default.
+		if lv == "host" || strings.HasPrefix(lv, "ns:") || strings.HasPrefix(lv, "container:") {
+			return name + "=" + val, true
+		}
+		if (name == "--network" || name == "--net") && strings.Contains(lv, "allow_host_loopback=true") {
+			return name + "=" + val, true
+		}
+	case name == "--cap-add":
+		for _, c := range strings.Split(val, ",") {
+			c = strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")
+			if dangerousCaps[c] {
+				return "--cap-add=" + val, true
+			}
+		}
+	case name == "--security-opt":
+		n := strings.ReplaceAll(lv, ":", "=")
+		if strings.Contains(n, "unconfined") || n == "label=disable" {
+			return "--security-opt=" + val, true
+		}
 	}
 	return "", false
+}
+
+// bindSourceRefused reports whether a bind-mount SOURCE is one the builder
+// never allows: the root, anything inside /proc /sys /dev /run /var/run (this
+// covers the podman/docker sockets and device nodes), the system roots /etc
+// /boot /root /home themselves, and any *.sock file. Ordinary subpaths of
+// /etc /boot /root /home are allowed. Symlinks are resolved and both forms
+// are checked. Named volumes (no leading /, ., ~) are not bind sources.
+func bindSourceRefused(src string) (bool, string) {
+	if src == "" || !(strings.HasPrefix(src, "/") || strings.HasPrefix(src, ".") || strings.HasPrefix(src, "~")) {
+		return false, ""
+	}
+	if strings.HasPrefix(src, "~") {
+		return true, "home-relative source is not resolved by the builder"
+	}
+	abs, err := filepath.Abs(src)
+	if err != nil {
+		return true, "cannot resolve source"
+	}
+	cands := []string{filepath.Clean(abs)}
+	if r, err := filepath.EvalSymlinks(abs); err == nil {
+		cands = append(cands, filepath.Clean(r))
+	}
+	for _, c := range cands {
+		if c == "/" {
+			return true, "root"
+		}
+		for _, r := range []string{"/proc", "/sys", "/dev", "/run", "/var/run"} {
+			if c == r || strings.HasPrefix(c, r+"/") {
+				return true, "inside " + r
+			}
+		}
+		for _, r := range []string{"/etc", "/boot", "/root", "/home"} {
+			if c == r {
+				return true, r + " itself"
+			}
+		}
+		if strings.HasSuffix(c, ".sock") {
+			return true, "socket file"
+		}
+	}
+	return false, ""
+}
+
+func checkVolumeSpec(spec string) error {
+	src, _, _ := strings.Cut(spec, ":")
+	if bad, why := bindSourceRefused(src); bad {
+		return forbidden("bind mount source %q refused (%s)", src, why)
+	}
+	return nil
+}
+
+func checkMountSpec(spec string) error {
+	kv := map[string]string{}
+	for _, f := range strings.Split(spec, ",") {
+		k, v, _ := strings.Cut(f, "=")
+		kv[strings.ToLower(strings.TrimSpace(k))] = strings.TrimSpace(v)
+	}
+	if strings.ToLower(kv["type"]) != "bind" {
+		return nil
+	}
+	src := kv["source"]
+	if src == "" {
+		src = kv["src"]
+	}
+	if src == "" {
+		return forbidden("bind --mount without a source")
+	}
+	if bad, why := bindSourceRefused(src); bad {
+		return forbidden("bind mount source %q refused (%s)", src, why)
+	}
+	return nil
+}
+
+// scanExtraArgs applies every free-form-argument rule to the extra args.
+func scanExtraArgs(args []string) error {
+	for i, a := range args {
+		next := ""
+		if i+1 < len(args) {
+			next = args[i+1]
+		}
+		name, val, hasVal := strings.Cut(a, "=")
+		if !hasVal {
+			val = next
+		}
+		switch {
+		case name == "-v" || name == "--volume":
+			if err := checkVolumeSpec(val); err != nil {
+				return err
+			}
+		case strings.HasPrefix(a, "-v") && !strings.HasPrefix(a, "--") && len(a) > 2:
+			if err := checkVolumeSpec(strings.TrimPrefix(a[2:], "=")); err != nil {
+				return err
+			}
+		case name == "--mount":
+			if err := checkMountSpec(val); err != nil {
+				return err
+			}
+		}
+		if what, bad := forbiddenArg(a, next); bad {
+			return forbidden("extra arg %s", what)
+		}
+	}
+	return nil
 }
 
 // validateRunOptions checks every typed option plus the free-form forms and
@@ -271,13 +401,12 @@ func validateRunOptions(o *runOptions, image string) error {
 			return forbidden("network %q shares the host network namespace", o.Network)
 		}
 	}
-	for i, a := range o.ExtraArgs {
-		next := ""
-		if i+1 < len(o.ExtraArgs) {
-			next = o.ExtraArgs[i+1]
-		}
-		if what, bad := forbiddenArg(a, next); bad {
-			return forbidden("extra arg %s", what)
+	if err := scanExtraArgs(o.ExtraArgs); err != nil {
+		return err
+	}
+	for _, v := range o.Volumes {
+		if err := checkVolumeSpec(v); err != nil {
+			return err
 		}
 	}
 	if o.memorySet && o.Memory <= 0 {

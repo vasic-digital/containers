@@ -35,7 +35,42 @@ unit-tested with paired mutants; one rootless-podman cgroup read-back test
 - `pkg/remote` `RemoteRuntime.Run` returns `RunSpec.Err` instead of executing a
   refused option set.
 
+### Round 2 (after an independent review returned NO-GO; PROVISIONAL)
+- `pkg/runtime`: `--cap-add` is split on commas, `CAP_` stripped, compared
+  case-insensitively, and refuses ALL, SYS_ADMIN, SYS_MODULE, SYS_RAWIO,
+  SYS_PTRACE in any element; `ns:<path>` and `container:<id>` values of
+  `--network/--pid/--ipc/--uts/--cgroupns` (and `allow_host_loopback=true`) are
+  refused by policy; `--device` / `--device-cgroup-rule` in ExtraArgs are
+  refused (devices only through `WithRunDevice`); bind mounts (`-v`, `-vSRC`,
+  `--volume`, `--mount type=bind`, `WithRunVolumes`) whose source is `/`, inside
+  `/proc /sys /dev /run /var/run`, `/etc /boot /root /home` themselves, or any
+  `*.sock`, are refused (symlinks resolved); `--security-opt label:disable`
+  (colon form) is refused. Ordinary subpaths of `/etc /home ...` stay allowed.
+- `pkg/hostbudget`: pids axis counts tasks (threads) of the current UID from
+  `/proc/<pid>/status`, not every process; an unparsable table is
+  `undetermined`; negative `Need` is `undetermined`; `WriteJSON` uses `O_EXCL`
+  (no symlink follow, no overwrite); RLIMIT_NPROC now comes from
+  `golang.org/x/sys/unix` (fixes the wrong darwin constants; linux, darwin,
+  freebsd and windows cross-build).
+- `pkg/emulator`: `ContainerizedConfig.RequireKVM` (refuse with `ErrKVMRequired`
+  instead of silent TCG fallback); an unwritable `EvidenceDir` is an error
+  (`ErrEvidenceWrite`) and nothing starts. `ADBProbe` now runs
+  `nc -z ...; echo RC=$?` and requires the marker (absent = could not run);
+  `ContainerProbe` separates exit 125-127 / non-exit failures (could not run)
+  from other non-zero exits (ran, no connection).
+- Notes: `docker`/`nerdctl` containers need
+  `--add-host=host.docker.internal:host-gateway` for the G11 URL to resolve
+  (podman provides `host.containers.internal`). The development host measured
+  about 30 GiB RAM and 16 CPUs, not 251 GiB; thresholds are scaled from `/proc`.
+
 ### Known gaps
+- Bind-mount policy remainder: other sensitive sources (`/var/lib/containers`,
+  `--volumes-from`, `--mount type=volume` aliasing a host path, paths created
+  after the check) and capabilities beyond the five listed are not blocked; the
+  builder is a policy gate, not a sandbox. `container:` namespace joins are
+  refused by policy, not by danger. `WithRunDevice` probes the LOCAL host, which
+  is wrong through `RemoteRuntime`. On hosts where `/var/run` is not a symlink to
+  `/run` the lexical `/var/run` entry is what protects it (untested here).
 - `pkg/cuttlefish` still builds a `--privileged` / `--network host` run argv by
   design (excluded from the rootless emulation path); it is not changed here.
 - Default emulator memory (5 GiB), pids (4096) and the `nc -z` in-device probe

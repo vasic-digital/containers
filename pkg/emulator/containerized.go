@@ -15,6 +15,14 @@ import (
 	"digital.vasic.containers/pkg/hostbudget"
 )
 
+// ErrKVMRequired is returned (wrapped) by Boot when ContainerizedConfig.RequireKVM
+// is set and this host has no usable /dev/kvm; nothing is admitted or started.
+var ErrKVMRequired = errors.New("emulator: KVM required but /dev/kvm is not usable")
+
+// ErrEvidenceWrite is returned (wrapped) by Boot when EvidenceDir is set and the
+// admission evidence cannot be written; nothing is started without its record.
+var ErrEvidenceWrite = errors.New("emulator: host-budget evidence could not be written")
+
 // ErrHostBudget is returned (wrapped) by Boot when the host-budget admission
 // refuses: the verdict was does_not_fit or undetermined. Nothing was started.
 var ErrHostBudget = errors.New("host budget does not allow starting the emulator")
@@ -426,6 +434,7 @@ type Containerized struct {
 	pidsLimit   int64
 	admit       func(hostbudget.Need) hostbudget.Evidence
 	evidenceDir string
+	requireKVM  bool
 }
 
 // ContainerizedConfig parameterises a [Containerized] instance.
@@ -471,6 +480,10 @@ type ContainerizedConfig struct {
 	// EvidenceDir, when set, receives hostbudget-<label>.json for every
 	// admission (fits or not).
 	EvidenceDir string
+	// RequireKVM makes Boot refuse (ErrKVMRequired) when /dev/kvm is not
+	// usable, instead of silently falling back to software (TCG) emulation,
+	// and makes admission count the KVM need. Default false (TCG allowed).
+	RequireKVM bool
 }
 
 // NewContainerized constructs a Containerized emulator. Returns an
@@ -509,6 +522,7 @@ func NewContainerized(cfg ContainerizedConfig) (*Containerized, error) {
 		pidsLimit:        cfg.PidsLimit,
 		admit:            cfg.Admit,
 		evidenceDir:      cfg.EvidenceDir,
+		requireKVM:       cfg.RequireKVM,
 	}, nil
 }
 
@@ -538,6 +552,10 @@ func (c *Containerized) Boot(
 	if lim.Pids <= 0 {
 		lim.Pids = dPids
 	}
+	if c.requireKVM && !kvmAvailable() {
+		refusal := fmt.Errorf("%w (path %s)", ErrKVMRequired, kvmDevicePath)
+		return BootResult{AVD: avd, Started: false, BootDuration: time.Since(startedAt), Error: refusal}, refusal
+	}
 	admit := c.admit
 	if admit == nil {
 		admit = defaultAdmit
@@ -548,7 +566,8 @@ func (c *Containerized) Boot(
 	if c.evidenceDir != "" {
 		label := fmt.Sprintf("emulator-%s-%d", sanitizeContainerName(avd.Name), startedAt.UnixMilli())
 		if _, werr := ev.WriteJSON(c.evidenceDir, label); werr != nil {
-			noteToStderr("hostbudget evidence not written: " + werr.Error())
+			refusal := fmt.Errorf("%w: %v", ErrEvidenceWrite, werr)
+			return BootResult{AVD: avd, Started: false, BootDuration: time.Since(startedAt), Error: refusal}, refusal
 		}
 	}
 	if ev.Verdict != hostbudget.Fits {

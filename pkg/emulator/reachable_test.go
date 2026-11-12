@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os/exec"
 	"strings"
 	"testing"
 )
@@ -132,7 +133,7 @@ func TestReachable_ProbeFailureIsAnErrorNotAnUnverifiedPass(t *testing.T) {
 }
 
 func TestADBProbe_ArgvAndInjectionGuards(t *testing.T) {
-	fake := &fakeExecutor{scripts: map[string]fakeScript{"adb": {Out: []byte("")}}}
+	fake := &fakeExecutor{scripts: map[string]fakeScript{"adb": {Out: []byte("RC=0\n")}}}
 	p := ADBProbe(fake, "adb")
 	res, err := p(context.Background(), Target{Kind: TargetAndroidEmulator, Serial: "emulator-5554"}, "10.0.2.2", 8080)
 	if err != nil || !res.ExitOK {
@@ -158,7 +159,7 @@ func TestADBProbe_ArgvAndInjectionGuards(t *testing.T) {
 		}
 	}
 	// non-zero exit => ExitOK false, no Go error
-	failing := &fakeExecutor{scripts: map[string]fakeScript{"adb": {Out: []byte("failed"), Err: errors.New("exit status 1")}}}
+	failing := &fakeExecutor{scripts: map[string]fakeScript{"adb": {Out: []byte("failed\nRC=1\n")}}}
 	res, err = ADBProbe(failing, "adb")(context.Background(), Target{Kind: TargetAndroidEmulator, Serial: "emulator-5554"}, "10.0.2.2", 8080)
 	if err != nil || res.ExitOK {
 		t.Errorf("failing probe: %v %+v", err, res)
@@ -187,5 +188,64 @@ func TestContainerProbe_ArgvAndInjectionGuards(t *testing.T) {
 	}
 	if _, err := p(context.Background(), Target{Kind: TargetContainer, Runtime: "podman; id", ContainerName: "ok"}, "h", 1); err == nil {
 		t.Error("runtime binary must be one of the known names")
+	}
+}
+
+func adbRun(out string, err error) (ProbeResult, error) {
+	f := &fakeExecutor{scripts: map[string]fakeScript{"adb": {Out: []byte(out), Err: err}}}
+	return ADBProbe(f, "adb")(context.Background(), Target{Kind: TargetAndroidEmulator, Serial: "emulator-5554"}, "10.0.2.2", 8080)
+}
+
+func TestR2_F8_ADBProbe_RequiresExplicitRemoteStatus(t *testing.T) {
+	// adb shell exits 0 even when the in-device command failed (older adb):
+	// success without the RC marker is NOT a connection.
+	if _, err := adbRun("", nil); err == nil {
+		t.Error("no RC marker: must be a could-not-run error, not a pass")
+	}
+	if _, err := adbRun("nc: bad option -z\n", nil); err == nil {
+		t.Error("garbage without marker: must be could-not-run")
+	}
+	r, err := adbRun("RC=1\n", nil)
+	if err != nil || r.ExitOK {
+		t.Errorf("RC=1 = ran, no connection: %v %+v", err, r)
+	}
+	r, err = adbRun("RC=0\n", nil)
+	if err != nil || !r.ExitOK {
+		t.Errorf("RC=0 = connected: %v %+v", err, r)
+	}
+	// adb itself failing (device offline) is could-not-run
+	if _, err := adbRun("error: device offline", errors.New("exit status 1")); err == nil {
+		t.Error("adb transport failure must be could-not-run")
+	}
+	// RC=0 text injected by the remote command output earlier in the stream must not win over the last marker
+	r, err = adbRun("RC=0\nRC=1\n", nil)
+	if err != nil || r.ExitOK {
+		t.Errorf("the LAST marker decides: %v %+v", err, r)
+	}
+}
+
+func exitErr(t *testing.T, code string) error {
+	t.Helper()
+	return exec.Command("sh", "-c", "exit "+code).Run()
+}
+
+func TestR2_F8_ContainerProbe_ClassifiesExitCodes(t *testing.T) {
+	run := func(err error) (ProbeResult, error) {
+		f := &fakeExecutor{scripts: map[string]fakeScript{"podman": {Out: []byte("o"), Err: err}}}
+		return ContainerProbe(f)(context.Background(), Target{Kind: TargetContainer, Runtime: "podman", ContainerName: "c1"}, "h", 9000)
+	}
+	if r, err := run(exitErr(t, "1")); err != nil || r.ExitOK {
+		t.Errorf("exit 1 = ran, no connection: %v %+v", err, r)
+	}
+	for _, code := range []string{"125", "126", "127"} {
+		if _, err := run(exitErr(t, code)); err == nil {
+			t.Errorf("exit %s is a runtime/exec failure: must be could-not-run", code)
+		}
+	}
+	if _, err := run(errors.New("fork/exec podman: no such file")); err == nil {
+		t.Error("a non-ExitError failure must be could-not-run")
+	}
+	if r, err := run(nil); err != nil || !r.ExitOK {
+		t.Errorf("nil error = connected: %v %+v", err, r)
 	}
 }

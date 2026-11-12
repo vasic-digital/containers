@@ -402,6 +402,11 @@ carries `--memory`, `--memory-swap`, `--cpus`, `--pids-limit`. `pkg/runtime` run
 options gained typed resource, device, publish, label and digest options that
 refuse `--privileged` and host namespaces. `emulator.ReachableAPI` resolves which
 URL an emulator, container or bridge client must use to reach a host service.
+Round 2 hardens the option builder (capability lists, `ns:`/`container:` joins,
+`--device`, sensitive bind-mount sources), counts only the current user's tasks
+for the pids axis, adds `ContainerizedConfig.RequireKVM`, and makes the in-target
+probes require an explicit exit status. Docker/nerdctl need
+`--add-host=host.docker.internal:host-gateway`. See "Known gaps" in `CHANGELOG.md`.
 
 ## Android Emulator (pkg/emulator)
 

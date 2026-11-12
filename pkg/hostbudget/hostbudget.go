@@ -78,6 +78,8 @@ type Probe struct {
 	NumCPU func() int
 	// KVMPath, when set and Need.NeedsKVM, is opened O_RDWR.
 	KVMPath string
+	// UID is the user whose tasks count against RLIMIT_NPROC (default os.Getuid).
+	UID func() int
 	// PidsLimit returns RLIMIT_NPROC (limit, limited=false means unlimited).
 	PidsLimit func() (uint64, bool, error)
 }
@@ -120,6 +122,11 @@ func KVMUsable(path string) error {
 // an undetermined axis; undetermined wins over fits.
 func Admit(need Need, pol Policy, pr Probe) Evidence {
 	ev := Evidence{Need: need, Policy: pol}
+	if need.MemBytes < 0 || need.CPUs < 0 || need.Pids < 0 {
+		ev.Verdict = Undetermined
+		ev.Reasons = []string{fmt.Sprintf("invalid need (negative): mem=%d cpus=%g pids=%d", need.MemBytes, need.CPUs, need.Pids)}
+		return ev
+	}
 	var refuse, unknown []string
 	root := pr.ProcRoot
 	if root == "" {
@@ -193,12 +200,16 @@ func Admit(need Need, pol Policy, pr Probe) Evidence {
 			limFn = rlimitNproc
 		}
 		lim, limited, err := limFn()
-		n, cerr := countProcs(root)
+		uidFn := pr.UID
+		if uidFn == nil {
+			uidFn = os.Getuid
+		}
+		n, cerr := countTasks(root, uidFn())
 		switch {
 		case err != nil:
 			unknown = append(unknown, "RLIMIT_NPROC unreadable: "+err.Error())
 		case cerr != nil:
-			unknown = append(unknown, "process table unreadable: "+cerr.Error())
+			unknown = append(unknown, "task table unreadable: "+cerr.Error())
 		default:
 			ev.Inputs.ProcCount = n
 			if !limited {
@@ -248,7 +259,17 @@ func (e Evidence) WriteJSON(dir, label string) (string, error) {
 		return "", err
 	}
 	p := filepath.Join(dir, "hostbudget-"+label+".json")
-	return p, os.WriteFile(p, append(b, '\n'), 0o600)
+	// O_EXCL: an existing path (including a symlink) is refused, never followed
+	// or overwritten.
+	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return "", err
+	}
+	if _, err := f.Write(append(b, '\n')); err != nil {
+		_ = f.Close()
+		return "", err
+	}
+	return p, f.Close()
 }
 
 func readMeminfo(path string) (total, avail int64, err error) {
@@ -327,18 +348,59 @@ func readPSI(path string) (some, full float64, err error) {
 	return some, full, nil
 }
 
-func countProcs(root string) (int, error) {
+// countTasks sums the Threads of every process whose real UID is uid — the
+// quantity RLIMIT_NPROC limits (tasks of one user, threads included). A process
+// table with entries but no readable status is an error (never "0 tasks").
+func countTasks(root string, uid int) (int, error) {
 	ents, err := os.ReadDir(root)
 	if err != nil {
 		return 0, err
 	}
-	n := 0
+	total, dirs, parsed := 0, 0, 0
 	for _, e := range ents {
-		if e.IsDir() {
-			if _, err := strconv.Atoi(e.Name()); err == nil {
-				n++
+		if !e.IsDir() {
+			continue
+		}
+		if _, err := strconv.Atoi(e.Name()); err != nil {
+			continue
+		}
+		dirs++
+		b, err := os.ReadFile(filepath.Join(root, e.Name(), "status"))
+		if err != nil {
+			continue // vanished or unreadable: skip this one
+		}
+		puid, threads, ok := parseStatus(string(b))
+		if !ok {
+			continue
+		}
+		parsed++
+		if puid == uid {
+			total += threads
+		}
+	}
+	if dirs > 0 && parsed == 0 {
+		return 0, errors.New("no process status could be parsed")
+	}
+	return total, nil
+}
+
+func parseStatus(s string) (uid, threads int, ok bool) {
+	var gotU, gotT bool
+	for _, l := range strings.Split(s, "\n") {
+		fs := strings.Fields(l)
+		if len(fs) < 2 {
+			continue
+		}
+		switch fs[0] {
+		case "Uid:":
+			if v, err := strconv.Atoi(fs[1]); err == nil {
+				uid, gotU = v, true
+			}
+		case "Threads:":
+			if v, err := strconv.Atoi(fs[1]); err == nil {
+				threads, gotT = v, true
 			}
 		}
 	}
-	return n, nil
+	return uid, threads, gotU && gotT
 }

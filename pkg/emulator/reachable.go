@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
@@ -144,14 +145,38 @@ func ADBProbe(ex CommandExecutor, adbBinary string) ProbeFunc {
 		if !probeHostRe.MatchString(host) || port < 1 || port > 65535 {
 			return ProbeResult{}, fmt.Errorf("adb probe: unsafe target %q:%d", host, port)
 		}
-		args := []string{"-s", t.Serial, "shell", "nc", "-z", "-w", "3", host, strconv.Itoa(port)}
+		// `adb shell` may exit 0 whatever the in-device command did (older adb),
+		// so the remote status is requested explicitly and parsed; its absence
+		// is "could not run", never a pass.
+		remote := "nc -z -w 3 " + host + " " + strconv.Itoa(port) + "; echo RC=$?"
+		args := []string{"-s", t.Serial, "shell", remote}
 		out, err := ex.Execute(ctx, adbBinary, args...)
-		return ProbeResult{
-			Command: adbBinary + " " + strings.Join(args, " "),
-			Output:  string(out),
-			ExitOK:  err == nil,
-		}, nil
+		res := ProbeResult{Command: adbBinary + " " + strings.Join(args, " "), Output: string(out)}
+		if err != nil {
+			return res, fmt.Errorf("adb probe: adb itself failed: %w", err)
+		}
+		rc, ok := lastRC(string(out))
+		if !ok {
+			return res, errors.New("adb probe: no remote exit status (RC=) in the output")
+		}
+		res.ExitOK = rc == 0
+		return res, nil
 	}
+}
+
+var rcRe = regexp.MustCompile(`(?m)^RC=(\d+)\s*$`)
+
+// lastRC returns the last RC=<n> marker line of out.
+func lastRC(out string) (int, bool) {
+	m := rcRe.FindAllStringSubmatch(out, -1)
+	if len(m) == 0 {
+		return 0, false
+	}
+	n, err := strconv.Atoi(m[len(m)-1][1])
+	if err != nil {
+		return 0, false
+	}
+	return n, true
 }
 
 // ContainerProbe probes from inside a container via `<runtime> exec <name> nc
@@ -171,10 +196,20 @@ func ContainerProbe(ex CommandExecutor) ProbeFunc {
 		}
 		args := []string{"exec", t.ContainerName, "nc", "-z", "-w", "3", host, strconv.Itoa(port)}
 		out, err := ex.Execute(ctx, t.Runtime, args...)
-		return ProbeResult{
-			Command: t.Runtime + " " + strings.Join(args, " "),
-			Output:  string(out),
-			ExitOK:  err == nil,
-		}, nil
+		res := ProbeResult{Command: t.Runtime + " " + strings.Join(args, " "), Output: string(out), ExitOK: err == nil}
+		if err == nil {
+			return res, nil
+		}
+		// Only a genuine non-zero exit of the in-container command is "ran, no
+		// connection"; 125-127 are runtime/exec failures and anything that is
+		// not an exit status (missing binary, killed) could not run at all.
+		var ee *exec.ExitError
+		if !errors.As(err, &ee) {
+			return res, fmt.Errorf("container probe: could not run: %w", err)
+		}
+		if c := ee.ExitCode(); c >= 125 && c <= 127 {
+			return res, fmt.Errorf("container probe: runtime/exec failure (exit %d): %w", c, err)
+		}
+		return res, nil
 	}
 }
