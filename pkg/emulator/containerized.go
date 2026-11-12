@@ -3,13 +3,56 @@ package emulator
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"digital.vasic.containers/pkg/hostbudget"
 )
+
+// ErrHostBudget is returned (wrapped) by Boot when the host-budget admission
+// refuses: the verdict was does_not_fit or undetermined. Nothing was started.
+var ErrHostBudget = errors.New("host budget does not allow starting the emulator")
+
+// Default emulator envelope (CAT-DEVEMU G2). PROVISIONAL starting points: the
+// memory figure mirrors the 5 GiB per-emulator cap used in earlier manual runs
+// on the reference host; neither value has been re-measured for a TV image.
+const (
+	DefaultEmulatorMemoryBytes int64 = 5 << 30
+	DefaultEmulatorPids        int64 = 4096
+)
+
+// defaultEmulatorLimits returns the host-adaptive envelope: fixed memory and
+// pids, CPUs = clamp(0.25*ncpu, 1, 3).
+func defaultEmulatorLimits(ncpu int) (mem int64, cpus float64, pids int64) {
+	cpus = float64(ncpu) / 4
+	if cpus > 3 {
+		cpus = 3
+	}
+	if cpus < 1 {
+		cpus = 1
+	}
+	return DefaultEmulatorMemoryBytes, cpus, DefaultEmulatorPids
+}
+
+// defaultAdmit is the production admitter: the live host against the
+// constitution-derived default policy. Package var so the package's unit-test
+// TestMain can make legacy tests machine-independent.
+var defaultAdmit = func(need hostbudget.Need) hostbudget.Evidence {
+	return hostbudget.Admit(need, hostbudget.DefaultPolicy(), hostbudget.Probe{KVMPath: kvmDevicePath})
+}
+
+// resourceLimits is the --memory/--cpus/--pids-limit envelope; zero = omitted.
+type resourceLimits struct {
+	Memory int64
+	CPUs   float64
+	Pids   int64
+}
 
 // kvmDevicePath is the path to the KVM device. Package-level so tests
 // can redirect it to a synthetic path without needing a real /dev/kvm.
@@ -25,9 +68,10 @@ var kvmDevicePath = "/dev/kvm"
 // enabled; on macOS the podman VM kernel does NOT expose /dev/kvm (HVF
 // is a macOS-host-only API, unreachable from the container's Linux VM).
 //
-// This function reads the filesystem; it does not call any kernel
-// ioctl. A stat(2) is the least-privilege check — we want to know the
-// device exists, not that we can open it for writing.
+// CAT-DEVEMU G2: the check OPENS the node read-write and closes it (no
+// ioctl). The earlier stat(2) said "available" for a node that exists but is
+// not openable by this user (ACL-only access, wrong group), which then failed
+// inside the container. This matches pkg/vm's probe.
 //
 // Anti-bluff posture (§6.J/§6.L):
 //   - Production Containerized.Boot calls this to decide whether to
@@ -35,8 +79,7 @@ var kvmDevicePath = "/dev/kvm"
 //   - Tests override kvmDevicePath to a temp dir path to exercise both
 //     branches without requiring a real KVM device.
 func kvmAvailable() bool {
-	_, err := os.Stat(kvmDevicePath)
-	return err == nil
+	return hostbudget.KVMUsable(kvmDevicePath) == nil
 }
 
 // buildContainerRunArgs constructs the `podman run` / `docker run`
@@ -67,6 +110,20 @@ func buildContainerRunArgs(
 	coldBoot bool,
 	image string,
 ) []string {
+	return buildContainerRunArgsWithLimits(runtimeBinary, containerName, hostPort, avd, coldBoot, image, resourceLimits{})
+}
+
+// buildContainerRunArgsWithLimits is buildContainerRunArgs plus the resource
+// envelope. Swap is pinned to the memory value (no swap).
+func buildContainerRunArgsWithLimits(
+	runtimeBinary string,
+	containerName string,
+	hostPort int,
+	avd AVD,
+	coldBoot bool,
+	image string,
+	lim resourceLimits,
+) []string {
 	args := []string{
 		"run",
 		"-d",
@@ -92,6 +149,18 @@ func buildContainerRunArgs(
 	// different userns mechanism and rejects --userns=keep-id.
 	if runtimeBinary == "podman" {
 		args = append(args, "--userns=keep-id")
+	}
+
+	if lim.Memory > 0 {
+		args = append(args,
+			"--memory", strconv.FormatInt(lim.Memory, 10),
+			"--memory-swap", strconv.FormatInt(lim.Memory, 10))
+	}
+	if lim.CPUs > 0 {
+		args = append(args, "--cpus", strconv.FormatFloat(lim.CPUs, 'g', -1, 64))
+	}
+	if lim.Pids > 0 {
+		args = append(args, "--pids-limit", strconv.FormatInt(lim.Pids, 10))
 	}
 
 	// KVM passthrough: include only when the host exposes /dev/kvm.
@@ -350,6 +419,13 @@ type Containerized struct {
 	// gradlePropertiesSetter for why this package does not itself know
 	// any consumer-specific property name.
 	gradleProperties []string
+
+	// G2 envelope + admission (see ContainerizedConfig).
+	memory      int64
+	cpus        float64
+	pidsLimit   int64
+	admit       func(hostbudget.Need) hostbudget.Evidence
+	evidenceDir string
 }
 
 // ContainerizedConfig parameterises a [Containerized] instance.
@@ -381,6 +457,20 @@ type ContainerizedConfig struct {
 	// flag threads into this field. Generic passthrough; this package
 	// never assumes any consumer-specific property name.
 	GradleProperties []string
+
+	// Memory, CPUs and PidsLimit are the container resource envelope
+	// (--memory with swap pinned to it, --cpus, --pids-limit). Zero values take
+	// the host-adaptive defaults; there is no way to run without an envelope.
+	Memory    int64
+	CPUs      float64
+	PidsLimit int64
+	// Admit is the host-budget admission seam. nil = the live host against
+	// hostbudget.DefaultPolicy. Boot refuses (ErrHostBudget) on any verdict
+	// other than fits.
+	Admit func(hostbudget.Need) hostbudget.Evidence
+	// EvidenceDir, when set, receives hostbudget-<label>.json for every
+	// admission (fits or not).
+	EvidenceDir string
 }
 
 // NewContainerized constructs a Containerized emulator. Returns an
@@ -414,6 +504,11 @@ func NewContainerized(cfg ContainerizedConfig) (*Containerized, error) {
 		gradleModule:     cfg.GradleModule,
 		buildType:        cfg.BuildType,
 		gradleProperties: cfg.GradleProperties,
+		memory:           cfg.Memory,
+		cpus:             cfg.CPUs,
+		pidsLimit:        cfg.PidsLimit,
+		admit:            cfg.Admit,
+		evidenceDir:      cfg.EvidenceDir,
 	}, nil
 }
 
@@ -430,6 +525,41 @@ func (c *Containerized) Boot(
 	coldBoot bool,
 ) (BootResult, error) {
 	startedAt := time.Now()
+
+	// G2: resource envelope + host-budget admission BEFORE anything is started.
+	dMem, dCPUs, dPids := defaultEmulatorLimits(runtime.NumCPU())
+	lim := resourceLimits{Memory: c.memory, CPUs: c.cpus, Pids: c.pidsLimit}
+	if lim.Memory <= 0 {
+		lim.Memory = dMem
+	}
+	if lim.CPUs <= 0 {
+		lim.CPUs = dCPUs
+	}
+	if lim.Pids <= 0 {
+		lim.Pids = dPids
+	}
+	admit := c.admit
+	if admit == nil {
+		admit = defaultAdmit
+	}
+	ev := admit(hostbudget.Need{
+		MemBytes: lim.Memory, CPUs: lim.CPUs, Pids: lim.Pids, NeedsKVM: kvmAvailable(),
+	})
+	if c.evidenceDir != "" {
+		label := fmt.Sprintf("emulator-%s-%d", sanitizeContainerName(avd.Name), startedAt.UnixMilli())
+		if _, werr := ev.WriteJSON(c.evidenceDir, label); werr != nil {
+			noteToStderr("hostbudget evidence not written: " + werr.Error())
+		}
+	}
+	if ev.Verdict != hostbudget.Fits {
+		refusal := fmt.Errorf("%w: verdict=%s: %s", ErrHostBudget, ev.Verdict, strings.Join(ev.Reasons, "; "))
+		return BootResult{
+			AVD:          avd,
+			Started:      false,
+			BootDuration: time.Since(startedAt),
+			Error:        refusal,
+		}, refusal
+	}
 
 	// Pick an ephemeral host port to forward 5555 to. Use port 0 to
 	// let the OS allocate, but for the runtime CLI we need a
@@ -498,8 +628,8 @@ func (c *Containerized) Boot(
 	// emulator inside the container fall back to TCG software
 	// emulation. buildContainerRunArgs centralises this decision so
 	// it is unit-testable without running a real container.
-	args := buildContainerRunArgs(
-		c.runtimeBinary, containerName, hostPort, runAVD, coldBoot, image,
+	args := buildContainerRunArgsWithLimits(
+		c.runtimeBinary, containerName, hostPort, runAVD, coldBoot, image, lim,
 	)
 
 	out, err := c.executor.Execute(ctx, c.runtimeBinary, args...)
