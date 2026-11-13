@@ -316,7 +316,8 @@ func TestAL_Mounts_ResolvedOnlyDenyAndRemoteLexicalDenies(t *testing.T) {
 	home := t.TempDir()
 	require.NoError(t, os.MkdirAll(filepath.Join(home, ".config", "containers", "d"), 0o755))
 	fakeHome(t, home)
-	cfg := filepath.Join(home, ".config")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "work"), 0o755))
+	cfg := filepath.Join(home, "work") // NB: ~/.config itself is an ancestor of a credential child and is denied
 	link := filepath.Join(cfg, "lnk")
 	require.NoError(t, os.Symlink(filepath.Join(cfg, "containers", "d"), link))
 	// root is not denied, the lexical source is not denied, ONLY the resolved path is
@@ -552,7 +553,7 @@ func TestR5_SymlinkedRootResolvingToHomeRefusedByRootCheck(t *testing.T) {
 		WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(link, "work", "f"), Target: "/x"})})
 	require.Error(t, spec.Err)
 	assert.True(t, errors.Is(spec.Err, ErrRunForbiddenOption), "%v", spec.Err)
-	assert.Contains(t, spec.Err.Error(), "resolves to a denied path")
+	assert.Contains(t, spec.Err.Error(), "is itself denied") // resolved form of the root is part of the one deny rule
 }
 
 // M66: every home child on the deny list is denied directly (the R4 loop
@@ -647,7 +648,7 @@ func TestR5_TargetRejectsCRAndTab(t *testing.T) {
 	assert.NoError(t, containerTarget("/x/y"))
 }
 
-// anchorForms returns the lexical and the symlink-resolved form of an anchor.
+// pathForms returns the lexical and the symlink-resolved form of an anchor.
 func TestR5_AnchorFormsResolvesSymlinks(t *testing.T) {
 	base := t.TempDir()
 	real := filepath.Join(base, "real")
@@ -656,6 +657,6 @@ func TestR5_AnchorFormsResolvesSymlinks(t *testing.T) {
 	require.NoError(t, os.Symlink(real, link))
 	rr, err := filepath.EvalSymlinks(real)
 	require.NoError(t, err)
-	assert.Equal(t, []string{link, rr}, anchorForms(link, true))
-	assert.Equal(t, []string{link}, anchorForms(link, false))
+	assert.Equal(t, []string{link, rr}, pathForms(link, true))
+	assert.Equal(t, []string{link}, pathForms(link, false))
 }

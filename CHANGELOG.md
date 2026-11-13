@@ -188,12 +188,35 @@ Tag `containers-2.0.0`. Module path unchanged (`digital.vasic.containers`); see
 - Remote-deployment integration tests SKIP honestly without a configured host.
 - HTML/PDF twins not regenerated unless stated in the release notes.
 
+### CONT-DENY-STRUCT (structural rework of the host-path deny; PROVISIONAL)
+
+Replaces the per-anchor patches of rounds 4-5 with ONE class-wide rule
+(`pkg/runtime/run_policy.go`): a single set of protected anchors (filesystem
+root, `/home`, the tmp anchor, the user home, every credential child of the
+home, every system subtree) is expanded to {lexical,
+symlink-resolved (longest existing prefix, tolerant of missing tails)} forms.
+A candidate path (also in all forms) is denied iff for any anchor form A:
+P == A, P is under A (tree anchors only: credential children, system
+subtrees, tmp state prefixes), or A is under P (ancestor mount, all anchors).
+Closes N1 (symlinked credential child), N2 (ancestor of a credential child,
+e.g. `~/.config`, `~/.local`) and N3 (unset HOME in local mode now falls back
+to the passwd home, else refuses: fail closed). No ancestor of the home may be
+mounted; a work dir under the home that is neither an ancestor nor a
+descendant of a protected anchor is accepted. Remote mode stays purely lexical
+(the local filesystem is not consulted). Anchors are injectable
+(`denySubtrees`, `tmpAnchor`, `homeDir`, `fallbackHome`) so resolved system
+and tmp anchors are tested through the real path. Behaviour change: mounting
+`~/.config`, `~/.local`, `~/.local/share` (ancestors of credential children)
+is now refused. Limits: a symlink loop or unreadable component stops
+resolution at that prefix; check-to-use races are not closed.
+
 ### Round 5 (after reviewer round 4; PROVISIONAL)
 
 - Fix (F1, important): a symlinked HOME no longer bypasses the home/credential
-  denies. `denyHostPath` now compares every anchor (home, deny children, system
-  subtrees, `/tmp` state prefixes) in lexical AND symlink-resolved form (local
-  mode only; the remote side stays lexical).
+  denies for the HOME anchor. NOTE (corrected in CONT-DENY-STRUCT): round 5 did
+  NOT resolve the credential children, ancestors of them, or an unset HOME, and
+  its tests did not exercise resolved system or `/tmp` anchors; the earlier
+  wording claimed every anchor was resolved, which overstated it.
 - Denies added (F4): `/tmp` `tmux-*`, `ssh-*`, `.X11-unix`, `systemd-private-*`;
   home `.config/gh`, `.git-credentials`, `.local/share/keyrings`, `.pgpass`.
 - Container targets containing CR, LF or TAB are refused (F5).

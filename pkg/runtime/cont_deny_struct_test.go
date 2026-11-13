@@ -1,0 +1,319 @@
+package runtime
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+// CONT-DENY-STRUCT RED probes (reviewer round-5 N1/N2/N3): written against
+// the pre-rework deny logic using only seams that already existed.
+
+func mkHome(t *testing.T) (base, home string) {
+	t.Helper()
+	base = t.TempDir()
+	home = filepath.Join(base, "home")
+	for _, d := range []string{"work", ".config/gh", ".config/other", ".local/share/keyrings", ".local/bin", ".ssh"} {
+		require.NoError(t, os.MkdirAll(filepath.Join(home, d), 0o700))
+	}
+	return
+}
+
+// N1: credential child is a symlink to a directory outside the lexical child.
+func TestCDS_N1_SymlinkedCredentialChild(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	dot := filepath.Join(home, "dotfiles", "ssh")
+	require.NoError(t, os.MkdirAll(dot, 0o700))
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".ssh")))
+	require.NoError(t, os.Symlink(dot, filepath.Join(home, ".ssh")))
+	_ = base
+	fakeHome(t, home)
+	refused(t, "source = real target of ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(dot))
+	refused(t, "source = ~/.ssh symlink", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(filepath.Join(home, ".ssh")))
+	allowed(t, "ctrl work", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+}
+
+// N2: mounting an ancestor of a credential child.
+func TestCDS_N2_AncestorOfCredentialChild(t *testing.T) {
+	useLocal(t)
+	_, home := mkHome(t)
+	fakeHome(t, home)
+	for _, a := range []string{".config", ".local", ".local/share"} {
+		p := filepath.Join(home, a)
+		refused(t, "ancestor "+a, WithRunMountAllowedRoots(p), bm5(p))
+		refused(t, "ancestor via wide root "+a, WithRunMountAllowedRoots(home), bm5(p))
+	}
+	allowed(t, "sibling .config/other", WithRunMountAllowedRoots(filepath.Join(home, ".config", "other")), bm5(filepath.Join(home, ".config", "other")))
+}
+
+// N3: HOME unset / unresolvable in local mode must fail closed.
+func TestCDS_N3_HomeUnsetFailsClosed(t *testing.T) {
+	useLocal(t)
+	_, home := mkHome(t)
+	old := homeDir
+	homeDir = func() string { return "" }
+	oldF := fallbackHome
+	fallbackHome = func() string { return "" }
+	t.Cleanup(func() { homeDir = old; fallbackHome = oldF })
+	refused(t, "no home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refused(t, "no home: ordinary work dir", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+}
+
+// N3b: $HOME unusable but passwd gives a home: the credential denies still hold.
+func TestCDS_N3_HomeFromPasswdFallback(t *testing.T) {
+	useLocal(t)
+	_, home := mkHome(t)
+	old := homeDir
+	homeDir = func() string { return "" }
+	oldF := fallbackHome
+	fallbackHome = func() string { return home }
+	t.Cleanup(func() { homeDir = old; fallbackHome = oldF })
+	refused(t, "fallback home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refused(t, "fallback home: ~/.config ancestor", WithRunMountAllowedRoots(filepath.Join(home, ".config")), bm5(filepath.Join(home, ".config")))
+	allowed(t, "fallback home: work", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+}
+
+// N3c: a relative / unclean home is not trusted either.
+func TestCDS_N3_BadHomeFailsClosed(t *testing.T) {
+	useLocal(t)
+	_, home := mkHome(t)
+	for _, h := range []string{"relative/home", home + "/../home"} {
+		fakeHome(t, h)
+		refused(t, "bad home "+h, WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+	}
+}
+
+// Symlinked ~/.config and ~/.local, HOME itself a symlink, intermediate
+// symlink, trailing slash and ".." forms.
+func TestCDS_SymlinkedAncestorsAndFormsRefused(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	other := filepath.Join(base, "elsewhere")
+	require.NoError(t, os.MkdirAll(filepath.Join(other, "cfg", "gh"), 0o700))
+	require.NoError(t, os.MkdirAll(filepath.Join(other, "loc", "share", "keyrings"), 0o700))
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".config")))
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".local")))
+	require.NoError(t, os.Symlink(filepath.Join(other, "cfg"), filepath.Join(home, ".config")))
+	require.NoError(t, os.Symlink(filepath.Join(other, "loc"), filepath.Join(home, ".local")))
+	fakeHome(t, home)
+	// real targets of the symlinked ancestors and their credential children
+	for _, p := range []string{filepath.Join(other, "cfg"), filepath.Join(other, "cfg", "gh"),
+		filepath.Join(other, "loc"), filepath.Join(other, "loc", "share"), filepath.Join(other, "loc", "share", "keyrings"),
+		filepath.Join(home, ".config"), filepath.Join(home, ".local")} {
+		refused(t, "symlinked ancestor "+p, WithRunMountAllowedRoots(p), bm5(p))
+	}
+	// trailing slash and ".." are refused as unclean
+	refused(t, "trailing slash", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".ssh")+"/"))
+	refused(t, "dotdot after symlink", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".config", "..", ".ssh")))
+	// HOME itself a symlink; caller names real path or the link
+	link := filepath.Join(base, "hl")
+	require.NoError(t, os.Symlink(home, link))
+	fakeHome(t, link)
+	refused(t, "HOME link: real .ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refused(t, "HOME link: link .ssh", WithRunMountAllowedRoots(filepath.Join(link, ".ssh")), bm5(filepath.Join(link, ".ssh")))
+	refused(t, "HOME link: real home", WithRunMountAllowedRoots(home), bm5(home))
+	allowed(t, "HOME link: work via link", WithRunMountAllowedRoots(filepath.Join(link, "work")), bm5(filepath.Join(link, "work")))
+	allowed(t, "HOME link: work via real", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+}
+
+// N4: system and tmp anchors are injectable; their RESOLVED forms are
+// exercised through the real deny path.
+func TestCDS_N4_ResolvedSystemAndTmpAnchors(t *testing.T) {
+	base := t.TempDir()
+	realSys := filepath.Join(base, "realsys")
+	realTmp := filepath.Join(base, "realtmp")
+	for _, d := range []string{realSys, filepath.Join(realTmp, "podman-run-1"), filepath.Join(realTmp, "ordinary"), filepath.Join(base, "free")} {
+		require.NoError(t, os.MkdirAll(d, 0o755))
+	}
+	sysLink := filepath.Join(base, "syslink")
+	tmpLink := filepath.Join(base, "tmplink")
+	require.NoError(t, os.Symlink(realSys, sysLink))
+	require.NoError(t, os.Symlink(realTmp, tmpLink))
+	oldS, oldT := denySubtrees, tmpAnchor
+	denySubtrees = []string{sysLink}
+	tmpAnchor = tmpLink
+	t.Cleanup(func() { denySubtrees, tmpAnchor = oldS, oldT })
+	home := filepath.Join(base, "h")
+	require.NoError(t, os.MkdirAll(home, 0o755))
+
+	// system anchor: lexical anchor is the LINK, caller names the REAL dir
+	for _, p := range []string{realSys, filepath.Join(realSys, "x"), sysLink, filepath.Join(sysLink, "x")} {
+		d, _ := denyHostPathMode(p, home, true)
+		require.True(t, d, p)
+	}
+	// remote (lexical): the real dir is not known to be an alias
+	d, _ := denyHostPathMode(filepath.Join(realSys, "x"), "", false)
+	require.False(t, d)
+	d, _ = denyHostPathMode(filepath.Join(sysLink, "x"), "", false)
+	require.True(t, d)
+	// tmp anchor symlinked: state prefixes denied through the real path too
+	for _, p := range []string{filepath.Join(realTmp, "podman-run-1", "s"), filepath.Join(tmpLink, "podman-run-1", "s")} {
+		d, _ := denyHostPathMode(p, home, true)
+		require.True(t, d, p)
+	}
+	d, _ = denyHostPathMode(filepath.Join(realTmp, "ordinary", "s"), home, true)
+	require.False(t, d)
+	d, _ = denyHostPathMode(filepath.Join(base, "free"), home, true)
+	require.False(t, d)
+	// tmp anchor itself (and via its real path) is not mountable
+	for _, p := range []string{tmpLink, realTmp} {
+		d, _ := denyHostPathMode(p, home, true)
+		require.True(t, d, p)
+	}
+}
+
+// Resolved-home pass: only the RESOLVED form of the home matches.
+func TestCDS_ResolvedHomeFormMatters(t *testing.T) {
+	base, home := mkHome(t)
+	link := filepath.Join(base, "hl")
+	require.NoError(t, os.Symlink(home, link))
+	d, _ := denyHostPathMode(filepath.Join(home, ".ssh"), link, true)
+	require.True(t, d)
+	d, _ = denyHostPathMode(home, link, true)
+	require.True(t, d)
+	d, _ = denyHostPathMode(filepath.Join(home, "work"), link, true)
+	require.False(t, d)
+}
+
+// Property-style, class-exhaustive: home real/symlinked x each protected child
+// real/symlinked/absent x {anchor, ancestor, descendant, sibling-legit}.
+func TestCDS_Property_ClassExhaustive(t *testing.T) {
+	children := []string{".ssh", ".config/gh", ".local/share/keyrings"}
+	const (
+		real_ = iota
+		symlinked
+		absent
+	)
+	for homeLinked := 0; homeLinked < 2; homeLinked++ {
+		for code := 0; code < 27; code++ {
+			states := []int{code % 3, (code / 3) % 3, (code / 9) % 3}
+			base := t.TempDir()
+			realHome := filepath.Join(base, "realhome")
+			require.NoError(t, os.MkdirAll(filepath.Join(realHome, "work"), 0o755))
+			require.NoError(t, os.MkdirAll(filepath.Join(realHome, ".config", "other"), 0o755))
+			require.NoError(t, os.MkdirAll(filepath.Join(realHome, ".local", "share", "other"), 0o755))
+			home := realHome
+			if homeLinked == 1 {
+				home = filepath.Join(base, "homelink")
+				require.NoError(t, os.Symlink(realHome, home))
+			}
+			var targets []string // real targets of symlinked children
+			for i, c := range children {
+				p := filepath.Join(realHome, c)
+				switch states[i] {
+				case real_:
+					require.NoError(t, os.MkdirAll(p, 0o700))
+				case symlinked:
+					tgt := filepath.Join(realHome, "dotfiles", filepath.Base(c)+"-t")
+					require.NoError(t, os.MkdirAll(tgt, 0o700))
+					require.NoError(t, os.MkdirAll(filepath.Dir(p), 0o755))
+					require.NoError(t, os.Symlink(tgt, p))
+					targets = append(targets, tgt)
+				}
+			}
+			var deny, allow []string
+			for _, h := range []string{home, realHome} {
+				deny = append(deny, h, filepath.Dir(h))
+				allow = append(allow, filepath.Join(h, "work"), filepath.Join(h, "work", "deep"),
+					filepath.Join(h, ".config", "other"), filepath.Join(h, ".local", "share", "other"),
+					filepath.Join(h, ".ssh-notes"), filepath.Join(h, ".config", "gh2"), filepath.Join(h, ".local", "share", "keyrings2"))
+				for _, c := range children {
+					a := filepath.Join(h, c)
+					deny = append(deny, a, filepath.Join(a, "sub")) // anchor, descendant
+					for d := filepath.Dir(a); d != h && d != "."; d = filepath.Dir(d) {
+						deny = append(deny, d) // ancestors of the child within home
+					}
+				}
+			}
+			for _, tgt := range targets {
+				deny = append(deny, tgt, filepath.Join(tgt, "sub"))
+			}
+			if len(targets) > 0 {
+				for _, h := range []string{home, realHome} {
+					deny = append(deny, filepath.Join(h, "dotfiles")) // ancestor of a resolved credential dir
+				}
+			}
+			for _, p := range deny {
+				d, _ := denyHostPathMode(p, home, true)
+				require.True(t, d, "homeLinked=%d states=%v DENY %s", homeLinked, states, p)
+			}
+			for _, p := range allow {
+				d, _ := denyHostPathMode(p, home, true)
+				require.False(t, d, "homeLinked=%d states=%v ALLOW %s", homeLinked, states, p)
+			}
+		}
+	}
+}
+
+// Seam: with an empty credential-child list the home node anchor alone must
+// still deny the home and its ancestor, and still accept a work dir.
+func TestCDS_HomeNodeAnchorStandsAlone(t *testing.T) {
+	old := denyHomeChildren
+	denyHomeChildren = nil
+	t.Cleanup(func() { denyHomeChildren = old })
+	_, home := mkHome(t)
+	for _, p := range []string{home, filepath.Dir(home)} {
+		d, _ := denyHostPathMode(p, home, true)
+		require.True(t, d, p)
+	}
+	d, _ := denyHostPathMode(filepath.Join(home, "work"), home, true)
+	require.False(t, d)
+}
+
+// A candidate whose LEXICAL form is harmless but whose resolved form lands in
+// a tmp runtime-state directory.
+func TestCDS_TmpStateReachedOnlyViaResolvedCandidate(t *testing.T) {
+	base := t.TempDir()
+	realTmp := filepath.Join(base, "rt")
+	require.NoError(t, os.MkdirAll(filepath.Join(realTmp, "podman-run-1", "s"), 0o755))
+	free := filepath.Join(base, "free")
+	require.NoError(t, os.MkdirAll(free, 0o755))
+	require.NoError(t, os.Symlink(filepath.Join(realTmp, "podman-run-1"), filepath.Join(free, "v")))
+	old := tmpAnchor
+	tmpAnchor = realTmp
+	t.Cleanup(func() { tmpAnchor = old })
+	home := filepath.Join(base, "h")
+	require.NoError(t, os.MkdirAll(home, 0o755))
+	d, _ := denyHostPathMode(filepath.Join(free, "v", "s"), home, true)
+	require.True(t, d)
+	d, _ = denyHostPathMode(filepath.Join(free, "v", "s"), "", false) // remote: lexical, no local resolution
+	require.False(t, d)
+}
+
+// A candidate whose resolved form is another user's home (/home/<x>).
+func TestCDS_ResolvedFormIsUserHomeDir(t *testing.T) {
+	ents, err := os.ReadDir("/home")
+	var name string
+	for _, e := range ents {
+		if e.IsDir() {
+			name = e.Name()
+			break
+		}
+	}
+	if err != nil || name == "" {
+		t.Skip("no directory below /home on this host") // SKIP-OK: needs a real /home/<user> dir
+	}
+	base := t.TempDir()
+	link := filepath.Join(base, "l")
+	require.NoError(t, os.Symlink(filepath.Join("/home", name), link))
+	home := "/zz-nohome/h" // unrelated to /home, so no ancestor rule can fire
+	d, _ := denyHostPathMode(link, home, true)
+	require.True(t, d)
+	d, _ = denyHostPathMode(link, "", false) // remote: lexical only
+	require.False(t, d)
+}
+
+// The source check sees the RESOLVED form (a socket-named file behind a symlink
+// in an otherwise acceptable root).
+func TestCDS_SourceResolvedFormChecked(t *testing.T) {
+	useLocal(t)
+	_, home := mkHome(t)
+	fakeHome(t, home)
+	w := filepath.Join(home, "work")
+	require.NoError(t, os.WriteFile(filepath.Join(w, "x.sock"), []byte("x"), 0o644))
+	require.NoError(t, os.Symlink(filepath.Join(w, "x.sock"), filepath.Join(w, "l")))
+	refused(t, "symlink to x.sock", WithRunMountAllowedRoots(w), bm5(filepath.Join(w, "l")))
+}

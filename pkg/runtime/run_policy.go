@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/user"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -391,69 +392,147 @@ var denyHomeChildren = []string{
 	".local/share/containers", ".local/share/docker", ".password-store",
 }
 
-// denyHostPath reports whether a CLEAN ABSOLUTE host path is never mountable.
-func denyHostPath(p, home string) (bool, string) {
-	// Local mode (home known): every anchor (home, system dirs, /tmp) is
-	// compared in its lexical AND symlink-resolved form, so a symlinked HOME
-	// or /tmp cannot hide it. Remote mode (home == "") stays purely lexical.
-	if d, why := denyHostPathOne(p, home, home != ""); d {
-		return d, why
+// ---- host-path deny: ONE class-wide rule (CONT-DENY-STRUCT) ----------------
+//
+// Protected anchors: /home (the filesystem root is an ancestor of every anchor), the tmp anchor (all "node"
+// anchors), the user home (node), every credential child of the home (tree)
+// and every system subtree (tree). Each anchor is expanded to its forms
+// {lexical, fully symlink-resolved}; the resolution is
+// tolerant of non-existent tails (longest existing prefix is resolved).
+// A candidate P (likewise expanded) is DENIED iff, for ANY pair of forms,
+//
+//	tree anchor A: P == A, or P is under A, or A is under P (ancestor mount)
+//	node anchor A: P == A, or A is under P (ancestor mount) - but P below
+//	               a node anchor (a work dir under the home) is ACCEPTED.
+//
+// So the only ancestors of the home that may be mounted: none. A work dir
+// under the home that is neither an ancestor nor a descendant of a protected
+// anchor is accepted. Local mode with no resolvable home is refused by the
+// caller (bindSource). Remote mode (local=false) is purely lexical.
+
+// tmpAnchor is the shared temp directory whose runtime-state children are
+// protected. It is a variable only as a test seam.
+var tmpAnchor = "/tmp"
+
+// fallbackHome is the passwd-derived home used when $HOME is unusable.
+var fallbackHome = func() string {
+	if u, err := user.Current(); err == nil {
+		return u.HomeDir
 	}
-	if home != "" {
-		if rh, err := filepath.EvalSymlinks(home); err == nil && rh != home {
-			return denyHostPathOne(p, rh, true)
-		}
-	}
-	return false, ""
+	return ""
 }
 
-func anchorForms(a string, resolve bool) []string {
-	out := []string{a}
-	if resolve {
-		if r, err := filepath.EvalSymlinks(a); err == nil && r != a {
-			out = append(out, r)
-		}
+// localHome returns the validated home for a local runtime, or an error
+// (fail closed: an unknown home would drop every home/credential deny).
+func localHome() (string, error) {
+	h := homeDir()
+	if h == "" {
+		h = fallbackHome()
 	}
+	if h == "" || !filepath.IsAbs(h) || filepath.Clean(h) != h {
+		return "", forbidden("cannot determine a valid home directory; refusing bind mounts (fail closed)")
+	}
+	return h, nil
+}
+
+// resolveTolerant resolves symlinks of the longest existing prefix of p and
+// appends the non-existent tail unchanged.
+func resolveTolerant(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	dir, base := filepath.Split(p)
+	dir = filepath.Clean(dir)
+	if dir == p || base == "" {
+		return p
+	}
+	return filepath.Join(resolveTolerant(dir), base)
+}
+
+// pathForms returns the lexical and the fully-resolved (tolerant) forms.
+func pathForms(p string, local bool) []string {
+	out := []string{p}
+	if !local {
+		return out
+	}
+	add := func(x string) {
+		for _, e := range out {
+			if e == x {
+				return
+			}
+		}
+		out = append(out, x)
+	}
+	add(resolveTolerant(p))
 	return out
 }
 
-func denyHostPathOne(p, home string, resolve bool) (bool, string) {
-	if p == "/" || p == "/home" || p == "/tmp" {
-		return true, "system root directory"
+func under(p, root string) bool {
+	if root == "/" {
+		return p != "/"
 	}
-	if strings.HasPrefix(p, "/home/") && strings.Count(p[1:], "/") == 1 {
-		return true, "a user home directory"
+	return strings.HasPrefix(p, root+"/")
+}
+
+type protAnchor struct {
+	path string
+	tree bool // tree: P under A is also denied
+	why  string
+}
+
+func protectedAnchors(home string) []protAnchor {
+	as := []protAnchor{
+		{"/home", false, "system root directory"},
+		{tmpAnchor, false, "system root directory"},
 	}
-	if home != "" && home != "/" {
-		if p == home || strings.HasPrefix(home, p+"/") {
-			return true, "the user home directory or an ancestor of it"
-		}
+	if home != "" {
+		as = append(as, protAnchor{home, false, "the user home directory or an ancestor of it"})
 		for _, c := range denyHomeChildren {
-			d := filepath.Join(home, c)
-			if p == d || strings.HasPrefix(p, d+"/") {
-				return true, "credential/container-storage directory in home"
-			}
+			as = append(as, protAnchor{filepath.Join(home, c), true, "credential/container-storage directory in home (or an ancestor of it)"})
 		}
 	}
 	for _, sub := range denySubtrees {
-		for _, r := range anchorForms(sub, resolve) {
-			if p == r || strings.HasPrefix(p, r+"/") {
-				return true, "inside " + r
-			}
+		as = append(as, protAnchor{sub, true, "system directory"})
+	}
+	return as
+}
+
+// denyHostPath reports whether a CLEAN ABSOLUTE host path is never mountable.
+// home == "" selects the purely lexical remote-side check.
+func denyHostPath(p, home string) (bool, string) {
+	return denyHostPathMode(p, home, home != "")
+}
+
+func denyHostPathMode(p, home string, local bool) (bool, string) {
+	pf := pathForms(p, local)
+	for _, x := range pf {
+		if strings.HasPrefix(x, "/home/") && strings.Count(x[1:], "/") == 1 {
+			return true, "a user home directory"
+		}
+		if strings.HasSuffix(x, ".sock") || strings.HasSuffix(x, ".socket") {
+			return true, "socket file"
 		}
 	}
-	for _, tmp := range anchorForms("/tmp", resolve) {
-		if strings.HasPrefix(p, tmp+"/") {
-			first := strings.SplitN(p[len(tmp)+1:], "/", 2)[0]
-			for _, pre := range denyTmpPrefixes {
-				if strings.HasPrefix(first, pre) {
-					return true, "container runtime or session state in /tmp"
+	for _, a := range protectedAnchors(home) {
+		for _, af := range pathForms(a.path, local) {
+			for _, x := range pf {
+				if x == af || under(af, x) || (a.tree && under(x, af)) {
+					return true, a.why + " (" + af + ")"
 				}
 			}
 		}
 	}
-	if strings.HasSuffix(p, ".sock") || strings.HasSuffix(p, ".socket") {
-		return true, "socket file"
+	for _, tf := range pathForms(tmpAnchor, local) {
+		for _, x := range pf {
+			if under(x, tf) {
+				first := strings.SplitN(x[len(tf)+1:], "/", 2)[0]
+				for _, pre := range denyTmpPrefixes {
+					if strings.HasPrefix(first, pre) {
+						return true, "container runtime or session state in " + tf
+					}
+				}
+			}
+		}
 	}
 	return false, ""
 }
@@ -468,7 +547,11 @@ func bindSource(o *runOptions, src string) (string, error) {
 	}
 	home := ""
 	if !o.remote {
-		home = homeDir()
+		h, err := localHome()
+		if err != nil {
+			return "", err
+		}
+		home = h
 	}
 	if len(o.MountRoots) == 0 {
 		return "", forbidden("bind mount %q: no WithRunMountAllowedRoots given", src)
@@ -478,7 +561,7 @@ func bindSource(o *runOptions, src string) (string, error) {
 		if !filepath.IsAbs(r) || filepath.Clean(r) != r {
 			return "", invalid("allowed root %q must be absolute and clean", r)
 		}
-		if d, why := denyHostPath(r, home); d {
+		if d, why := denyHostPathMode(r, home, !o.remote); d {
 			return "", forbidden("allowed root %q is itself denied (%s)", r, why)
 		}
 		if !o.remote {
@@ -486,10 +569,7 @@ func bindSource(o *runOptions, src string) (string, error) {
 			if err != nil {
 				return "", invalid("allowed root %q does not resolve: %v", r, err)
 			}
-			r = rr
-			if d, why := denyHostPath(r, home); d {
-				return "", forbidden("allowed root %q resolves to a denied path (%s)", r, why)
-			}
+			r = rr // denyHostPathMode above already checked the resolved forms
 		}
 		roots = append(roots, r)
 	}
@@ -503,11 +583,10 @@ func bindSource(o *runOptions, src string) (string, error) {
 		if fi, err := os.Stat(r); err == nil && fi.Mode()&os.ModeSocket != 0 {
 			return "", forbidden("bind source %q is a socket", src)
 		}
-		cands = append(cands, r)
-		use = r // pass the RESOLVED path: a later symlink swap cannot redirect it
+		use = r // pass the RESOLVED path (a later symlink swap cannot redirect it); its forms are denied below
 	}
 	for _, c := range cands {
-		if d, why := denyHostPath(c, home); d {
+		if d, why := denyHostPathMode(c, home, !o.remote); d {
 			return "", forbidden("bind source %q refused (%s)", c, why)
 		}
 	}
