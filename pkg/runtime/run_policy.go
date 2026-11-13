@@ -456,7 +456,13 @@ const maxSymlinkHops = 40
 // target or DANGLING - is always followed (relative targets are taken relative
 // to the directory holding the link). More than maxSymlinkHops links (a loop)
 // yields ok=false: the caller fails closed.
-func resolveWalk(p string) (string, bool) {
+//
+// locs lists every PHYSICAL location the walk visited: for each component
+// (also inside a link target, at every hop) the resolved parent joined with the
+// component name. A container that can write to a directory holding such an
+// entry can replace it (a symlink swapped for another one), so locs are node
+// anchors for the deny rule.
+func resolveWalk(p string) (res string, locs []string, ok bool) {
 	parts := strings.Split(strings.TrimPrefix(filepath.Clean(p), "/"), "/")
 	cur := "/"
 	hops := 0
@@ -471,6 +477,7 @@ func resolveWalk(p string) (string, bool) {
 			continue
 		}
 		nx := filepath.Join(cur, c)
+		locs = append(locs, nx)
 		fi, err := os.Lstat(nx)
 		if err != nil {
 			cur = nx
@@ -479,11 +486,11 @@ func resolveWalk(p string) (string, bool) {
 		if fi.Mode()&os.ModeSymlink != 0 {
 			hops++
 			if hops > maxSymlinkHops {
-				return "", false
+				return "", locs, false
 			}
 			t, err := os.Readlink(nx)
 			if err != nil {
-				return "", false
+				return "", locs, false
 			}
 			if filepath.IsAbs(t) {
 				cur = "/"
@@ -493,28 +500,29 @@ func resolveWalk(p string) (string, bool) {
 		}
 		cur = nx
 	}
-	return cur, true
+	return cur, locs, true
 }
 
-// pathFormsOK returns the lexical and the fully-resolved form. ok=false means
-// resolution failed (symlink loop): fail closed.
-func pathFormsOK(p string, local bool) ([]string, bool) {
-	out := []string{p}
+// pathFormsOK returns the lexical and the fully-resolved form plus the
+// physical locations visited. ok=false means resolution failed (symlink loop
+// or too many hops): fail closed.
+func pathFormsOK(p string, local bool) (forms, locs []string, ok bool) {
+	forms = []string{p}
 	if !local {
-		return out, true
+		return forms, nil, true
 	}
-	r, ok := resolveWalk(p)
+	r, locs, ok := resolveWalk(p)
 	if !ok {
-		return out, false
+		return forms, locs, false
 	}
 	if r != p {
-		out = append(out, r)
+		forms = append(forms, r)
 	}
-	return out, true
+	return forms, locs, true
 }
 
 func pathForms(p string, local bool) []string {
-	f, _ := pathFormsOK(p, local)
+	f, _, _ := pathFormsOK(p, local)
 	return f
 }
 
@@ -563,7 +571,7 @@ func denyHostPathMode(p, home string, local bool) (bool, string) {
 }
 
 func denyHostPathHomes(p string, homes []string, local bool) (bool, string) {
-	pf, pok := pathFormsOK(p, local)
+	pf, _, pok := pathFormsOK(p, local)
 	if !pok {
 		return true, "path does not resolve (symlink loop); refused (fail closed)"
 	}
@@ -576,10 +584,25 @@ func denyHostPathHomes(p string, homes []string, local bool) (bool, string) {
 		}
 	}
 	for _, a := range protectedAnchors(homes) {
-		for _, af := range pathForms(a.path, local) {
+		afs, alocs, aok := pathFormsOK(a.path, local)
+		if !aok {
+			// an anchor that cannot be resolved (loop / too many hops) cannot be
+			// protected precisely: refuse everything (fail closed)
+			return true, "protected path " + a.path + " does not resolve (symlink loop); refused (fail closed)"
+		}
+		for _, af := range afs {
 			for _, x := range pf {
 				if x == af || under(af, x) || (a.tree && under(x, af)) {
 					return true, a.why + " (" + af + ")"
+				}
+			}
+		}
+		// physical locations the anchor's resolution passed through: a candidate
+		// equal to or above one could replace the link that leads to the anchor
+		for _, l := range alocs {
+			for _, x := range pf {
+				if x == l || under(l, x) {
+					return true, a.why + " (location " + l + " on the way to " + a.path + ")"
 				}
 			}
 		}

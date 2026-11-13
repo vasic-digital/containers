@@ -467,6 +467,13 @@ for the source and for every allowed root):
   `~/.ssh` that points at a missing directory is anchored on that missing target,
   so mounting its parent is refused), relative targets and chains; more than 40
   hops (a loop) is refused (fail closed).
+- the PHYSICAL location of every link on the way to an anchor is protected too:
+  while an anchor is resolved, each component's real position (resolved parent +
+  name, at every hop, also inside link targets) is recorded; a candidate equal to,
+  or an ancestor of, such a location is refused (a container with write access to
+  the directory that holds `~/.local/bin -> /disk/bin` could replace that link).
+- an anchor that cannot be resolved (loop, or more than 40 hops) refuses EVERY
+  bind mount until it is fixed (fail closed), with a reason naming the anchor.
 - the home anchors are built from BOTH `$HOME` and the passwd home. A `$HOME` of
   `/`, a relative or unclean `$HOME` is ignored (the passwd home still protects);
   if neither is usable the local runtime refuses every bind mount (fail closed).
@@ -477,6 +484,12 @@ and passes the RESOLVED path to the engine. `ResolveRunSpec` (used by
 `RemoteRuntime`) does NOT inspect the local file system: it requires an absolute,
 clean, literal path, applies the lexical denies and the roots, and assumes nothing
 about symlinks on the remote host.
+
+Evidence level of the bind-mount policy: unit tests with paired mutants, a
+property test against an author oracle and an independent oracle based on GNU
+`readlink -m` (see CHANGELOG for the counts of the last run). Both are finite
+random samples of symlink layouts, not a proof; no live rootless podman run
+exercised these denies.
 
 Known limits of the bind-mount policy (stated, not hidden): other users' credential
 directories are not anchors (only `/home/<user>` itself is refused); hard links

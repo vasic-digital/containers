@@ -6,6 +6,30 @@ CAT-DEVEMU, gaps G1, G2 and G11 of the device-emulation plan. **PROVISIONAL**:
 unit-tested with paired mutants; one rootless-podman cgroup read-back test
 (alpine, no pull). No emulator was booted and no live Android/Tauri run exists.
 
+### Fixed (CONT-DENY-STRUCT round 3, PROVISIONAL)
+- `pkg/runtime` bind-source deny: every PHYSICAL location visited while resolving
+  an anchor (each parent joined with each component, at every hop, missing
+  components included) is now protected: a candidate equal to or an ancestor of
+  any such location is refused (N1: `bindSource(<base>/realhome/.local)` was
+  accepted when HOME was a symlink and credential entries were links elsewhere).
+- An anchor that does not resolve (loop, more than 40 hops) now refuses the
+  candidate (fail closed) instead of being dropped (N2).
+- Tests assert the refusal class (`refusedDeny`); `TestCDS_R2_Table` asserts;
+  `..` after a symlinked component is covered (kills the reviewer mutant RV1).
+- Evidence: independent `readlink -m` fuzz, seeds 7,1113,424242,99001,5,31337 x 150
+  iterations: total=62356 bypass=0 fp=1537 (before the fix, seeds 7,1113: bypass=95).
+  The FPs are over-refusals by design: 1355 loop/hops (fail closed) and 182
+  ancestor-of-physical-location refusals; none is an acceptance. Finite random
+  samples, not a proof.
+- Mutants (119): 115 killed, 2 invalid (do not compile), 2 survivors RV4 and RV9 judged
+  EQUIVALENT (every ancestor of a visited location is itself a visited location,
+  and a home-node location always resolves to the anchor itself).
+- Known limits: TOCTOU between the check and container start (narrowed by passing
+  the resolved path); hard links and bind-mount aliases invisible; other users'
+  credential dirs not anchors; remote mode is lexical only; `/home` -> `/var/home`
+  refused (safe, UNCONFIRMED live); no live podman run; a Readlink error after a
+  successful Lstat (RV3) needs a race and is not tested.
+
 ### Fixed (CONT-DENY-STRUCT round 2, PROVISIONAL)
 - `pkg/runtime` bind-source deny: symlinks are now walked with `Lstat`/`Readlink`
   so a credential child that is a DANGLING link (`~/.ssh -> ~/work/proj/keys`,

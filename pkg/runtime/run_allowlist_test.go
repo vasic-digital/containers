@@ -41,6 +41,26 @@ func resolveSpec(opts []RunOption) RunSpec {
 	return RunSpec{Args: buildRunArgs(o, "alpine:3.20", nil)}
 }
 
+// refusedDeny is refused() plus a check that the refusal is the HOST-PATH deny
+// class (not some other refusal such as a flag or an allowlist miss).
+func refusedDeny(t *testing.T, name string, opts ...RunOption) {
+	t.Helper()
+	refused(t, name, opts...)
+	spec := resolveSpec(opts)
+	if spec.Err == nil {
+		return
+	}
+	msg := spec.Err.Error()
+	deny := false
+	// host-path deny class: a deny hit, an unresolvable/unknown host path, or a
+	// malformed source. NOT: an allowed-roots miss, a flag error, a type error.
+	for _, m := range []string{"refused (", "is itself denied", "fail closed", "absolute, clean, literal", "is a socket", "does not resolve"} {
+		deny = deny || strings.Contains(msg, m)
+	}
+	assert.True(t, deny,
+		"%s: refusal is not the host-path deny class: %v", name, spec.Err)
+}
+
 func refused(t *testing.T, name string, opts ...RunOption) {
 	t.Helper()
 	spec := resolveSpec(opts)

@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -31,8 +32,8 @@ func TestCDS_N1_SymlinkedCredentialChild(t *testing.T) {
 	require.NoError(t, os.Symlink(dot, filepath.Join(home, ".ssh")))
 	_ = base
 	fakeHome(t, home)
-	refused(t, "source = real target of ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(dot))
-	refused(t, "source = ~/.ssh symlink", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(filepath.Join(home, ".ssh")))
+	refusedDeny(t, "source = real target of ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(dot))
+	refusedDeny(t, "source = ~/.ssh symlink", WithRunMountAllowedRoots(filepath.Join(home, "dotfiles")), bm5(filepath.Join(home, ".ssh")))
 	allowed(t, "ctrl work", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 }
 
@@ -43,8 +44,8 @@ func TestCDS_N2_AncestorOfCredentialChild(t *testing.T) {
 	fakeHome(t, home)
 	for _, a := range []string{".config", ".local", ".local/share"} {
 		p := filepath.Join(home, a)
-		refused(t, "ancestor "+a, WithRunMountAllowedRoots(p), bm5(p))
-		refused(t, "ancestor via wide root "+a, WithRunMountAllowedRoots(home), bm5(p))
+		refusedDeny(t, "ancestor "+a, WithRunMountAllowedRoots(p), bm5(p))
+		refusedDeny(t, "ancestor via wide root "+a, WithRunMountAllowedRoots(home), bm5(p))
 	}
 	allowed(t, "sibling .config/other", WithRunMountAllowedRoots(filepath.Join(home, ".config", "other")), bm5(filepath.Join(home, ".config", "other")))
 }
@@ -58,8 +59,8 @@ func TestCDS_N3_HomeUnsetFailsClosed(t *testing.T) {
 	oldF := fallbackHome
 	fallbackHome = func() string { return "" }
 	t.Cleanup(func() { homeDir = old; fallbackHome = oldF })
-	refused(t, "no home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
-	refused(t, "no home: ordinary work dir", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+	refusedDeny(t, "no home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refusedDeny(t, "no home: ordinary work dir", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 }
 
 // N3b: $HOME unusable but passwd gives a home: the credential denies still hold.
@@ -71,8 +72,8 @@ func TestCDS_N3_HomeFromPasswdFallback(t *testing.T) {
 	oldF := fallbackHome
 	fallbackHome = func() string { return home }
 	t.Cleanup(func() { homeDir = old; fallbackHome = oldF })
-	refused(t, "fallback home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
-	refused(t, "fallback home: ~/.config ancestor", WithRunMountAllowedRoots(filepath.Join(home, ".config")), bm5(filepath.Join(home, ".config")))
+	refusedDeny(t, "fallback home: ~/.ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refusedDeny(t, "fallback home: ~/.config ancestor", WithRunMountAllowedRoots(filepath.Join(home, ".config")), bm5(filepath.Join(home, ".config")))
 	allowed(t, "fallback home: work", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 }
 
@@ -85,7 +86,7 @@ func TestCDS_N3_BadHomeFailsClosed(t *testing.T) {
 	t.Cleanup(func() { fallbackHome = oldF })
 	for _, h := range []string{"relative/home", home + "/../home", "/"} {
 		fakeHome(t, h)
-		refused(t, "bad home "+h, WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
+		refusedDeny(t, "bad home "+h, WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 	}
 }
 
@@ -106,18 +107,18 @@ func TestCDS_SymlinkedAncestorsAndFormsRefused(t *testing.T) {
 	for _, p := range []string{filepath.Join(other, "cfg"), filepath.Join(other, "cfg", "gh"),
 		filepath.Join(other, "loc"), filepath.Join(other, "loc", "share"), filepath.Join(other, "loc", "share", "keyrings"),
 		filepath.Join(home, ".config"), filepath.Join(home, ".local")} {
-		refused(t, "symlinked ancestor "+p, WithRunMountAllowedRoots(p), bm5(p))
+		refusedDeny(t, "symlinked ancestor "+p, WithRunMountAllowedRoots(p), bm5(p))
 	}
 	// trailing slash and ".." are refused as unclean
-	refused(t, "trailing slash", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".ssh")+"/"))
-	refused(t, "dotdot after symlink", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".config", "..", ".ssh")))
+	refusedDeny(t, "trailing slash", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".ssh")+"/"))
+	refusedDeny(t, "dotdot after symlink", WithRunMountAllowedRoots(home), bm5(filepath.Join(home, ".config", "..", ".ssh")))
 	// HOME itself a symlink; caller names real path or the link
 	link := filepath.Join(base, "hl")
 	require.NoError(t, os.Symlink(home, link))
 	fakeHome(t, link)
-	refused(t, "HOME link: real .ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
-	refused(t, "HOME link: link .ssh", WithRunMountAllowedRoots(filepath.Join(link, ".ssh")), bm5(filepath.Join(link, ".ssh")))
-	refused(t, "HOME link: real home", WithRunMountAllowedRoots(home), bm5(home))
+	refusedDeny(t, "HOME link: real .ssh", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refusedDeny(t, "HOME link: link .ssh", WithRunMountAllowedRoots(filepath.Join(link, ".ssh")), bm5(filepath.Join(link, ".ssh")))
+	refusedDeny(t, "HOME link: real home", WithRunMountAllowedRoots(home), bm5(home))
 	allowed(t, "HOME link: work via link", WithRunMountAllowedRoots(filepath.Join(link, "work")), bm5(filepath.Join(link, "work")))
 	allowed(t, "HOME link: work via real", WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 }
@@ -318,7 +319,7 @@ func TestCDS_SourceResolvedFormChecked(t *testing.T) {
 	w := filepath.Join(home, "work")
 	require.NoError(t, os.WriteFile(filepath.Join(w, "x.sock"), []byte("x"), 0o644))
 	require.NoError(t, os.Symlink(filepath.Join(w, "x.sock"), filepath.Join(w, "l")))
-	refused(t, "symlink to x.sock", WithRunMountAllowedRoots(w), bm5(filepath.Join(w, "l")))
+	refusedDeny(t, "symlink to x.sock", WithRunMountAllowedRoots(w), bm5(filepath.Join(w, "l")))
 }
 
 // ---- round 2 (Opus NO-GO F1/F2) ----------------------------------------------
@@ -333,8 +334,8 @@ func TestCDS_R2_DanglingCredentialLinks(t *testing.T) {
 	proj := filepath.Join(home, "work", "proj")
 	require.NoError(t, os.MkdirAll(proj, 0o700))
 	require.NoError(t, os.Symlink(filepath.Join(proj, "keys"), filepath.Join(home, ".ssh")))
-	refused(t, "dangling abs target: parent mounted", WithRunMountAllowedRoots(proj), bm5(proj))
-	refused(t, "dangling abs target: dir through it", WithRunMountAllowedRoots(home+"/.ssh"), bm5(home+"/.ssh"))
+	refusedDeny(t, "dangling abs target: parent mounted", WithRunMountAllowedRoots(proj), bm5(proj))
+	refusedDeny(t, "dangling abs target: dir through it", WithRunMountAllowedRoots(home+"/.ssh"), bm5(home+"/.ssh"))
 	allowed(t, "sibling work dir", WithRunMountAllowedRoots(filepath.Join(home, "work", "other")), func() RunOption {
 		require.NoError(t, os.MkdirAll(filepath.Join(home, "work", "other"), 0o700))
 		return bm5(filepath.Join(home, "work", "other"))
@@ -342,14 +343,14 @@ func TestCDS_R2_DanglingCredentialLinks(t *testing.T) {
 	// relative dangling target
 	require.NoError(t, os.Remove(filepath.Join(home, ".ssh")))
 	require.NoError(t, os.Symlink("work/proj/relkeys", filepath.Join(home, ".ssh")))
-	refused(t, "dangling relative target", WithRunMountAllowedRoots(proj), bm5(proj))
+	refusedDeny(t, "dangling relative target", WithRunMountAllowedRoots(proj), bm5(proj))
 	// chain: ~/.ssh -> /out/l1 (existing link) -> dangling under proj
 	out := filepath.Join(base, "out")
 	require.NoError(t, os.MkdirAll(out, 0o700))
 	require.NoError(t, os.Symlink(filepath.Join(proj, "chain"), filepath.Join(out, "l1")))
 	require.NoError(t, os.Remove(filepath.Join(home, ".ssh")))
 	require.NoError(t, os.Symlink(filepath.Join(out, "l1"), filepath.Join(home, ".ssh")))
-	refused(t, "dangling via chain", WithRunMountAllowedRoots(proj), bm5(proj))
+	refusedDeny(t, "dangling via chain", WithRunMountAllowedRoots(proj), bm5(proj))
 }
 
 // A symlink loop is denied for a candidate (fail closed) and does not hide a
@@ -369,8 +370,37 @@ func TestCDS_R2_SymlinkLoopFailsClosed(t *testing.T) {
 	require.NoError(t, os.Symlink(filepath.Join(home, ".aws"), filepath.Join(home, ".awsx")))
 	d, _ = denyHostPathMode(filepath.Join(home, ".aws"), home, true)
 	require.True(t, d)
-	d, _ = denyHostPathMode(filepath.Join(home, "work"), home, true)
-	require.False(t, d)
+	// N2: an anchor that does not resolve cannot be protected precisely: refuse
+	// everything (fail closed), with a reason that names the anchor.
+	d, why = denyHostPathMode(filepath.Join(home, "work"), home, true)
+	require.True(t, d)
+	require.Contains(t, why, "does not resolve")
+	require.Contains(t, why, ".aws")
+}
+
+// N2: an anchor that is a chain of 41+ links (beyond the walk bound) is not
+// silently dropped.
+func TestCDS_R3_AnchorHopChainFailsClosed(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	fakeHome(t, home)
+	oldF := fallbackHome
+	fallbackHome = func() string { return "" }
+	t.Cleanup(func() { fallbackHome = oldF })
+	work := filepath.Join(home, "work")
+	prev := filepath.Join(work, "target")
+	require.NoError(t, os.MkdirAll(filepath.Join(base, "o"), 0o700))
+	for k := 45; k >= 1; k-- {
+		l := filepath.Join(base, "o", fmt.Sprintf("h%d", k))
+		require.NoError(t, os.Symlink(prev, l))
+		prev = l
+	}
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".aws")))
+	require.NoError(t, os.Symlink(prev, filepath.Join(home, ".aws")))
+	refusedDeny(t, "45-link anchor chain: ordinary work dir", WithRunMountAllowedRoots(work), bm5(work))
+	d, why := denyHostPathMode(work, home, true)
+	require.True(t, d)
+	require.Contains(t, why, "does not resolve")
 }
 
 // F2: both $HOME and the passwd home are anchors; "/" or unclean HOME is invalid.
@@ -385,12 +415,12 @@ func TestCDS_R2_PasswdHomeAnchorAlongsideHome(t *testing.T) {
 	fallbackHome = func() string { return other }
 	for _, h := range []string{home, "/", "relative", other + "/../other"} {
 		fakeHome(t, h)
-		refused(t, "passwd ~/.ssh, HOME="+h, WithRunMountAllowedRoots(filepath.Join(other, ".ssh")), bm5(filepath.Join(other, ".ssh")))
-		refused(t, "passwd home itself, HOME="+h, WithRunMountAllowedRoots(other), bm5(other))
+		refusedDeny(t, "passwd ~/.ssh, HOME="+h, WithRunMountAllowedRoots(filepath.Join(other, ".ssh")), bm5(filepath.Join(other, ".ssh")))
+		refusedDeny(t, "passwd home itself, HOME="+h, WithRunMountAllowedRoots(other), bm5(other))
 		allowed(t, "passwd work dir, HOME="+h, WithRunMountAllowedRoots(filepath.Join(other, "work")), bm5(filepath.Join(other, "work")))
 	}
 	fakeHome(t, home)
-	refused(t, "HOME ~/.ssh with passwd elsewhere", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+	refusedDeny(t, "HOME ~/.ssh with passwd elsewhere", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
 }
 
 // The error names the escape hatch (mount a subdirectory).
