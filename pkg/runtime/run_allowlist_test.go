@@ -533,3 +533,51 @@ func TestR4_VantageShapeTypedEquivalent(t *testing.T) {
 		assert.Error(t, err, s)
 	}
 }
+
+// ---- round 5: survivors of the 69-mutant run ----
+
+// M53: only the allowed-root re-denial after symlink resolution can refuse
+// this call (the source is an ordinary, non-denied file below the home).
+func TestR5_SymlinkedRootResolvingToHomeRefusedByRootCheck(t *testing.T) {
+	useLocal(t)
+	base := t.TempDir()
+	home := filepath.Join(base, "home")
+	require.NoError(t, os.MkdirAll(filepath.Join(home, "work"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, "work", "f"), []byte("x"), 0o644))
+	fakeHome(t, home)
+	link := filepath.Join(base, "h")
+	require.NoError(t, os.Symlink(home, link))
+	spec := resolveSpec([]RunOption{WithRunMountAllowedRoots(link),
+		WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(link, "work", "f"), Target: "/x"})})
+	require.Error(t, spec.Err)
+	assert.True(t, errors.Is(spec.Err, ErrRunForbiddenOption), "%v", spec.Err)
+	assert.Contains(t, spec.Err.Error(), "resolves to a denied path")
+}
+
+// M66: every home child on the deny list is denied directly (the R4 loop
+// above is refused by the allowed-root check first and cannot isolate it).
+func TestR5_DenyHostPathCoversEveryHomeChild(t *testing.T) {
+	home := "/home/zz-user"
+	for _, c := range denyHomeChildren {
+		d := filepath.Join(home, c)
+		for _, p := range []string{d, d + "/sub"} {
+			denied, _ := denyHostPath(p, home)
+			assert.True(t, denied, p)
+		}
+	}
+	for _, c := range []string{".ssh", ".bashrc", ".bash_profile", ".profile", ".zshrc", ".netrc", ".config/systemd", ".local/bin"} {
+		denied, _ := denyHostPath(filepath.Join(home, c), home)
+		assert.True(t, denied, c)
+	}
+	denied, _ := denyHostPath(filepath.Join(home, "work", "f"), home)
+	assert.False(t, denied)
+}
+
+// M68: each memory unit has its exact binary multiplier.
+func TestR5_ParseRunMemoryUnits(t *testing.T) {
+	for in, want := range map[string]int64{"4096": 4096, "7b": 7, "1k": 1 << 10, "3K": 3 << 10, "1m": 1 << 20, "1g": 1 << 30, "2G": 2 << 30} {
+		got, err := ParseRunMemory(in)
+		require.NoError(t, err, in)
+		assert.Equal(t, want, got, in)
+	}
+}
