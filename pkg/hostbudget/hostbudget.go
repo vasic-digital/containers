@@ -28,6 +28,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 )
 
 // Verdict is the closed result set.
@@ -370,6 +371,9 @@ func readPSI(path string) (some, full float64, err error) {
 // countTasks sums the Threads of every process whose real UID is uid — the
 // quantity RLIMIT_NPROC limits (tasks of one user, threads included). A process
 // table with entries but no readable status is an error (never "0 tasks").
+// readStatus is a seam so tests can inject read errors.
+var readStatus = os.ReadFile
+
 func countTasks(root string, uid int) (int, error) {
 	ents, err := os.ReadDir(root)
 	if err != nil {
@@ -384,9 +388,12 @@ func countTasks(root string, uid int) (int, error) {
 			continue
 		}
 		dirs++
-		b, err := os.ReadFile(filepath.Join(root, e.Name(), "status"))
+		b, err := readStatus(filepath.Join(root, e.Name(), "status"))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
+			// ENOENT/ESRCH: the process exited between ReadDir and the read.
+			// EACCES (for example hidepid mounts) is NOT skipped: it makes the
+			// count unknown.
+			if errors.Is(err, os.ErrNotExist) || errors.Is(err, syscall.ESRCH) {
 				continue // the process exited between ReadDir and ReadFile
 			}
 			// unreadable for any other reason: the count is unknown, and a

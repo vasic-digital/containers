@@ -416,3 +416,120 @@ func TestAL_RealPodman_CapabilityBitsAreWhatWeThink(t *testing.T) {
 	assert.Zero(t, eff&(1<<21), "SYS_ADMIN (bit 21) must NOT be granted")
 	assert.Zero(t, eff&(1<<0), "CHOWN dropped by cap-drop=ALL")
 }
+
+// ---- round 4 ----
+
+func TestR4_SymlinkedAllowedRootToHomeIsRedenied(t *testing.T) {
+	useLocal(t)
+	base := t.TempDir()
+	home := filepath.Join(base, "home")
+	require.NoError(t, os.Mkdir(home, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(home, ".bashrc"), []byte("x"), 0o644))
+	fakeHome(t, home)
+	link := filepath.Join(base, "h")
+	require.NoError(t, os.Symlink(home, link))
+	refused(t, "root symlink to home", WithRunMountAllowedRoots(link),
+		WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(link, ".bashrc"), Target: "/x"}))
+}
+
+func TestR4_CommaQuoteNewlineInjection(t *testing.T) {
+	useLocal(t)
+	root := t.TempDir()
+	comma := filepath.Join(root, "a,b")
+	require.NoError(t, os.Mkdir(comma, 0o755))
+	quote := filepath.Join(root, `q"x`)
+	require.NoError(t, os.Mkdir(quote, 0o755))
+	nl := filepath.Join(root, "n\nl")
+	require.NoError(t, os.Mkdir(nl, 0o755))
+	ok := filepath.Join(root, "ok")
+	require.NoError(t, os.Mkdir(ok, 0o755))
+	roots := WithRunMountAllowedRoots(root)
+	for _, src := range []string{comma, quote, nl} {
+		refused(t, "source "+src, roots, WithRunMount(RunMount{Type: MountBind, Source: src, Target: "/x"}))
+	}
+	for _, tgt := range []string{"/a,b", `/a"b`, "/a\nb"} {
+		spec := resolveSpec([]RunOption{roots, WithRunMount(RunMount{Type: MountBind, Source: ok, Target: tgt})})
+		require.Error(t, spec.Err, tgt)
+		spec = resolveSpec([]RunOption{WithRunMount(RunMount{Type: MountTmpfs, Target: tgt})})
+		require.Error(t, spec.Err, "tmpfs "+tgt)
+		spec = resolveSpec([]RunOption{extra("--tmpfs", tgt)})
+		require.Error(t, spec.Err, "--tmpfs "+tgt)
+	}
+}
+
+func TestR4_AddHostAndUlimitNames(t *testing.T) {
+	for _, v := range []string{"bad_host!:10.0.0.1", "-x:1.1.1.1", ":1.1.1.1", "a b:1.1.1.1", "h:", "h:1.1.1"} {
+		invalidOpt(t, "add-host "+v, extra("--add-host", v))
+	}
+	allowed(t, "add-host ok", extra("--add-host", "a.b-c:::1"))
+	for _, v := range []string{"memlock=1", "rtprio=1", "nice=1", "locks=1", "bogus=1", "nofile", "=1", "nofile=1:2:3"} {
+		invalidOpt(t, "ulimit "+v, extra("--ulimit", v))
+	}
+	for _, n := range []string{"nofile", "nproc", "core", "cpu", "fsize", "stack"} {
+		allowed(t, "ulimit "+n, extra("--ulimit", n+"=10"))
+	}
+}
+
+func TestR4_StopSignalRange(t *testing.T) {
+	for _, v := range []string{"0", "65", "-1", "99999", "sig term", "term!"} {
+		invalidOpt(t, "stop-signal "+v, extra("--stop-signal", v))
+	}
+	for _, v := range []string{"1", "64", "SIGTERM", "TERM", "KILL"} {
+		allowed(t, "stop-signal "+v, extra("--stop-signal", v))
+	}
+}
+
+func TestR4_ExtraHomeAndSystemDenies(t *testing.T) {
+	useLocal(t)
+	home := t.TempDir()
+	fakeHome(t, home)
+	require.NoError(t, os.Mkdir(filepath.Join(home, "w"), 0o755))
+	for _, c := range []string{".bashrc", ".profile", ".config/systemd", ".config/autostart", ".local/bin", ".netrc", ".zshrc", ".bash_profile"} {
+		d := filepath.Join(home, c)
+		require.NoError(t, os.MkdirAll(d, 0o755))
+		refused(t, "home "+c, WithRunMountAllowedRoots(filepath.Join(home, "w")), WithRunMount(RunMount{Type: MountBind, Source: d, Target: "/x"}))
+	}
+	localMode = false
+	for _, p := range []string{"/mnt/x", "/media/x", "/snap/x"} {
+		refused(t, p, WithRunMountAllowedRoots(p), WithRunMount(RunMount{Type: MountBind, Source: p, Target: "/x"}))
+	}
+}
+
+func TestR4_ReasonTiedToCapability(t *testing.T) {
+	spec := ResolveRunSpec("alpine:3.20", nil, []RunOption{WithRunCapAddReason("needs tun for the test rig", "NET_ADMIN")})
+	require.NoError(t, spec.Err)
+	assert.Equal(t, []string{"NET_ADMIN: needs tun for the test rig"}, spec.Reasons)
+	// a reason given for one cap does not license NET_ADMIN added separately
+	refused(t, "reason for other cap", WithRunCapAddReason("a perfectly long reason", "CHOWN"), WithRunCapAdd("NET_ADMIN"))
+}
+
+// The shape llmctl/internal/vantage passes today, with typed equivalents.
+func TestR4_VantageShapeTypedEquivalent(t *testing.T) {
+	useLocal(t)
+	probe := t.TempDir()
+	mem, err := ParseRunMemory("128m")
+	require.NoError(t, err)
+	assert.Equal(t, int64(128<<20), mem)
+	args := allowed(t, "vantage typed",
+		WithRunName("vantage-ab12"), WithRunRemove(true), WithRunUser("0:0"),
+		WithRunEntrypoint("/vantage/vantage-probe"), WithRunNetwork("bridge"),
+		WithRunMountAllowedRoots(probe), WithRunVolumes(probe+":/vantage:ro"),
+		WithRunDetach(), WithRunMemory(mem), WithRunMemorySwap(mem), WithRunPidsLimit(64),
+		WithRunCapDropAll(), WithRunLabel("k1", "1"), WithRunLabel("k2", "owner"),
+		WithRunExtraArgs("--pull=never", "--read-only"))
+	assert.Contains(t, args, "-d")
+	assert.Contains(t, args, "--cap-drop=ALL")
+	assert.Contains(t, args, "--read-only")
+	// the verbatim old shape is NOT accepted: the typed options are required
+	refused(t, "verbatim old shape", WithRunMountAllowedRoots(probe), WithRunVolumes(probe+":/vantage:ro"),
+		WithRunExtraArgs("-d", "--pull=never", "--memory", "128m", "--memory-swap", "128m",
+			"--pids-limit", "64", "--cap-drop", "all", "--read-only"))
+	// bounds
+	for _, o := range []RunOption{WithRunPidsLimit(1 << 21), WithRunMemory(1 << 20), WithRunCPUs(1e9)} {
+		invalidOpt(t, "bounds", o)
+	}
+	for _, s := range []string{"", "x", "-1", "1t", "128mb", "99999999999999999999"} {
+		_, err := ParseRunMemory(s)
+		assert.Error(t, err, s)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -421,4 +422,32 @@ func TestR3_WriteJSONFsyncFailureRemovesPartialFile(t *testing.T) {
 	syncFile = old
 	_, err = Evidence{Verdict: Fits}.WriteJSON(dir, "p")
 	assert.NoError(t, err, "label is reusable after a failed write")
+}
+
+func TestR4_ESRCHSkippedEACCESandOthersUndetermined(t *testing.T) {
+	old := readStatus
+	defer func() { readStatus = old }()
+	for name, c := range map[string]struct {
+		err  error
+		want Verdict
+	}{
+		"ESRCH skipped":       {syscall.ESRCH, Fits},
+		"ENOENT skipped":      {os.ErrNotExist, Fits},
+		"EACCES undetermined": {syscall.EACCES, Undetermined},
+		"EIO undetermined":    {syscall.EIO, Undetermined},
+		"wrapped ESRCH":       {&os.PathError{Op: "read", Err: syscall.ESRCH}, Fits},
+	} {
+		root := writeProc(t, goodFx())
+		first := true
+		readStatus = func(p string) ([]byte, error) {
+			if first && strings.HasSuffix(p, "/status") {
+				first = false
+				return nil, c.err
+			}
+			return os.ReadFile(p)
+		}
+		p := probe(root)
+		p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+		assert.Equal(t, c.want, Admit(Need{MemBytes: gib, Pids: 5}, DefaultPolicy(), p).Verdict, name)
+	}
 }

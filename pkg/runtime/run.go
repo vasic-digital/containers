@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"os"
 	"os/exec"
@@ -99,7 +100,9 @@ type runOptions struct {
 	MountRoots   []string
 	CapAdd       []string
 	CapReasons   []string
+	reasonedCaps map[string]bool
 	CapDropAll   bool
+	Detach       bool
 	NoNewPrivs   bool
 	remote       bool // no local filesystem inspection (set by ResolveRunSpec)
 	resolvedMnts []string
@@ -268,8 +271,14 @@ func validateRunOptions(o *runOptions, image string) error {
 	if o.cpusSet && !(o.CPUs > 0) {
 		return invalid("cpus must be > 0, got %g", o.CPUs)
 	}
-	if o.pidsSet && o.PidsLimit <= 0 {
-		return invalid("pids-limit must be > 0, got %d", o.PidsLimit)
+	if o.pidsSet && (o.PidsLimit <= 0 || o.PidsLimit > maxPidsLimit) {
+		return invalid("pids-limit must be in 1..%d, got %d", maxPidsLimit, o.PidsLimit)
+	}
+	if o.memorySet && o.Memory < minMemoryBytes {
+		return invalid("memory must be >= %d bytes, got %d", minMemoryBytes, o.Memory)
+	}
+	if o.cpusSet && (o.CPUs > maxCPUs || math.IsNaN(o.CPUs) || math.IsInf(o.CPUs, 0)) {
+		return invalid("cpus must be in (0,%d], got %g", maxCPUs, o.CPUs)
 	}
 	for _, d := range o.Devices {
 		if d.Path != path.Clean(d.Path) || !strings.HasPrefix(d.Path, "/dev/") ||
@@ -439,6 +448,9 @@ func buildRunArgs(o *runOptions, image string, cmd []string) []string {
 	args := []string{"run"}
 	if o.Remove {
 		args = append(args, "--rm")
+	}
+	if o.Detach {
+		args = append(args, "-d")
 	}
 	if o.Stdin != nil {
 		args = append(args, "-i")

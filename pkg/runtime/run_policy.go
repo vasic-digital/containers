@@ -19,7 +19,9 @@ import (
 //     flags, `--` tricks, stray positionals that would become the image) is
 //     refused with ErrRunForbiddenOption.
 //   - Security-sensitive features (mounts, capabilities, security options,
-//     devices, namespaces, publishing) exist only as typed options.
+//     devices, namespaces, publishing) are offered only as typed options. The
+//     policy is a gate on the argv this package builds, not a sandbox: it does
+//     not inspect what an image, a named volume or an engine default does.
 //   - Features that are never available: --rootfs, --env-host, --env-file,
 //     --hooks-dir, --volumes-from, --cgroup-parent, --gpus, --privileged,
 //     --security-opt other than no-new-privileges, --cap-add outside the typed
@@ -68,8 +70,41 @@ func WithRunCapAdd(caps ...string) RunOption {
 func WithRunCapAddReason(reason string, caps ...string) RunOption {
 	return func(o *runOptions) {
 		o.CapAdd = append(o.CapAdd, caps...)
-		o.CapReasons = append(o.CapReasons, reason)
+		o.CapReasons = append(o.CapReasons, strings.Join(caps, ",")+": "+reason)
+		if o.reasonedCaps == nil {
+			o.reasonedCaps = map[string]bool{}
+		}
+		for _, c := range caps {
+			o.reasonedCaps[strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")] = true
+		}
 	}
+}
+
+// WithRunDetach runs the container detached (-d); the engine prints the
+// container id on stdout.
+func WithRunDetach() RunOption { return func(o *runOptions) { o.Detach = true } }
+
+const (
+	minMemoryBytes = 4 << 20
+	maxPidsLimit   = 1 << 20
+	maxCPUs        = 4096
+)
+
+var reMemory = regexp.MustCompile(`^([0-9]{1,15})([bkmg]?)$`)
+
+// ParseRunMemory converts the engine's size spelling ("128m", "1g", "4096",
+// lower-case unit b/k/m/g, binary multiples) into bytes for WithRunMemory.
+func ParseRunMemory(s string) (int64, error) {
+	m := reMemory.FindStringSubmatch(strings.ToLower(strings.TrimSpace(s)))
+	if m == nil {
+		return 0, invalid("memory %q is not <digits>[b|k|m|g]", s)
+	}
+	n, _ := strconv.ParseInt(m[1], 10, 64)
+	mult := map[string]int64{"": 1, "b": 1, "k": 1 << 10, "m": 1 << 20, "g": 1 << 30}[m[2]]
+	if n > (1<<62)/mult {
+		return 0, invalid("memory %q overflows", s)
+	}
+	return n * mult, nil
 }
 
 // WithRunCapDropAll drops every capability (--cap-drop=ALL) before any add.
@@ -190,7 +225,11 @@ func vOneOf(allowed ...string) func(string) error {
 }
 
 func vSignal(v string) error {
-	if _, err := strconv.Atoi(v); err == nil || reSignal.MatchString(v) {
+	if n, err := strconv.Atoi(v); err == nil {
+		if n >= 1 && n <= 64 {
+			return nil
+		}
+	} else if reSignal.MatchString(v) {
 		return nil
 	}
 	return bad("signal %q", v)
@@ -338,11 +377,13 @@ var homeDir = func() string { h, _ := os.UserHomeDir(); return h }
 
 var denySubtrees = []string{
 	"/proc", "/sys", "/dev", "/run", "/var", "/etc", "/boot", "/root", "/usr",
-	"/opt", "/srv", "/lib", "/lib32", "/lib64", "/libx32", "/bin", "/sbin",
+	"/opt", "/srv", "/mnt", "/media", "/snap", "/lib", "/lib32", "/lib64", "/libx32", "/bin", "/sbin",
 }
 
 var denyHomeChildren = []string{
 	".ssh", ".gnupg", ".aws", ".kube", ".docker", ".config/containers",
+	".bashrc", ".bash_profile", ".profile", ".zshrc", ".netrc", ".config/systemd",
+	".config/autostart", ".local/bin",
 	".local/share/containers", ".local/share/docker", ".password-store",
 }
 
@@ -529,19 +570,18 @@ func (o *runOptions) buildMounts() error {
 
 func (o *runOptions) normaliseCaps() error {
 	seen := map[string]bool{}
-	reasoned := false
 	for _, r := range o.CapReasons {
-		if len(strings.TrimSpace(r)) < 8 {
+		_, why, _ := strings.Cut(r, ": ")
+		if len(strings.TrimSpace(why)) < 8 {
 			return invalid("capability reason %q is too short (>= 8 characters)", r)
 		}
-		reasoned = true
 	}
 	for _, c := range o.CapAdd {
 		n := strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")
 		switch {
 		case safeCaps[n]:
 		case reasonCaps[n]:
-			if !reasoned {
+			if !o.reasonedCaps[n] {
 				return forbidden("capability %s needs WithRunCapAddReason", n)
 			}
 		default:

@@ -72,9 +72,19 @@ exposure via mounts, weakened confinement, capability gaps) because free-form
   `ExtraArgs` may carry only allowlisted flags (README table); `--mount`, `-v`,
   `--volume`, `--cap-add`, `--cap-drop`, `--security-opt`, `--network`, `--userns`,
   `--device`, `--publish`, `--name`, `--user`, `--entrypoint`, `--memory` ... are
-  no longer accepted there. Nothing in this repository or in the two vendored
-  consumers (`submodules/containers`, `constitution/submodules/containers`) passed
-  ExtraArgs outside tests (grep, read-only).
+  no longer accepted there. CORRECTION of an earlier claim of this entry: it said no consumer passed
+  ExtraArgs outside tests. That was wrong: `constitution/submodules/llmctl/internal/
+  vantage/vantage.go` calls `WithRunVolumes(probeDir+":/vantage:ro")` and
+  `WithRunExtraArgs("-d","--pull=never","--memory",M,"--memory-swap",M,
+  "--pids-limit","64","--cap-drop","all","--read-only","--label",...)`. Round 4
+  makes that shape expressible with typed options (not edited in llmctl); the
+  verbatim old call is refused. Migration: `WithRunDetach()`,
+  `WithRunMemory(n)`/`WithRunMemorySwap(n)` (`ParseRunMemory("128m")` converts the
+  engine spelling; memory >= 4 MiB), `WithRunPidsLimit(64)` (1..1048576),
+  `WithRunCapDropAll()`, `WithRunLabel(k, v)` per label,
+  `WithRunMountAllowedRoots(probeDir)` + `WithRunVolumes(probeDir+":/vantage:ro")`
+  (the roots call is NEW and required, and probeDir must not be in a denied
+  location), and `WithRunExtraArgs("--pull=never","--read-only")` for the rest.
 - New typed options: `WithRunMount`/`RunMount`, `WithRunMountAllowedRoots`,
   `WithRunCapAdd`, `WithRunCapAddReason`, `WithRunCapDropAll`,
   `WithRunNoNewPrivileges`; `RunSpec.Reasons`. `WithRunVolumes` is parsed into typed
@@ -104,6 +114,19 @@ and the user-home deny list inspect the LOCAL host, which is wrong through
 and `--dns` can still point a container at any address; `--ulimit nproc` interacts
 with host pid accounting. Whether the engines accept every flag spelling in the
 allowlist on every version is UNCONFIRMED beyond podman on this host.
+
+### Round 4
+- Typed `WithRunDetach`, `ParseRunMemory`; bounds on memory (>= 4 MiB), pids
+  (<= 1048576), cpus (<= 4096, finite); `--stop-signal` numbers 1..64.
+- Policy: a symlinked allowed root is re-checked after resolution; comma/quote
+  in mount targets and tmpfs destinations covered by tests; extra denies
+  (`~/.bashrc .bash_profile .profile .zshrc .netrc .config/systemd
+  .config/autostart .local/bin`, `/mnt /media /snap`); a capability reason is now
+  tied to the capabilities it was given for (`RunSpec.Reasons` entries read
+  `CAP,CAP: reason`).
+- `pkg/hostbudget`: ESRCH is skipped like ENOENT. EACCES (for example a `hidepid`
+  mount hiding other users' status files) is NOT skipped: it makes the pids axis
+  `undetermined`; on such hosts the axis cannot be `fits`.
 
 ### Known gaps (rounds 1-2, superseded in part by round 3)
 - Bind-mount policy remainder: other sensitive sources (`/var/lib/containers`,
