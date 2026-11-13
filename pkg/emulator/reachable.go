@@ -159,6 +159,9 @@ func ADBProbe(ex CommandExecutor, adbBinary string) ProbeFunc {
 		if !ok {
 			return res, errors.New("adb probe: no remote exit status (RC=) in the output")
 		}
+		if rc == 126 || rc == 127 { // nc not executable / not found: could not run
+			return res, fmt.Errorf("adb probe: could not run nc in the device (RC=%d)", rc)
+		}
 		res.ExitOK = rc == 0
 		return res, nil
 	}

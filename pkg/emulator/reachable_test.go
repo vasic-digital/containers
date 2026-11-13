@@ -217,6 +217,12 @@ func TestR2_F8_ADBProbe_RequiresExplicitRemoteStatus(t *testing.T) {
 	if _, err := adbRun("error: device offline", errors.New("exit status 1")); err == nil {
 		t.Error("adb transport failure must be could-not-run")
 	}
+	// nc missing / not executable in the device: RC 126/127 is could-not-run
+	for _, rc := range []string{"RC=127\n", "RC=126\n", "sh: nc: not found\nRC=127\n"} {
+		if r, err := adbRun(rc, nil); err == nil || r.ExitOK {
+			t.Errorf("%q must be could-not-run, got err=%v %+v", rc, err, r)
+		}
+	}
 	// RC=0 text injected by the remote command output earlier in the stream must not win over the last marker
 	r, err = adbRun("RC=0\nRC=1\n", nil)
 	if err != nil || r.ExitOK {

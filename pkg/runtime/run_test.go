@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -183,6 +184,9 @@ func TestPodmanRun_WithoutStdinOmitsTheInteractiveFlag(t *testing.T) {
 func TestRun_OptionsMapToFlags(t *testing.T) {
 	exe := &stdinCapableExecutor{}
 	d := NewDockerRuntimeWithExecutor(exe)
+	hostDir := t.TempDir()
+	hostDirResolved, rerr := filepath.EvalSymlinks(hostDir)
+	require.NoError(t, rerr)
 
 	_, err := d.Run(
 		context.Background(), "img:2", []string{"sh", "-c", "true"},
@@ -193,7 +197,8 @@ func TestRun_OptionsMapToFlags(t *testing.T) {
 		WithRunUser("1000:1000"),
 		WithRunNetwork("none"),
 		WithRunEnv(map[string]string{"ZED": "z", "ALPHA": "a"}),
-		WithRunVolumes("/host:/ctr:ro"),
+		WithRunMountAllowedRoots(hostDir),
+		WithRunVolumes(hostDir+":/ctr:ro"),
 		WithRunExtraArgs("--read-only"),
 	)
 	require.NoError(t, err)
@@ -207,7 +212,7 @@ func TestRun_OptionsMapToFlags(t *testing.T) {
 		"--network", "none",
 		"-e", "ALPHA=a",
 		"-e", "ZED=z",
-		"-v", "/host:/ctr:ro",
+		"--mount", "type=bind,source=" + hostDirResolved + ",target=/ctr,readonly",
 		"--read-only",
 		"img:2",
 		"sh", "-c", "true",

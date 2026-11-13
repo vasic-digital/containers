@@ -63,7 +63,49 @@ unit-tested with paired mutants; one rootless-podman cgroup read-back test
   (podman provides `host.containers.internal`). The development host measured
   about 30 GiB RAM and 16 CPUs, not 251 GiB; thresholds are scaled from `/proc`.
 
-### Known gaps
+### Round 3 (STRUCTURAL: allowlist replaces the denylist scan; PROVISIONAL)
+Review rounds 1 and 2 kept finding new members of one class (host file-system
+exposure via mounts, weakened confinement, capability gaps) because free-form
+`ExtraArgs` were scanned against a denylist. Replaced, not layered.
+
+- `pkg/runtime` BREAKING for callers of `WithRunExtraArgs`/`WithRunVolumes`:
+  `ExtraArgs` may carry only allowlisted flags (README table); `--mount`, `-v`,
+  `--volume`, `--cap-add`, `--cap-drop`, `--security-opt`, `--network`, `--userns`,
+  `--device`, `--publish`, `--name`, `--user`, `--entrypoint`, `--memory` ... are
+  no longer accepted there. Nothing in this repository or in the two vendored
+  consumers (`submodules/containers`, `constitution/submodules/containers`) passed
+  ExtraArgs outside tests (grep, read-only).
+- New typed options: `WithRunMount`/`RunMount`, `WithRunMountAllowedRoots`,
+  `WithRunCapAdd`, `WithRunCapAddReason`, `WithRunCapDropAll`,
+  `WithRunNoNewPrivileges`; `RunSpec.Reasons`. `WithRunVolumes` is parsed into typed
+  mounts (only `ro`/`rw` options) and now needs allowed roots for bind sources.
+  Mounts are emitted as `--mount`. `WithRunNetwork` is validated (no `host`,
+  `container`, `ns:`, no `pasta:`/`slirp4netns:` option forms).
+- `WithRunName`, `WithRunWorkDir`, `WithRunEnv` names are validated.
+- `pkg/hostbudget`: `Need.CPUs` NaN/Inf is `undetermined` (evidence stays
+  serialisable); one unreadable or unparsable `/proc/<pid>/status` (anything but
+  ENOENT) makes the pids axis `undetermined` instead of under-counting;
+  `WriteJSON` fsyncs and removes the partial file on failure.
+- `pkg/emulator`: `ADBProbe` treats RC 126/127 (nc not executable/found) as
+  could-not-run.
+- Tests: `run_allowlist_test.go` (a row for every R2-1..R2-4/R2-7/R2-8 form),
+  a live rootless-podman test (typed read-only bind mount works; glob/volume-opt/
+  rootfs attempts never reach the engine, counted by a wrapping executor) and a
+  live capability-bit read-back; `scripts/mutation_g1_round3.sh` (mutant table in
+  `scripts/mutants_g1_round3.py`).
+
+Known gaps (round 3): the policy is still a gate, not a sandbox. Not covered:
+a named volume that was created elsewhere with `device=`/`o=bind` options (the
+volume name is accepted; its backing path is not inspected); a custom podman/docker
+graph root outside the listed directories; paths changed between the check and the
+engine start (the resolved path narrows, does not close, the race); `WithRunDevice`
+and the user-home deny list inspect the LOCAL host, which is wrong through
+`RemoteRuntime` (home deny is skipped there, device probing is not); `--add-host`
+and `--dns` can still point a container at any address; `--ulimit nproc` interacts
+with host pid accounting. Whether the engines accept every flag spelling in the
+allowlist on every version is UNCONFIRMED beyond podman on this host.
+
+### Known gaps (rounds 1-2, superseded in part by round 3)
 - Bind-mount policy remainder: other sensitive sources (`/var/lib/containers`,
   `--volumes-from`, `--mount type=volume` aliasing a host path, paths created
   after the check) and capabilities beyond the five listed are not blocked; the

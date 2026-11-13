@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -92,6 +91,18 @@ type runOptions struct {
 	Env        map[string]string
 	Volumes    []string
 	ExtraArgs  []string
+
+	// Allowlist-design options (round 3). Mounts, capabilities and
+	// security options exist ONLY as typed options; free-form ExtraArgs may
+	// carry only the flags in extraFlagAllowlist.
+	Mounts       []RunMount
+	MountRoots   []string
+	CapAdd       []string
+	CapReasons   []string
+	CapDropAll   bool
+	NoNewPrivs   bool
+	remote       bool // no local filesystem inspection (set by ResolveRunSpec)
+	resolvedMnts []string
 
 	// Typed host-safety options (G1, CAT-DEVEMU). Raw values are recorded by
 	// the With* options and validated together in validateRunOptions, so a
@@ -234,180 +245,14 @@ func forbidden(format string, a ...any) error {
 	return fmt.Errorf("%w: %s", ErrRunForbiddenOption, fmt.Sprintf(format, a...))
 }
 
-// hostNamespaceFlags are the flags whose value "host" shares a host namespace.
-var hostNamespaceFlags = map[string]bool{
-	"--network": true, "--net": true, "--userns": true, "--pid": true,
-	"--ipc": true, "--uts": true, "--cgroupns": true,
-}
-
-// dangerousCaps are refused in --cap-add (any element of a comma list, with or
-// without the CAP_ prefix, any case).
-var dangerousCaps = map[string]bool{
-	"ALL": true, "SYS_ADMIN": true, "SYS_MODULE": true, "SYS_RAWIO": true, "SYS_PTRACE": true,
-}
-
-// forbiddenArg inspects one flag (+ optional next token) of free-form args and
-// reports whether it is a host-escalating form. It does not look at volumes
-// (see scanExtraArgs).
-func forbiddenArg(flag, next string) (string, bool) {
-	name, val, hasVal := strings.Cut(flag, "=")
-	if !hasVal {
-		val = next
-	}
-	lv := strings.ToLower(strings.TrimSpace(val))
-	switch {
-	case name == "--privileged":
-		return "--privileged", true
-	case name == "--device" || name == "--device-cgroup-rule":
-		return name + " (use WithRunDevice with an allowlist)", true
-	case hostNamespaceFlags[name]:
-		// "host" shares the namespace; "ns:<path>" joins any namespace the
-		// caller can name; "container:<id>" joins another container's.
-		// Policy: all three are refused by default.
-		if lv == "host" || strings.HasPrefix(lv, "ns:") || strings.HasPrefix(lv, "container:") {
-			return name + "=" + val, true
-		}
-		if (name == "--network" || name == "--net") && strings.Contains(lv, "allow_host_loopback=true") {
-			return name + "=" + val, true
-		}
-	case name == "--cap-add":
-		for _, c := range strings.Split(val, ",") {
-			c = strings.TrimPrefix(strings.ToUpper(strings.TrimSpace(c)), "CAP_")
-			if dangerousCaps[c] {
-				return "--cap-add=" + val, true
-			}
-		}
-	case name == "--security-opt":
-		n := strings.ReplaceAll(lv, ":", "=")
-		if strings.Contains(n, "unconfined") || n == "label=disable" {
-			return "--security-opt=" + val, true
-		}
-	}
-	return "", false
-}
-
-// bindSourceRefused reports whether a bind-mount SOURCE is one the builder
-// never allows: the root, anything inside /proc /sys /dev /run /var/run (this
-// covers the podman/docker sockets and device nodes), the system roots /etc
-// /boot /root /home themselves, and any *.sock file. Ordinary subpaths of
-// /etc /boot /root /home are allowed. Symlinks are resolved and both forms
-// are checked. Named volumes (no leading /, ., ~) are not bind sources.
-func bindSourceRefused(src string) (bool, string) {
-	if src == "" || !(strings.HasPrefix(src, "/") || strings.HasPrefix(src, ".") || strings.HasPrefix(src, "~")) {
-		return false, ""
-	}
-	if strings.HasPrefix(src, "~") {
-		return true, "home-relative source is not resolved by the builder"
-	}
-	abs, err := filepath.Abs(src)
-	if err != nil {
-		return true, "cannot resolve source"
-	}
-	cands := []string{filepath.Clean(abs)}
-	if r, err := filepath.EvalSymlinks(abs); err == nil {
-		cands = append(cands, filepath.Clean(r))
-	}
-	for _, c := range cands {
-		if c == "/" {
-			return true, "root"
-		}
-		for _, r := range []string{"/proc", "/sys", "/dev", "/run", "/var/run"} {
-			if c == r || strings.HasPrefix(c, r+"/") {
-				return true, "inside " + r
-			}
-		}
-		for _, r := range []string{"/etc", "/boot", "/root", "/home"} {
-			if c == r {
-				return true, r + " itself"
-			}
-		}
-		if strings.HasSuffix(c, ".sock") {
-			return true, "socket file"
-		}
-	}
-	return false, ""
-}
-
-func checkVolumeSpec(spec string) error {
-	src, _, _ := strings.Cut(spec, ":")
-	if bad, why := bindSourceRefused(src); bad {
-		return forbidden("bind mount source %q refused (%s)", src, why)
-	}
-	return nil
-}
-
-func checkMountSpec(spec string) error {
-	kv := map[string]string{}
-	for _, f := range strings.Split(spec, ",") {
-		k, v, _ := strings.Cut(f, "=")
-		kv[strings.ToLower(strings.TrimSpace(k))] = strings.TrimSpace(v)
-	}
-	if strings.ToLower(kv["type"]) != "bind" {
-		return nil
-	}
-	src := kv["source"]
-	if src == "" {
-		src = kv["src"]
-	}
-	if src == "" {
-		return forbidden("bind --mount without a source")
-	}
-	if bad, why := bindSourceRefused(src); bad {
-		return forbidden("bind mount source %q refused (%s)", src, why)
-	}
-	return nil
-}
-
-// scanExtraArgs applies every free-form-argument rule to the extra args.
-func scanExtraArgs(args []string) error {
-	for i, a := range args {
-		next := ""
-		if i+1 < len(args) {
-			next = args[i+1]
-		}
-		name, val, hasVal := strings.Cut(a, "=")
-		if !hasVal {
-			val = next
-		}
-		switch {
-		case name == "-v" || name == "--volume":
-			if err := checkVolumeSpec(val); err != nil {
-				return err
-			}
-		case strings.HasPrefix(a, "-v") && !strings.HasPrefix(a, "--") && len(a) > 2:
-			if err := checkVolumeSpec(strings.TrimPrefix(a[2:], "=")); err != nil {
-				return err
-			}
-		case name == "--mount":
-			if err := checkMountSpec(val); err != nil {
-				return err
-			}
-		}
-		if what, bad := forbiddenArg(a, next); bad {
-			return forbidden("extra arg %s", what)
-		}
-	}
-	return nil
-}
-
 // validateRunOptions checks every typed option plus the free-form forms and
 // returns the first problem. It runs before any argv is built.
 func validateRunOptions(o *runOptions, image string) error {
 	if strings.HasPrefix(image, "-") {
 		return forbidden("image reference %q parses as a flag", image)
 	}
-	if o.Network != "" {
-		if _, bad := forbiddenArg("--network", o.Network); bad {
-			return forbidden("network %q shares the host network namespace", o.Network)
-		}
-	}
-	if err := scanExtraArgs(o.ExtraArgs); err != nil {
+	if err := validatePolicy(o); err != nil {
 		return err
-	}
-	for _, v := range o.Volumes {
-		if err := checkVolumeSpec(v); err != nil {
-			return err
-		}
 	}
 	if o.memorySet && o.Memory <= 0 {
 		return invalid("memory must be > 0 bytes, got %d", o.Memory)
@@ -565,16 +410,20 @@ func WithRunEnv(env map[string]string) RunOption {
 	}
 }
 
-// WithRunVolumes adds bind mounts in the CLI's own "source:target[:opts]" form
-// (-v).
+// WithRunVolumes adds mounts in the CLI's "source:target[:ro|rw]" form. They are
+// PARSED into typed mounts and subject to the same source policy as
+// WithRunMount (bind sources need WithRunMountAllowedRoots); the argv uses
+// --mount, never -v.
 func WithRunVolumes(volumes ...string) RunOption {
 	return func(o *runOptions) {
 		o.Volumes = append(o.Volumes, volumes...)
 	}
 }
 
-// WithRunExtraArgs appends verbatim flags immediately before the image name,
-// for runtime-specific options this package does not model.
+// WithRunExtraArgs appends flags immediately before the image name. ONLY the
+// flags in the allowlist (see README "Run option allowlist") are accepted;
+// every other token is refused with ErrRunForbiddenOption. Mounts, capabilities
+// and security options are NOT available here: use the typed options.
 func WithRunExtraArgs(args ...string) RunOption {
 	return func(o *runOptions) {
 		o.ExtraArgs = append(o.ExtraArgs, args...)
@@ -648,8 +497,15 @@ func buildRunArgs(o *runOptions, image string, cmd []string) []string {
 	for _, k := range keys {
 		args = append(args, "-e", fmt.Sprintf("%s=%s", k, o.Env[k]))
 	}
-	for _, v := range o.Volumes {
-		args = append(args, "-v", v)
+	args = append(args, o.resolvedMnts...)
+	if o.CapDropAll {
+		args = append(args, "--cap-drop=ALL")
+	}
+	for _, c := range o.CapAdd {
+		args = append(args, "--cap-add="+c)
+	}
+	if o.NoNewPrivs {
+		args = append(args, "--security-opt=no-new-privileges")
 	}
 	args = append(args, o.ExtraArgs...)
 	args = append(args, image)
@@ -676,16 +532,20 @@ type RunSpec struct {
 	// ErrRunUnsupportedOption, ErrRunInvalidOption). Args is nil then; a caller
 	// MUST check Err before executing Args.
 	Err error
+	// Reasons are the documented justifications supplied for reasoned
+	// capabilities (WithRunCapAddReason), for the caller's audit trail.
+	Reasons []string
 }
 
 // ResolveRunSpec applies the given RunOptions and returns the resolved argv and
 // stdin reader. See RunSpec.
 func ResolveRunSpec(image string, cmd []string, opts []RunOption) RunSpec {
 	o := applyRunOptions(opts)
+	o.remote = true // the argv runs on another host: no local resolution
 	if err := validateRunOptions(o, image); err != nil {
 		return RunSpec{Err: err}
 	}
-	return RunSpec{Args: buildRunArgs(o, image, cmd), Stdin: o.Stdin}
+	return RunSpec{Args: buildRunArgs(o, image, cmd), Stdin: o.Stdin, Reasons: o.CapReasons}
 }
 
 // runViaCLI performs the one-shot run for every Docker-CLI-compatible runtime.

@@ -112,10 +112,10 @@ func TestG1_PrivilegedAndHostNetworkRefused_ClassWide(t *testing.T) {
 	}
 	// controls: benign spellings are NOT refused (false-positive guard)
 	for name, opts := range map[string][]RunOption{
-		"network none":          {WithRunNetwork("none")},
-		"read-only extra":       {WithRunExtraArgs("--read-only")},
-		"network named host-x":  {WithRunNetwork("hostnet")},
-		"extra --network=pasta": {WithRunExtraArgs("--network=pasta")},
+		"network none":         {WithRunNetwork("none")},
+		"read-only extra":      {WithRunExtraArgs("--read-only")},
+		"network named host-x": {WithRunNetwork("hostnet")},
+		"network pasta":        {WithRunNetwork("pasta")},
 	} {
 		spec := ResolveRunSpec("alpine:3.20", nil, opts)
 		assert.NoError(t, spec.Err, name)

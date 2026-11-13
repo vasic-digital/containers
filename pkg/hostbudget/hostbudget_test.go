@@ -2,6 +2,8 @@ package hostbudget
 
 import (
 	"encoding/json"
+	"errors"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -355,4 +357,68 @@ func TestR2_F12_WriteJSONDoesNotFollowSymlinkOrOverwrite(t *testing.T) {
 	require.NoError(t, err)
 	_, err = ev.WriteJSON(dir, "y")
 	assert.Error(t, err)
+}
+
+// ---- round 3 follow-ups ----
+
+func TestR3_NeedCPUsNaNInfNegativeAreUndetermined(t *testing.T) {
+	p := probe(writeProc(t, goodFx()))
+	for _, c := range []float64{math.NaN(), math.Inf(1), math.Inf(-1), -0.5} {
+		ev := Admit(Need{MemBytes: gib, CPUs: c}, DefaultPolicy(), p)
+		assert.Equal(t, Undetermined, ev.Verdict, "cpus=%v", c)
+		_, err := ev.WriteJSON(t.TempDir(), "nan")
+		assert.NoError(t, err, "evidence must stay serialisable for cpus=%v", c)
+	}
+}
+
+func TestR3_PidsMinusOneBoundaryAndZero(t *testing.T) {
+	p := probe(writeProc(t, goodFx()))
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	assert.Equal(t, Undetermined, Admit(Need{MemBytes: gib, Pids: -1}, DefaultPolicy(), p).Verdict, "Pids == -1")
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib, Pids: 0}, DefaultPolicy(), p).Verdict, "Pids == 0 is no pid need")
+}
+
+func TestR3_UnreadableOrUnparsableOneStatusIsUndetermined(t *testing.T) {
+	for name, mutate := range map[string]func(dir string){
+		"status is a directory (read error)": func(d string) {
+			_ = os.Remove(filepath.Join(d, "status"))
+			_ = os.Mkdir(filepath.Join(d, "status"), 0o755)
+		},
+		"status unparsable": func(d string) {
+			_ = os.WriteFile(filepath.Join(d, "status"), []byte("garbage\n"), 0o644)
+		},
+	} {
+		root := writeProc(t, goodFx())
+		ents, _ := os.ReadDir(root)
+		for _, e := range ents {
+			if e.IsDir() && e.Name() != "pressure" {
+				mutate(filepath.Join(root, e.Name())) // exactly one pid dir
+				break
+			}
+		}
+		p := probe(root)
+		p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+		ev := Admit(Need{MemBytes: gib, Pids: 5}, DefaultPolicy(), p)
+		assert.Equal(t, Undetermined, ev.Verdict, name)
+	}
+	// a vanished pid (no status file at all, ENOENT) is still skipped
+	root := writeProc(t, goodFx())
+	require.NoError(t, os.MkdirAll(filepath.Join(root, "99999"), 0o755))
+	p := probe(root)
+	p.PidsLimit = func() (uint64, bool, error) { return 50, true, nil }
+	assert.Equal(t, Fits, Admit(Need{MemBytes: gib, Pids: 5}, DefaultPolicy(), p).Verdict)
+}
+
+func TestR3_WriteJSONFsyncFailureRemovesPartialFile(t *testing.T) {
+	old := syncFile
+	syncFile = func(*os.File) error { return errors.New("injected fsync failure") }
+	defer func() { syncFile = old }()
+	dir := t.TempDir()
+	_, err := Evidence{Verdict: Fits}.WriteJSON(dir, "p")
+	require.Error(t, err)
+	_, statErr := os.Stat(filepath.Join(dir, "hostbudget-p.json"))
+	assert.True(t, os.IsNotExist(statErr), "partial file must be removed")
+	syncFile = old
+	_, err = Evidence{Verdict: Fits}.WriteJSON(dir, "p")
+	assert.NoError(t, err, "label is reusable after a failed write")
 }

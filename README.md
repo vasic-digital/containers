@@ -405,8 +405,58 @@ URL an emulator, container or bridge client must use to reach a host service.
 Round 2 hardens the option builder (capability lists, `ns:`/`container:` joins,
 `--device`, sensitive bind-mount sources), counts only the current user's tasks
 for the pids axis, adds `ContainerizedConfig.RequireKVM`, and makes the in-target
-probes require an explicit exit status. Docker/nerdctl need
+probes require an explicit exit status. Round 3 replaces the denylist scan of
+free-form `ExtraArgs` with an ALLOWLIST (below). Docker/nerdctl need
 `--add-host=host.docker.internal:host-gateway`. See "Known gaps" in `CHANGELOG.md`.
+
+### Run option allowlist (pkg/runtime, round 3)
+
+`WithRunExtraArgs` accepts ONLY the flags below, parsed with the engine's grammar
+(`--x v`, `--x=v`, `-x v`, `-xv`, `-x=v`, clusters like `-ie A=b`, repeated).
+Anything else (unknown or abbreviated flags, `--`, a stray positional that would
+become the image, a value on a boolean flag) is refused with
+`ErrRunForbiddenOption`; a bad value of an allowed flag is `ErrRunInvalidOption`.
+
+| Flag | Value rule |
+|---|---|
+| `--read-only`, `--init`, `--rm`, `--interactive`/`-i` | boolean, no value |
+| `--label`/`-l` | `key=value`, non-empty key |
+| `--env`/`-e` | `NAME=value` (a bare `NAME` would copy a host variable: refused) |
+| `--workdir`/`-w` | absolute clean path |
+| `--hostname` | DNS-label characters |
+| `--stop-timeout` | integer 0..3600 |
+| `--tmpfs` | `dst[:opts]`, dst not `/`, `/proc`, `/sys`; opts from `ro rw noexec exec nosuid nodev size= mode= uid= gid= nr_inodes=` |
+| `--dns` | literal IP |
+| `--add-host` | `host:IP` or `host:host-gateway` |
+| `--ulimit` | `nofile nproc core cpu fsize stack` = non-negative `soft[:hard]` |
+| `--restart` | `no` only |
+| `--stop-signal` | signal name or number |
+| `--pull` | `never` or `missing` |
+| `--shm-size` | digits with optional `b k m g` |
+
+Security-sensitive features exist only as typed options:
+
+| Need | Typed option | Policy |
+|---|---|---|
+| mounts | `WithRunMount(RunMount{Type, Source, Target, ReadOnly})`, `WithRunVolumes("src:dst[:ro]")` (parsed into the same typed mounts) | types `bind`, `volume`, `tmpfs` only; emitted as `--mount`, never `-v`; bind sources need `WithRunMountAllowedRoots` |
+| capabilities | `WithRunCapAdd`, `WithRunCapAddReason(reason, ...)`, `WithRunCapDropAll` | safe list `NET_BIND_SERVICE NET_RAW CHOWN FOWNER FSETID KILL SETGID SETUID SYS_CHROOT`; `NET_ADMIN` only with a reason of at least 8 characters (returned in `RunSpec.Reasons`); everything else refused |
+| security options | `WithRunNoNewPrivileges` | only `no-new-privileges` |
+| devices, namespaces, publish, resources | existing typed options | unchanged |
+| network | `WithRunNetwork` | a plain network name, `none`, `bridge`, `pasta`, `slirp4netns`; `host`, `container`, `ns:`, any `:`/`=` option form refused |
+| rootfs, `--env-host`, `--env-file`, `--hooks-dir`, `--volumes-from`, `--cgroup-parent`, `--gpus`, `--privileged` | none | never available |
+
+Bind-mount source policy: the source must be absolute, clean, literal (no
+`,` `"` or control characters) and below one of the caller's allowed roots. Built-in
+denies, applied to the lexical and the resolved path: `/`, `/home`, `/tmp` itself,
+any `/home/<user>`, the current user's home and its ancestors, credential and
+container-storage directories in the home (`.ssh .gnupg .aws .kube .docker`, container
+config/storage), the subtrees `/proc /sys /dev /run /var /etc /boot /root /usr /opt
+/srv /lib* /bin /sbin`, container runtime state in `/tmp`, `*.sock`/`*.socket` and
+real socket files. A local runtime resolves symlinks (`EvalSymlinks`), requires the
+source to exist and passes the RESOLVED path to the engine. `ResolveRunSpec` (used
+by `RemoteRuntime`) does NOT inspect the local file system: it requires an absolute,
+clean, literal path, applies the lexical denies and the roots, and assumes nothing
+about symlinks on the remote host.
 
 ## Android Emulator (pkg/emulator)
 

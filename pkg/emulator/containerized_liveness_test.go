@@ -56,9 +56,9 @@ func TestContainerized_WaitForBoot_FailsFastWhenContainerExits(t *testing.T) {
 	const container = "lava-emu-CZ_API34_Phone-1"
 	fake := &fakeExecutor{
 		scripts: map[string]fakeScript{
-			"adb connect localhost:5555": {Out: []byte("connected\n")},
+			"adb connect localhost:5555":                             {Out: []byte("connected\n")},
 			"adb -s localhost:5555 shell getprop sys.boot_completed": {Out: []byte("\n")},
-			livenessInspectKey(container):                           {Out: []byte("false 1\n")},
+			livenessInspectKey(container):                            {Out: []byte("false 1\n")},
 			livenessLogsKey(container): {Out: []byte(
 				"ERROR: AVD 'CZ_API34_Phone' not found in image. Available:\n    Name: default\n",
 			)},
@@ -113,7 +113,7 @@ func TestContainerized_WaitForBoot_InspectFailureTreatedAsExit(t *testing.T) {
 	const container = "lava-emu-gone-1"
 	fake := &fakeExecutor{
 		scripts: map[string]fakeScript{
-			"adb connect localhost:5555": {Out: []byte("connected\n")},
+			"adb connect localhost:5555":                             {Out: []byte("connected\n")},
 			"adb -s localhost:5555 shell getprop sys.boot_completed": {Out: []byte("\n")},
 			livenessInspectKey(container): {
 				Out: []byte("Error: no such container\n"),
@@ -158,7 +158,7 @@ func TestContainerized_WaitForBoot_KeepsPollingWhileContainerAlive(t *testing.T)
 	const container = "lava-emu-alive-1"
 	fake := &fakeExecutor{
 		scripts: map[string]fakeScript{
-			"adb connect localhost:5555": {Out: []byte("connected\n")},
+			"adb connect localhost:5555":  {Out: []byte("connected\n")},
 			livenessInspectKey(container): {Out: []byte("true 0\n")},
 		},
 		sequencedScripts: map[string][]fakeScript{
@@ -200,7 +200,7 @@ func TestContainerized_WaitForBoot_KeepsPollingWhileContainerAlive(t *testing.T)
 func TestContainerized_WaitForBoot_NoContainerNameSkipsLiveness(t *testing.T) {
 	fake := &fakeExecutor{
 		scripts: map[string]fakeScript{
-			"adb connect localhost:5555": {Out: []byte("connected\n")},
+			"adb connect localhost:5555":                             {Out: []byte("connected\n")},
 			"adb -s localhost:5555 shell getprop sys.boot_completed": {Out: []byte("1\n")},
 		},
 	}

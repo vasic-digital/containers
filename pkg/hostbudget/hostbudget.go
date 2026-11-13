@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -122,9 +123,12 @@ func KVMUsable(path string) error {
 // an undetermined axis; undetermined wins over fits.
 func Admit(need Need, pol Policy, pr Probe) Evidence {
 	ev := Evidence{Need: need, Policy: pol}
-	if need.MemBytes < 0 || need.CPUs < 0 || need.Pids < 0 {
+	if need.MemBytes < 0 || !(need.CPUs >= 0) || math.IsInf(need.CPUs, 0) || need.Pids < 0 {
 		ev.Verdict = Undetermined
-		ev.Reasons = []string{fmt.Sprintf("invalid need (negative): mem=%d cpus=%g pids=%d", need.MemBytes, need.CPUs, need.Pids)}
+		ev.Reasons = []string{fmt.Sprintf("invalid need (negative, NaN or infinite): mem=%d cpus=%g pids=%d", need.MemBytes, need.CPUs, need.Pids)}
+		if math.IsNaN(need.CPUs) || math.IsInf(need.CPUs, 0) {
+			ev.Need.CPUs = 0 // JSON cannot carry NaN/Inf; the raw value is in Reasons
+		}
 		return ev
 	}
 	var refuse, unknown []string
@@ -249,6 +253,9 @@ func Admit(need Need, pol Policy, pr Probe) Evidence {
 
 var labelRe = regexp.MustCompile(`^[A-Za-z0-9._-]+$`)
 
+// syncFile is a seam so tests can inject an fsync failure.
+var syncFile = func(f *os.File) error { return f.Sync() }
+
 // WriteJSON stores the evidence as <dir>/hostbudget-<label>.json (0600).
 func (e Evidence) WriteJSON(dir, label string) (string, error) {
 	if !labelRe.MatchString(label) || strings.Contains(label, "..") {
@@ -265,11 +272,23 @@ func (e Evidence) WriteJSON(dir, label string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if _, err := f.Write(append(b, '\n')); err != nil {
+	// We created the file (O_EXCL), so we own it and may remove a partial one.
+	fail := func(err error) (string, error) {
 		_ = f.Close()
+		_ = os.Remove(p)
 		return "", err
 	}
-	return p, f.Close()
+	if _, err := f.Write(append(b, '\n')); err != nil {
+		return fail(err)
+	}
+	if err := syncFile(f); err != nil {
+		return fail(err)
+	}
+	if err := f.Close(); err != nil {
+		_ = os.Remove(p)
+		return "", err
+	}
+	return p, nil
 }
 
 func readMeminfo(path string) (total, avail int64, err error) {
@@ -367,11 +386,16 @@ func countTasks(root string, uid int) (int, error) {
 		dirs++
 		b, err := os.ReadFile(filepath.Join(root, e.Name(), "status"))
 		if err != nil {
-			continue // vanished or unreadable: skip this one
+			if errors.Is(err, os.ErrNotExist) {
+				continue // the process exited between ReadDir and ReadFile
+			}
+			// unreadable for any other reason: the count is unknown, and a
+			// partial count would under-report (R2-9)
+			return 0, fmt.Errorf("pid %s status unreadable: %w", e.Name(), err)
 		}
 		puid, threads, ok := parseStatus(string(b))
 		if !ok {
-			continue
+			return 0, fmt.Errorf("pid %s status has no Uid/Threads", e.Name())
 		}
 		parsed++
 		if puid == uid {
