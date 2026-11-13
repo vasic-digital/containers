@@ -309,7 +309,7 @@ func scanExtraArgs(args []string) error {
 			name, val, hasVal := strings.Cut(a, "=")
 			spec, ok := extraFlagAllowlist[name]
 			if !ok {
-				continue
+				return forbidden("extra arg %q is not on the flag allowlist", a)
 			}
 			if !spec.value {
 				if hasVal {
