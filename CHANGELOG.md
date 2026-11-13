@@ -188,6 +188,22 @@ Tag `containers-2.0.0`. Module path unchanged (`digital.vasic.containers`); see
 - Remote-deployment integration tests SKIP honestly without a configured host.
 - HTML/PDF twins not regenerated unless stated in the release notes.
 
+### Round 5 (after reviewer round 4; PROVISIONAL)
+
+- Fix (F1, important): a symlinked HOME no longer bypasses the home/credential
+  denies. `denyHostPath` now compares every anchor (home, deny children, system
+  subtrees, `/tmp` state prefixes) in lexical AND symlink-resolved form (local
+  mode only; the remote side stays lexical).
+- Denies added (F4): `/tmp` `tmux-*`, `ssh-*`, `.X11-unix`, `systemd-private-*`;
+  home `.config/gh`, `.git-credentials`, `.local/share/keyrings`, `.pgpass`.
+- Container targets containing CR, LF or TAB are refused (F5).
+- Tests: symlinked-HOME probe mirror, every `/tmp` prefix, the new home children,
+  CR/TAB targets; the real-socket leg now `t.Skip`s with a reason instead of
+  silently passing (F3). Mutant table extended to 81 entries.
+- Note (F6): commit a8b9fc0 ("README round 4 additions") carried a transient
+  mutant in `pkg/runtime/run_policy.go` by mistake; it was repaired by a743b8f.
+  History was not rewritten (no force-push).
+
 ## [1.2.3] - 2026-10-27 (test hygiene; no production-code change)
 
 Tag `containers-1.2.3`. Production (non-`_test.go`) code delta versus

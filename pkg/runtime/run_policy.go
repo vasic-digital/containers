@@ -294,7 +294,7 @@ func containerTarget(t string) error {
 		return err
 	}
 	if t == "/" || t == "/proc" || strings.HasPrefix(t, "/proc/") || t == "/sys" ||
-		strings.HasPrefix(t, "/sys/") || strings.ContainsAny(t, ",\"") {
+		strings.HasPrefix(t, "/sys/") || strings.ContainsAny(t, ",\"\r\n\t") {
 		return bad("container path %q not allowed", t)
 	}
 	return nil
@@ -380,7 +380,11 @@ var denySubtrees = []string{
 	"/opt", "/srv", "/mnt", "/media", "/snap", "/lib", "/lib32", "/lib64", "/libx32", "/bin", "/sbin",
 }
 
+var denyTmpPrefixes = []string{"storage-run-", "podman-run-", "containers-user-", "podman-",
+	"tmux-", "ssh-", ".X11-unix", "systemd-private-"}
+
 var denyHomeChildren = []string{
+	".config/gh", ".git-credentials", ".local/share/keyrings", ".pgpass",
 	".ssh", ".gnupg", ".aws", ".kube", ".docker", ".config/containers",
 	".bashrc", ".bash_profile", ".profile", ".zshrc", ".netrc", ".config/systemd",
 	".config/autostart", ".local/bin",
@@ -389,6 +393,31 @@ var denyHomeChildren = []string{
 
 // denyHostPath reports whether a CLEAN ABSOLUTE host path is never mountable.
 func denyHostPath(p, home string) (bool, string) {
+	// Local mode (home known): every anchor (home, system dirs, /tmp) is
+	// compared in its lexical AND symlink-resolved form, so a symlinked HOME
+	// or /tmp cannot hide it. Remote mode (home == "") stays purely lexical.
+	if d, why := denyHostPathOne(p, home, home != ""); d {
+		return d, why
+	}
+	if home != "" {
+		if rh, err := filepath.EvalSymlinks(home); err == nil && rh != home {
+			return denyHostPathOne(p, rh, true)
+		}
+	}
+	return false, ""
+}
+
+func anchorForms(a string, resolve bool) []string {
+	out := []string{a}
+	if resolve {
+		if r, err := filepath.EvalSymlinks(a); err == nil && r != a {
+			out = append(out, r)
+		}
+	}
+	return out
+}
+
+func denyHostPathOne(p, home string, resolve bool) (bool, string) {
 	if p == "/" || p == "/home" || p == "/tmp" {
 		return true, "system root directory"
 	}
@@ -406,16 +435,20 @@ func denyHostPath(p, home string) (bool, string) {
 			}
 		}
 	}
-	for _, r := range denySubtrees {
-		if p == r || strings.HasPrefix(p, r+"/") {
-			return true, "inside " + r
+	for _, sub := range denySubtrees {
+		for _, r := range anchorForms(sub, resolve) {
+			if p == r || strings.HasPrefix(p, r+"/") {
+				return true, "inside " + r
+			}
 		}
 	}
-	if strings.HasPrefix(p, "/tmp/") {
-		first := strings.SplitN(p[5:], "/", 2)[0]
-		for _, pre := range []string{"storage-run-", "podman-run-", "containers-user-", "podman-"} {
-			if strings.HasPrefix(first, pre) {
-				return true, "container runtime state in /tmp"
+	for _, tmp := range anchorForms("/tmp", resolve) {
+		if strings.HasPrefix(p, tmp+"/") {
+			first := strings.SplitN(p[len(tmp)+1:], "/", 2)[0]
+			for _, pre := range denyTmpPrefixes {
+				if strings.HasPrefix(first, pre) {
+					return true, "container runtime or session state in /tmp"
+				}
 			}
 		}
 	}

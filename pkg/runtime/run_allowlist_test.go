@@ -278,13 +278,14 @@ func TestAL_Mounts_SymlinkSocketAndHomeLocal(t *testing.T) {
 	sockDir, derr := os.MkdirTemp("", "s")
 	require.NoError(t, derr)
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
-	if ln, lerr := net.Listen("unix", filepath.Join(sockDir, "plain")); lerr == nil {
-		defer ln.Close()
-		refused(t, "real socket, plain name", WithRunMountAllowedRoots(sockDir),
-			WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(sockDir, "plain"), Target: "/x"}))
-	} else {
-		t.Logf("socket listen unavailable: %v", lerr)
+	ln, lerr := net.Listen("unix", filepath.Join(sockDir, "plain"))
+	if lerr != nil {
+		// never a silent pass: the real-socket leg did not run
+		t.Skipf("real-socket leg NOT exercised, unix listen unavailable: %v", lerr)
 	}
+	defer ln.Close()
+	refused(t, "real socket, plain name", WithRunMountAllowedRoots(sockDir),
+		WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(sockDir, "plain"), Target: "/x"}))
 	// *.sock by name
 	refused(t, "sock name", WithRunMountAllowedRoots(root), WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(root, "a.sock"), Target: "/x"}))
 	// runtime state dirs in /tmp
@@ -580,4 +581,81 @@ func TestR5_ParseRunMemoryUnits(t *testing.T) {
 		require.NoError(t, err, in)
 		assert.Equal(t, want, got, in)
 	}
+}
+
+// ---- round 5 (reviewer round 4): symlinked HOME and deny-list members ----
+
+func bm5(src string) RunOption {
+	return WithRunMount(RunMount{Type: MountBind, Source: src, Target: "/x"})
+}
+
+// F1: HOME is itself a symlink; the caller names the REAL path. Every
+// home/credential deny must hold in both lexical and resolved form.
+func TestR5_SymlinkedHomeDoesNotBypassHomeDenies(t *testing.T) {
+	useLocal(t)
+	base := t.TempDir()
+	real := filepath.Join(base, "data", "u")
+	for _, d := range []string{".ssh", "work", ".config/gh", ".local/share/keyrings"} {
+		require.NoError(t, os.MkdirAll(filepath.Join(real, d), 0o700))
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(real, ".ssh", "id"), []byte("k"), 0o600))
+	link := filepath.Join(base, "homelink")
+	require.NoError(t, os.Symlink(real, link))
+
+	// control: HOME = real path is refused
+	fakeHome(t, real)
+	refused(t, "ctrl real home root", WithRunMountAllowedRoots(real), bm5(filepath.Join(real, "work")))
+	// control: ordinary work dir is accepted
+	allowed(t, "ctrl work", WithRunMountAllowedRoots(filepath.Join(real, "work")), bm5(filepath.Join(real, "work")))
+
+	fakeHome(t, link)
+	refused(t, "symlinked HOME, root=real home", WithRunMountAllowedRoots(real), bm5(filepath.Join(real, "work")))
+	refused(t, "symlinked HOME, root=real .ssh", WithRunMountAllowedRoots(filepath.Join(real, ".ssh")), bm5(filepath.Join(real, ".ssh", "id")))
+	refused(t, "symlinked HOME, root=real .config/gh", WithRunMountAllowedRoots(filepath.Join(real, ".config")), bm5(filepath.Join(real, ".config", "gh")))
+	refused(t, "symlinked HOME, source=real .ssh under work root", WithRunMountAllowedRoots(filepath.Join(real, "work")), bm5(filepath.Join(real, ".ssh")))
+	allowed(t, "symlinked HOME, work still fine", WithRunMountAllowedRoots(filepath.Join(real, "work")), bm5(filepath.Join(real, "work")))
+	// a symlink at an intermediate component of the home path
+	mid := filepath.Join(base, "mid")
+	require.NoError(t, os.Symlink(filepath.Join(base, "data"), mid))
+	fakeHome(t, filepath.Join(mid, "u"))
+	refused(t, "intermediate-symlink HOME", WithRunMountAllowedRoots(filepath.Join(real, ".ssh")), bm5(filepath.Join(real, ".ssh", "id")))
+}
+
+// F2: every /tmp runtime-state prefix is denied (lexical, direct call).
+func TestR5_TmpStatePrefixesDenied(t *testing.T) {
+	for _, n := range []string{"storage-run-1", "podman-run-1", "containers-user-1", "podman-x", "tmux-1000", "ssh-abc", ".X11-unix", "systemd-private-x"} {
+		d, _ := denyHostPath("/tmp/"+n+"/s", "")
+		assert.True(t, d, n)
+	}
+	d, _ := denyHostPath("/tmp/ordinary/s", "")
+	assert.False(t, d)
+}
+
+// F4: more credential homes.
+func TestR5_MoreHomeCredentialChildrenDenied(t *testing.T) {
+	for _, c := range []string{".config/gh", ".git-credentials", ".local/share/keyrings", ".pgpass"} {
+		d, _ := denyHostPath("/home/zz-user/"+c, "/home/zz-user")
+		assert.True(t, d, c)
+	}
+}
+
+// F5: CR and TAB in a container target.
+func TestR5_TargetRejectsCRAndTab(t *testing.T) {
+	for _, tg := range []string{"/x\r", "/x\ty", "/x\n"} {
+		assert.Error(t, containerTarget(tg), "%q", tg)
+	}
+	assert.NoError(t, containerTarget("/x/y"))
+}
+
+// anchorForms returns the lexical and the symlink-resolved form of an anchor.
+func TestR5_AnchorFormsResolvesSymlinks(t *testing.T) {
+	base := t.TempDir()
+	real := filepath.Join(base, "real")
+	require.NoError(t, os.Mkdir(real, 0o755))
+	link := filepath.Join(base, "link")
+	require.NoError(t, os.Symlink(real, link))
+	rr, err := filepath.EvalSymlinks(real)
+	require.NoError(t, err)
+	assert.Equal(t, []string{link, rr}, anchorForms(link, true))
+	assert.Equal(t, []string{link}, anchorForms(link, false))
 }

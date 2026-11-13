@@ -60,7 +60,7 @@ M=[
 ("M51 ADB rc 126/127 not could-not-run","pkg/emulator/reachable.go",'if rc == 126 || rc == 127 {','if false {'),
 ("M52 ADB rc 127 not could-not-run","pkg/emulator/reachable.go",'rc == 126 || rc == 127','rc == 126'),
 ('M53 symlinked root not re-denied','pkg/runtime/run_policy.go','\t\t\tr = rr\n\t\t\tif d, why := denyHostPath(r, home); d {','\t\t\tr = rr\n\t\t\tif d, why := denyHostPath(r, home); d && false {'),
-('M54 container target comma/quote allowed','pkg/runtime/run_policy.go','strings.ContainsAny(t, ",\\"")','strings.ContainsAny(t, "")'),
+('M54 container target comma/quote allowed','pkg/runtime/run_policy.go','strings.ContainsAny(t, ",\\"\\r\\n\\t")','strings.ContainsAny(t, "\\r\\n\\t")'),
 ('M55 bind source comma allowed','pkg/runtime/run_policy.go','strings.ContainsAny(src, ",\\"\\n\\r\\x00")','strings.ContainsAny(src, "\\"\\n\\r\\x00")'),
 ('M56 bind source quote allowed','pkg/runtime/run_policy.go','strings.ContainsAny(src, ",\\"\\n\\r\\x00")','strings.ContainsAny(src, ",\\n\\r\\x00")'),
 ('M57 bind source newline allowed','pkg/runtime/run_policy.go','strings.ContainsAny(src, ",\\"\\n\\r\\x00")','strings.ContainsAny(src, ",\\"\\r\\x00")'),
@@ -76,6 +76,18 @@ M=[
 ('M67 /mnt not denied','pkg/runtime/run_policy.go','"/srv", "/mnt", "/media",','"/srv", "/media",'),
 ('M68 memory unit k wrong','pkg/runtime/run_policy.go','"k": 1 << 10,','"k": 1 << 11,'),
 ('M69 cpus bound dropped','pkg/runtime/run.go','o.CPUs > maxCPUs || math.IsNaN(o.CPUs)','math.IsNaN(o.CPUs)'),
+('M70 symlinked home resolved form not checked','pkg/runtime/run_policy.go','return denyHostPathOne(p, rh, true)','return false, ""'),
+('M71 anchor resolution off','pkg/runtime/run_policy.go','\tif resolve {\n\t\tif r, err := filepath.EvalSymlinks(a)','\tif false {\n\t\tif r, err := filepath.EvalSymlinks(a)'),
+('M72 tmp tmux- not denied','pkg/runtime/run_policy.go','"tmux-", "ssh-",','"ssh-",'),
+('M73 tmp ssh- not denied','pkg/runtime/run_policy.go','"tmux-", "ssh-",','"tmux-",'),
+('M74 tmp .X11-unix not denied','pkg/runtime/run_policy.go','".X11-unix", "systemd-private-"}','"systemd-private-"}'),
+('M75 tmp systemd-private- not denied','pkg/runtime/run_policy.go','".X11-unix", "systemd-private-"}','".X11-unix"}'),
+('M76 tmp podman- not denied','pkg/runtime/run_policy.go','"containers-user-", "podman-",','"containers-user-",'),
+('M77 home .config/gh not denied','pkg/runtime/run_policy.go','".config/gh", ".git-credentials",','".git-credentials",'),
+('M78 home .git-credentials not denied','pkg/runtime/run_policy.go','".git-credentials", ".local/share/keyrings",','".local/share/keyrings",'),
+('M79 home keyrings not denied','pkg/runtime/run_policy.go','".local/share/keyrings", ".pgpass",','".pgpass",'),
+('M80 home .pgpass not denied','pkg/runtime/run_policy.go','".local/share/keyrings", ".pgpass",','".local/share/keyrings",'),
+('M81 target CR/TAB allowed','pkg/runtime/run_policy.go','strings.ContainsAny(t, ",\\"\\r\\n\\t")','strings.ContainsAny(t, ",\\"\\n")'),
 ]
 cmd=sys.argv[1]
 if cmd=="count":
