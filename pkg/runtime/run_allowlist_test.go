@@ -275,14 +275,11 @@ func TestAL_Mounts_SymlinkSocketAndHomeLocal(t *testing.T) {
 	// non-existent
 	refused(t, "missing", WithRunMountAllowedRoots(root), WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(root, "nope"), Target: "/x"}))
 	// a real unix socket without a .sock name
-	sockDir, derr := os.MkdirTemp("", "s")
+	sockDir, derr := os.MkdirTemp("/tmp", "s") // short path: sun_path is ~108 bytes, a long TMPDIR must not skip this leg
 	require.NoError(t, derr)
 	t.Cleanup(func() { _ = os.RemoveAll(sockDir) })
 	ln, lerr := net.Listen("unix", filepath.Join(sockDir, "plain"))
-	if lerr != nil {
-		// never a silent pass: the real-socket leg did not run
-		t.Skipf("real-socket leg NOT exercised, unix listen unavailable: %v", lerr)
-	}
+	require.NoError(t, lerr, "real-socket leg must run (short /tmp path)")
 	defer ln.Close()
 	refused(t, "real socket, plain name", WithRunMountAllowedRoots(sockDir),
 		WithRunMount(RunMount{Type: MountBind, Source: filepath.Join(sockDir, "plain"), Target: "/x"}))

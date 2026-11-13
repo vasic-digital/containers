@@ -6,6 +6,19 @@ CAT-DEVEMU, gaps G1, G2 and G11 of the device-emulation plan. **PROVISIONAL**:
 unit-tested with paired mutants; one rootless-podman cgroup read-back test
 (alpine, no pull). No emulator was booted and no live Android/Tauri run exists.
 
+### Fixed (CONT-DENY-STRUCT round 2, PROVISIONAL)
+- `pkg/runtime` bind-source deny: symlinks are now walked with `Lstat`/`Readlink`
+  so a credential child that is a DANGLING link (`~/.ssh -> ~/work/proj/keys`,
+  keys missing) is anchored on its missing target; a symlink loop (> 40 hops)
+  is refused (fail closed). The home anchors come from both `$HOME` and the
+  passwd home; `$HOME=/` or an unclean/relative `$HOME` no longer drops the
+  passwd home's denies, and no usable home still fails closed. Refusals hint to
+  mount a dedicated subdirectory. Reviewer fuzz and table tests adopted
+  (665 bypasses on the previous tip, 0 now).
+- Known limits: other users' credential dirs are not anchors; hard links and
+  bind-mount aliases are invisible (no dev/inode comparison); a `/home` symlinked
+  to `/var/home` host is refused (fails safe, UNCONFIRMED live).
+
 ### Added
 - `pkg/runtime` (G1): typed run options `WithRunMemory`, `WithRunMemorySwap`
   (swap defaults to memory), `WithRunCPUs`, `WithRunPidsLimit`, `WithRunDevice`

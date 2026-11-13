@@ -446,17 +446,45 @@ Security-sensitive features exist only as typed options:
 | rootfs, `--env-host`, `--env-file`, `--hooks-dir`, `--volumes-from`, `--cgroup-parent`, `--gpus`, `--privileged` | none | never available |
 
 Bind-mount source policy: the source must be absolute, clean, literal (no
-`,` `"` or control characters) and below one of the caller's allowed roots. Built-in
-denies, applied to the lexical and the resolved path: `/`, `/home`, `/tmp` itself,
-any `/home/<user>`, the current user's home and its ancestors, credential and
-container-storage directories in the home (`.ssh .gnupg .aws .kube .docker`, container
-config/storage), the subtrees `/proc /sys /dev /run /var /etc /boot /root /usr /opt
-/srv /lib* /bin /sbin`, container runtime state in `/tmp`, `*.sock`/`*.socket` and
-real socket files. A local runtime resolves symlinks (`EvalSymlinks`), requires the
-source to exist and passes the RESOLVED path to the engine. `ResolveRunSpec` (used
-by `RemoteRuntime`) does NOT inspect the local file system: it requires an absolute,
+`,` `"` or control characters) and below one of the caller's allowed roots. One
+class-wide deny rule (protected anchors x {lexical, fully symlink-resolved} forms,
+for the source and for every allowed root):
+
+- refused: `/` and `/home` (ancestors of every anchor), any `/home/<user>`, the
+  temp root itself, the user's home and every ancestor of it; the credential and
+  container-storage directories of the home AND every ancestor of them (so
+  `~/.config`, `~/.local`, `~/.local/share` are refused) with everything below
+  them: `.ssh .gnupg .aws .kube .docker .config/gh .config/containers
+  .config/systemd .config/autostart .local/bin .local/share/{keyrings,containers,docker}
+  .password-store`, the files `.git-credentials .pgpass .netrc` and the shell
+  dotfiles `.bashrc .bash_profile .profile .zshrc`; the subtrees `/proc /sys /dev
+  /run /var /etc /boot /root /usr /opt /srv /mnt /media /snap /lib* /bin /sbin`;
+  container runtime and session state directly in the temp root (`podman-*`,
+  `storage-run-*`, `tmux-*`, `ssh-*`, `.X11-unix`, ...); `*.sock`, `*.socket` and
+  real socket files. A work directory below the home that is neither an
+  ancestor nor a descendant of an anchor is accepted.
+- symlinks are followed component by component, including DANGLING links (a
+  `~/.ssh` that points at a missing directory is anchored on that missing target,
+  so mounting its parent is refused), relative targets and chains; more than 40
+  hops (a loop) is refused (fail closed).
+- the home anchors are built from BOTH `$HOME` and the passwd home. A `$HOME` of
+  `/`, a relative or unclean `$HOME` is ignored (the passwd home still protects);
+  if neither is usable the local runtime refuses every bind mount (fail closed).
+- a refusal message tells the caller to mount a dedicated subdirectory instead.
+
+A local runtime resolves symlinks (`EvalSymlinks`), requires the source to exist
+and passes the RESOLVED path to the engine. `ResolveRunSpec` (used by
+`RemoteRuntime`) does NOT inspect the local file system: it requires an absolute,
 clean, literal path, applies the lexical denies and the roots, and assumes nothing
 about symlinks on the remote host.
+
+Known limits of the bind-mount policy (stated, not hidden): other users' credential
+directories are not anchors (only `/home/<user>` itself is refused); hard links
+and bind-mount aliases of a protected directory are invisible (no device/inode
+comparison); on a host where `/home` is a symlink to `/var/home` the resolved
+`/var/...` form is refused, which fails safe but was not exercised on such a host
+(UNCONFIRMED live); a path changed between the check and the container start (TOCTOU)
+is mitigated only by passing the resolved path to the engine.
 
 Round 4 additions: `WithRunDetach()` emits `-d`; `ParseRunMemory("256m")` parses a
 size (digits plus optional `b/k/m/g`, overflow-checked) for the memory option.

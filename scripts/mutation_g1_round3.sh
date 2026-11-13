@@ -12,10 +12,12 @@ BK="$(mktemp -d)" || exit 2
 : "${BK:?}"
 export GOMAXPROCS=2
 NICE="nice -n 10"
+# optional: MUT_SKIP=<regexp> passes -skip to go test (e.g. the slow fuzz test); MUT_FROM=<n> starts at mutant n
+SKIPARG=(); [ -n "${MUT_SKIP:-}" ] && SKIPARG=(-skip "$MUT_SKIP")
 MUT=scripts/mutants_g1_round3.py
 N="$(python3 "$MUT" count)"
 killed=0; survived=0; invalid=0
-for ((i=0;i<N;i++)); do
+for ((i=${MUT_FROM:-0};i<N;i++)); do
   file="$(python3 "$MUT" file "$i")"
   bk="$BK/orig"
   cp "$file" "$bk"
@@ -28,9 +30,9 @@ for ((i=0;i<N;i++)); do
     pkg/hostbudget/*) pk="./pkg/hostbudget/";;
     pkg/emulator/*) pk="./pkg/emulator/"; run='Probe|Reachable';;
   esac
-  if ! $NICE go build ./... >/dev/null 2>&1 || ! $NICE go test -vet=off -count=1 -run '^$' "$pk" >/dev/null 2>&1; then
+  if ! $NICE go build ./pkg/runtime/ ./pkg/hostbudget/ ./pkg/emulator/ >/dev/null 2>&1 || ! $NICE go test -vet=off -count=1 -run '^$' "$pk" >/dev/null 2>&1; then
     echo "[$i] INVALID (does not compile): $out"; invalid=$((invalid+1))
-  elif $NICE go test -vet=off -count=1 -p 1 -run "$run" "$pk" >/dev/null 2>&1; then
+  elif $NICE go test -vet=off -count=1 -p 1 "${SKIPARG[@]}" -run "$run" "$pk" >/dev/null 2>&1; then
     echo "[$i] SURVIVED: $out"; survived=$((survived+1))
   else
     echo "[$i] killed: $out"; killed=$((killed+1))

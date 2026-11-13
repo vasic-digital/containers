@@ -80,7 +80,10 @@ func TestCDS_N3_HomeFromPasswdFallback(t *testing.T) {
 func TestCDS_N3_BadHomeFailsClosed(t *testing.T) {
 	useLocal(t)
 	_, home := mkHome(t)
-	for _, h := range []string{"relative/home", home + "/../home"} {
+	oldF := fallbackHome
+	fallbackHome = func() string { return "" }
+	t.Cleanup(func() { fallbackHome = oldF })
+	for _, h := range []string{"relative/home", home + "/../home", "/"} {
 		fakeHome(t, h)
 		refused(t, "bad home "+h, WithRunMountAllowedRoots(filepath.Join(home, "work")), bm5(filepath.Join(home, "work")))
 	}
@@ -316,4 +319,88 @@ func TestCDS_SourceResolvedFormChecked(t *testing.T) {
 	require.NoError(t, os.WriteFile(filepath.Join(w, "x.sock"), []byte("x"), 0o644))
 	require.NoError(t, os.Symlink(filepath.Join(w, "x.sock"), filepath.Join(w, "l")))
 	refused(t, "symlink to x.sock", WithRunMountAllowedRoots(w), bm5(filepath.Join(w, "l")))
+}
+
+// ---- round 2 (Opus NO-GO F1/F2) ----------------------------------------------
+
+// F1: a credential child that is a DANGLING symlink must still be anchored on
+// its (missing) target, also through relative and chained links.
+func TestCDS_R2_DanglingCredentialLinks(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	fakeHome(t, home)
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".ssh")))
+	proj := filepath.Join(home, "work", "proj")
+	require.NoError(t, os.MkdirAll(proj, 0o700))
+	require.NoError(t, os.Symlink(filepath.Join(proj, "keys"), filepath.Join(home, ".ssh")))
+	refused(t, "dangling abs target: parent mounted", WithRunMountAllowedRoots(proj), bm5(proj))
+	refused(t, "dangling abs target: dir through it", WithRunMountAllowedRoots(home+"/.ssh"), bm5(home+"/.ssh"))
+	allowed(t, "sibling work dir", WithRunMountAllowedRoots(filepath.Join(home, "work", "other")), func() RunOption {
+		require.NoError(t, os.MkdirAll(filepath.Join(home, "work", "other"), 0o700))
+		return bm5(filepath.Join(home, "work", "other"))
+	}())
+	// relative dangling target
+	require.NoError(t, os.Remove(filepath.Join(home, ".ssh")))
+	require.NoError(t, os.Symlink("work/proj/relkeys", filepath.Join(home, ".ssh")))
+	refused(t, "dangling relative target", WithRunMountAllowedRoots(proj), bm5(proj))
+	// chain: ~/.ssh -> /out/l1 (existing link) -> dangling under proj
+	out := filepath.Join(base, "out")
+	require.NoError(t, os.MkdirAll(out, 0o700))
+	require.NoError(t, os.Symlink(filepath.Join(proj, "chain"), filepath.Join(out, "l1")))
+	require.NoError(t, os.Remove(filepath.Join(home, ".ssh")))
+	require.NoError(t, os.Symlink(filepath.Join(out, "l1"), filepath.Join(home, ".ssh")))
+	refused(t, "dangling via chain", WithRunMountAllowedRoots(proj), bm5(proj))
+}
+
+// A symlink loop is denied for a candidate (fail closed) and does not hide a
+// protected anchor.
+func TestCDS_R2_SymlinkLoopFailsClosed(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	a, b := filepath.Join(base, "la"), filepath.Join(base, "lb")
+	require.NoError(t, os.Symlink(b, a))
+	require.NoError(t, os.Symlink(a, b))
+	d, why := denyHostPathMode(filepath.Join(a, "x"), home, true)
+	require.True(t, d, why)
+	require.Contains(t, why, "symlink loop")
+	// a looping credential anchor: lexical form still protected, candidates still judged
+	require.NoError(t, os.RemoveAll(filepath.Join(home, ".aws")))
+	require.NoError(t, os.Symlink(filepath.Join(home, ".awsx"), filepath.Join(home, ".aws")))
+	require.NoError(t, os.Symlink(filepath.Join(home, ".aws"), filepath.Join(home, ".awsx")))
+	d, _ = denyHostPathMode(filepath.Join(home, ".aws"), home, true)
+	require.True(t, d)
+	d, _ = denyHostPathMode(filepath.Join(home, "work"), home, true)
+	require.False(t, d)
+}
+
+// F2: both $HOME and the passwd home are anchors; "/" or unclean HOME is invalid.
+func TestCDS_R2_PasswdHomeAnchorAlongsideHome(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	other := filepath.Join(base, "other")
+	require.NoError(t, os.MkdirAll(filepath.Join(other, ".ssh"), 0o700))
+	require.NoError(t, os.MkdirAll(filepath.Join(other, "work"), 0o700))
+	oldF := fallbackHome
+	t.Cleanup(func() { fallbackHome = oldF })
+	fallbackHome = func() string { return other }
+	for _, h := range []string{home, "/", "relative", other + "/../other"} {
+		fakeHome(t, h)
+		refused(t, "passwd ~/.ssh, HOME="+h, WithRunMountAllowedRoots(filepath.Join(other, ".ssh")), bm5(filepath.Join(other, ".ssh")))
+		refused(t, "passwd home itself, HOME="+h, WithRunMountAllowedRoots(other), bm5(other))
+		allowed(t, "passwd work dir, HOME="+h, WithRunMountAllowedRoots(filepath.Join(other, "work")), bm5(filepath.Join(other, "work")))
+	}
+	fakeHome(t, home)
+	refused(t, "HOME ~/.ssh with passwd elsewhere", WithRunMountAllowedRoots(filepath.Join(home, ".ssh")), bm5(filepath.Join(home, ".ssh")))
+}
+
+// The error names the escape hatch (mount a subdirectory).
+func TestCDS_R2_ErrorHintsSubdirectory(t *testing.T) {
+	useLocal(t)
+	base, home := mkHome(t)
+	fakeHome(t, home)
+	_ = base
+	o := &runOptions{MountRoots: []string{filepath.Join(home, "work")}}
+	_, err := bindSource(o, filepath.Join(home, ".ssh"))
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "dedicated subdirectory")
 }
