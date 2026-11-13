@@ -458,6 +458,16 @@ by `RemoteRuntime`) does NOT inspect the local file system: it requires an absol
 clean, literal path, applies the lexical denies and the roots, and assumes nothing
 about symlinks on the remote host.
 
+Round 4 additions: `WithRunDetach()` emits `-d`; `ParseRunMemory("256m")` parses a
+size (digits plus optional `b/k/m/g`, overflow-checked) for the memory option.
+Bounds: pids `1..1048576`, memory `>= 4 MiB`, CPUs finite and `<= 4096`,
+`--stop-signal` numbers `1..64`. Further built-in denies: home files `.bashrc
+.bash_profile .profile .zshrc .netrc`, home dirs `.config/systemd .config/autostart
+.local/bin`, and the subtrees `/mnt /media /snap`. `WithRunCapAddReason` records
+`CAP,CAP: reason` and `NET_ADMIN` needs its own reasoned entry. Host-budget thread
+counting skips only ENOENT/ESRCH; EACCES (for example `/proc` mounted with `hidepid`)
+makes that axis undetermined instead of being skipped.
+
 ## Android Emulator (pkg/emulator)
 
 `pkg/emulator` provides multi-target Android emulator orchestration satisfying
