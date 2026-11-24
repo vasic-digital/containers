@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Source-Available-All-Rights-Reserved
 
 // Package ios orchestrates iOS build and simulator operations on macOS
 // hosts using the Xcode command-line tools (`xcodebuild`, `xcrun simctl`).

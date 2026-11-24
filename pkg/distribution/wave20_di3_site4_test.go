@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Source-Available-All-Rights-Reserved
 package distribution
 
 // Wave-20 DI3-SITE4-ARGSWEEP permanent regression guard (§11.4.115 GREEN

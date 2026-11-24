@@ -240,7 +240,7 @@ go test -v ./challenges/...
 
 ## License
 
-MIT License - See [LICENSE](../LICENSE) for details.
+Source-available, all rights reserved - see [LICENSE](../LICENSE) for details.
 
 ---
 
