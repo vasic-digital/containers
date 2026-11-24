@@ -107,7 +107,8 @@ runner_select() {
   name="${out%%$'\t'*}"; rest="${out#*$'\t'}"; source="${rest%%$'\t'*}"; mode="${rest#*$'\t'}"
   [ -n "$name" ] && [ -n "$source" ] && [ -n "$mode" ] || { _runner_err "unparseable answer from $b: '$out'"; return 2; }
   export CONTAINERS_RUNNER_CHOSEN="$name" CONTAINERS_RUNNER_SOURCE="$source"
-  if [ "$mode" = forced ]; then export CONTAINERS_RUNNER="$name"; fi
+  if [ "$mode" = forced ]; then export CONTAINERS_RUNNER="$name"
+  elif [ "$RUNNER_FLAG_SET" = 1 ]; then unset CONTAINERS_RUNNER; fi   # explicit auto beats an inherited env
   printf 'runner: %s (selected by %s)\n' "$name" "$source" >&2
   return 0
 }

@@ -78,7 +78,13 @@ func run(args []string, out, errw io.Writer, getenv func(string) string) int {
 		fmt.Fprintf(out, "%s\t%s\t%s\n", rt.Name(), choice.Source, mode)
 		return 0
 	}
-	cmd, cargs, err := compose.DetectComposeCmdForRunner(rt.Name())
+	var cmd string
+	var cargs []string
+	if choice.Forced() {
+		cmd, cargs, err = compose.DetectComposeCmdForRunner(rt.Name())
+	} else {
+		cmd, cargs, err = compose.DetectDefaultComposeCmd()
+	}
 	if err != nil {
 		fmt.Fprintf(errw, "runner: %v\n", err)
 		return 2

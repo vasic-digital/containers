@@ -930,6 +930,9 @@ func NewDefaultOrchestratorForRunner(
 	return newDefaultOrchestratorFrom(cmd, args, workDir, logger), nil
 }
 
+// DetectDefaultComposeCmd exposes the unforced probe order to consumers.
+func DetectDefaultComposeCmd() (string, []string, error) { return detectComposeCmd() }
+
 // detectComposeCmd tries to find a working compose command, preferring
 // Docker Compose v2 plugin, then standalone docker-compose, then
 // podman-compose, then podman compose.

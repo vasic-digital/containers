@@ -59,6 +59,8 @@ run_suite() {
     check "flag beats env" "$(cat "$TMPOUT")" "0 flag podman"
     ( unset CONTAINERS_RUNNER; runner_parse_args; runner_select 2>/dev/null; echo "$? $CONTAINERS_RUNNER_SOURCE ${CONTAINERS_RUNNER:-unset}" ) > "$TMPOUT"
     check "default leaves CONTAINERS_RUNNER unset" "$(cat "$TMPOUT")" "0 default unset"
+    ( export CONTAINERS_RUNNER=docker; runner_parse_args --runner=auto; runner_select 2>/dev/null; echo "$? ${CONTAINERS_RUNNER:-unset}" ) > "$TMPOUT"
+    check "--runner=auto clears inherited env" "$(cat "$TMPOUT")" "0 unset"
     ( unset CONTAINERS_RUNNER; runner_parse_args --runner=auto; runner_select 2>/dev/null; echo "$? ${CONTAINERS_RUNNER:-unset}" ) > "$TMPOUT"
     check "auto = default order" "$(cat "$TMPOUT")" "0 unset"
   else echo "  SKIP podman cases: podman not installed"; fi
@@ -85,6 +87,7 @@ if [ "${1:-}" = "--prove-failure" ]; then
   mut M4-no-conflict-check 's/\[ "\$RUNNER_FLAG_VALUE" != "\$1" \]/false/'
   mut M5-no-announce "s/printf 'runner: %s \(selected by %s\)\\\\n' \"\\\$name\" \"\\\$source\" >&2/:/"
   mut M6-hardcoded-list "s/\"\\\$b\" list;/printf 'podman\\\\ndocker\\\\n';/"
+  mut M8-auto-leaks-env 's/elif \[ "\$RUNNER_FLAG_SET" = 1 \]; then unset CONTAINERS_RUNNER; fi/elif false; then :; fi/'
   mut M7-rest-dropped 's/\*\) RUNNER_REST\+=\("\$1"\); shift ;;/*) shift ;;/'
   [ "$SURV" = 0 ] && [ "$INVALID" = 0 ] && exit 0 || exit 1
 fi
