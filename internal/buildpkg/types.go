@@ -36,6 +36,11 @@ type BuildComponent struct {
 	// component's build into. When empty the scheduler falls back to
 	// DefaultBuilderImage.
 	BuilderImage string
+	// ExtraVolumes specifies additional volume mounts for this component's build.
+	// Format: "hostPath:containerPath:options" (e.g., "/home/user/.cache/go-build:/root/.cache/go-build:Z")
+	ExtraVolumes []string
+	// NetworkMode specifies the network mode for the container (e.g., "host" for host networking).
+	NetworkMode string
 }
 
 func (c BuildComponent) ResourceRequirements() scheduler.ContainerRequirements {

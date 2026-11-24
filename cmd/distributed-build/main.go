@@ -13,7 +13,9 @@ import (
 
 	"digital.vasic.containers/internal/buildpkg"
 	"digital.vasic.containers/pkg/envconfig"
+	"digital.vasic.containers/pkg/logging"
 	"digital.vasic.containers/pkg/remote"
+	"digital.vasic.containers/pkg/runtime"
 	"digital.vasic.containers/pkg/scheduler"
 )
 
@@ -112,26 +114,39 @@ func main() {
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
+
+	// Allow zero remote hosts if all builds are local (no --component
+	// flag with remote-only components). We check after planning.
+	// For now, just warn if no remote hosts.
 	if len(cfg.Hosts) == 0 {
-		log.Fatal("no remote hosts configured — set CONTAINERS_REMOTE_HOST_* env vars or use --env flag")
-	}
-	log.Printf("Loaded %d hosts:", len(cfg.Hosts))
-	for i, h := range cfg.Hosts {
-		log.Printf("  Host %d: %s (%s) runtime=%s labels=%v", i+1, h.Name, h.Address, h.Runtime, h.Labels)
-	}
-
-	sshExec, err := remote.NewSSHExecutor(nil)
-	if err != nil {
-		log.Fatalf("create SSH executor: %v", err)
-	}
-	defer sshExec.Close()
-
-	hostMgr := remote.NewHostManager(sshExec, nil)
-
-	for _, h := range cfg.ToRemoteHosts() {
-		if err := hostMgr.AddHost(h); err != nil {
-			log.Printf("warning: failed to register host %s: %v", h.Name, err)
+		log.Printf("warning: no remote hosts configured — local-only builds will proceed if all components are local")
+	} else {
+		log.Printf("Loaded %d hosts:", len(cfg.Hosts))
+		for i, h := range cfg.Hosts {
+			log.Printf("  Host %d: %s (%s) runtime=%s labels=%v", i+1, h.Name, h.Address, h.Runtime, h.Labels)
 		}
+	}
+
+	// Create SSH executor and host manager only if we have remote hosts
+	var sshExec *remote.SSHExecutor
+	var hostMgr remote.HostManager
+	if len(cfg.Hosts) > 0 {
+		sshExec, err = remote.NewSSHExecutor(nil)
+		if err != nil {
+			log.Fatalf("create SSH executor: %v", err)
+		}
+		defer sshExec.Close()
+
+		hostMgr = remote.NewHostManager(sshExec, logging.NopLogger{})
+
+		for _, h := range cfg.ToRemoteHosts() {
+			if err := hostMgr.AddHost(h); err != nil {
+				log.Printf("warning: failed to register host %s: %v", h.Name, err)
+			}
+		}
+	} else {
+		// Create a nil hostMgr for local-only builds
+		hostMgr = remote.NewHostManager(nil, logging.NopLogger{})
 	}
 
 	strategy := scheduler.PlacementStrategy(*schedStrategy)
@@ -147,6 +162,15 @@ func main() {
 	planner := buildpkg.NewPlannerWithScheduler(hostMgr, sched, components)
 
 	ctx := context.Background()
+
+	// Auto-detect local container runtime for local builds
+	localRuntime, err := runtime.AutoDetect(ctx)
+	if err != nil {
+		log.Printf("warning: no local container runtime detected, local builds will be skipped: %v", err)
+		localRuntime = nil
+	} else {
+		log.Printf("Detected local container runtime: %s", localRuntime.Name())
+	}
 
 	var plan *buildpkg.BuildPlan
 	if *component != "" {
@@ -172,6 +196,29 @@ func main() {
 		WithBuildTimeout(time.Duration(*timeoutMin) * time.Minute)
 	artifactColl := buildpkg.NewArtifactCollector(sshExec, absProject, remoteDir)
 
+	// Create local container executor for local builds
+	var localExecutor *buildpkg.LocalContainerExecutor
+	if localRuntime != nil {
+		// Use the first component's builder image for local executor
+		// (all local components should use the same image type in practice)
+		var builderImage string
+		for _, a := range plan.LocalAssignments() {
+			if a.Component.BuilderImage != "" {
+				builderImage = a.Component.BuilderImage
+				break
+			}
+		}
+		if builderImage == "" {
+			builderImage = buildpkg.DefaultBuilderImage
+		}
+		localExecutor = buildpkg.NewLocalContainerExecutor(localRuntime, absProject, builderImage)
+		localExecutor.SetLogger(logging.NewStdLogger("distributed-build"))
+		// Enable --userns=keep-id for permission handling on rootless Podman
+		localExecutor.SetUserNSKeepID(true)
+		// Propagate the --timeout flag to local container builds
+		localExecutor.SetBuildTimeout(time.Duration(*timeoutMin) * time.Minute)
+	}
+
 	syncedHosts := make(map[string]bool)
 	for _, a := range plan.RemoteAssignments() {
 		if syncedHosts[a.Host] {
@@ -188,11 +235,32 @@ func main() {
 		syncedHosts[a.Host] = true
 	}
 
+	var results []buildpkg.BuildResult
+
+	// Execute local builds via LocalContainerExecutor
 	for _, a := range plan.LocalAssignments() {
-		fmt.Printf("  %s -> local (local builds handled by shell pipeline)\n", a.Component.Name)
+		if localExecutor == nil {
+			log.Printf("  %s -> local (SKIPPED: no local container runtime)", a.Component.Name)
+			results = append(results, buildpkg.BuildResult{
+				Component: a.Component.Name,
+				Host:      "local",
+				Status:    buildpkg.BuildStatusSkipped,
+				Error:     "no local container runtime available",
+			})
+			continue
+		}
+		fmt.Printf("Building %s locally (container)...\n", a.Component.Name)
+		result, err := localExecutor.ExecuteBuild(ctx, a.Component, *version, *skipTests)
+		if err != nil {
+			log.Printf("build %s locally failed: %v", a.Component.Name, err)
+			results = append(results, *result)
+			continue
+		}
+		fmt.Printf("  %s: %s (%.1fs)\n", a.Component.Name, result.Status, result.Duration.Seconds())
+		results = append(results, *result)
 	}
 
-	var results []buildpkg.BuildResult
+	// Execute remote builds via SSH
 	for _, a := range plan.RemoteAssignments() {
 		host, err := hostMgr.GetHost(a.Host)
 		if err != nil {
@@ -269,8 +337,6 @@ func loadConfig(envFile string) (*envconfig.DistributionConfig, error) {
 
 	// Load configuration from environment variables
 	cfg := envconfig.LoadFromEnv()
-	if len(cfg.Hosts) == 0 {
-		return nil, fmt.Errorf("no remote hosts configured — set CONTAINERS_REMOTE_HOST_* env vars or use --env flag")
-	}
+	// Allow zero hosts for local-only builds
 	return cfg, nil
 }
