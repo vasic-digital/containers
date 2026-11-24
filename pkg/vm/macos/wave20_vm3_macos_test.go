@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Source-Available-All-Rights-Reserved
 package macos
 
 // Wave-20 VM3-9-ARGSWEEP permanent regression guard (§11.4.115 GREEN polarity):

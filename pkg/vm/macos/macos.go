@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Source-Available-All-Rights-Reserved
 
 // Package macos orchestrates macOS virtual machines via Tart
 // (https://tart.run), an Apple-blessed open-source tool for running

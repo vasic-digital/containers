@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Apache-2.0
+// SPDX-License-Identifier: LicenseRef-Source-Available-All-Rights-Reserved
 // Copyright 2026 Milos Vasic
 
 package buildpkg
