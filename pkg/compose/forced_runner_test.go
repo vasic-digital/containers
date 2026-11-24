@@ -31,10 +31,10 @@ func TestDetectComposeCmdForRunner_NoComposeRunnerRefused(t *testing.T) {
 // must NOT pick podman's compose instead.
 func TestDetectComposeCmdForRunner_RealHost_AbsentDockerRefused(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err == nil {
-		t.Skip("docker present on this host; absent path not exercisable")
+		t.Skip("docker present on this host; absent path not exercisable") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	if _, err := exec.LookPath("docker-compose"); err == nil {
-		t.Skip("docker-compose present on this host")
+		t.Skip("docker-compose present on this host") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	cmd, _, err := DetectComposeCmdForRunner("docker")
 	require.Error(t, err)

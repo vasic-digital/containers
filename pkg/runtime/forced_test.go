@@ -138,7 +138,7 @@ func TestSelectRuntime_RealHost_AbsentRunnerRefused(t *testing.T) {
 		}
 	}
 	if absent == "" {
-		t.Skip("every supported runner client is installed; cannot exercise the absent path on this host")
+		t.Skip("every supported runner client is installed; cannot exercise the absent path on this host") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	rt, err := SelectRuntime(context.Background(), RunnerChoice{Name: absent, Source: SourceFlag})
 	assert.Nil(t, rt)
@@ -151,7 +151,7 @@ func TestSelectRuntime_RealHost_ForcedAvailableIsHonoured(t *testing.T) {
 	ctx := context.Background()
 	avail := DetectAll(ctx)
 	if len(avail) == 0 {
-		t.Skip("no container runtime on this host")
+		t.Skip("no container runtime on this host") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	for _, a := range avail {
 		rt, err := SelectRuntime(ctx, RunnerChoice{Name: a.Name(), Source: SourceFlag})

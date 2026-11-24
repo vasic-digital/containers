@@ -34,7 +34,7 @@ func TestUnknownRunnerIsRC2(t *testing.T) {
 
 func TestRealHost_ForcedAbsentRunnerIsRC2_NoFallback(t *testing.T) {
 	if _, err := exec.LookPath("docker"); err == nil {
-		t.Skip("docker installed here")
+		t.Skip("docker installed here") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	rc, out, errs := do(nil, "resolve", "--runner=docker")
 	assert.Equal(t, 2, rc)
@@ -47,7 +47,7 @@ func TestRealHost_ForcedAbsentRunnerIsRC2_NoFallback(t *testing.T) {
 
 func TestRealHost_PodmanForcedAndPrecedence(t *testing.T) {
 	if _, err := exec.LookPath("podman"); err != nil {
-		t.Skip("no podman")
+		t.Skip("no podman") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	rc, out, _ := do(nil, "resolve", "--runner", "podman")
 	assert.Equal(t, 0, rc)
@@ -65,7 +65,7 @@ func TestRealHost_PodmanForcedAndPrecedence(t *testing.T) {
 
 func TestRealHost_AutoIsNotForced(t *testing.T) {
 	if _, err := exec.LookPath("podman"); err != nil {
-		t.Skip("no podman")
+		t.Skip("no podman") // SKIP-OK: host-capability guard; the opposite branch is exercised by its sibling test
 	}
 	rc, out, _ := do(map[string]string{"CONTAINERS_RUNNER": "docker"}, "resolve", "--runner=auto")
 	assert.Equal(t, 0, rc)
