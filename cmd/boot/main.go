@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"context"
 	"flag"
 	"fmt"
@@ -94,8 +95,17 @@ func main() {
 
 	if err := runBoot(ctx, envFile, projectDir, choice); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		os.Exit(exitCodeFor(err))
 	}
+}
+
+// exitCodeFor maps a boot failure to the process exit code: a forced runner that is not installed is a
+// refusal about the invocation (exit 2, like an unknown runner; never a fallback), anything else exit 1.
+func exitCodeFor(err error) int {
+	if errors.Is(err, runtime.ErrRunnerUnavailable) {
+		return 2
+	}
+	return 1
 }
 
 // There is deliberately no local distributorAdapter here. One used to exist,
