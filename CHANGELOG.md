@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Added (forced container-runner selector)
+- `pkg/runtime/forced.go`: `SupportedRunners`, `ParseRunnerFlag`, `ResolveRunner`
+  (flag > `CONTAINERS_RUNNER` > default), `SelectRuntime` (forced runner never
+  falls back), errors `ErrUnknownRunner` / `ErrRunnerUnavailable` / `ErrBadRunnerFlag`.
+- `pkg/compose`: `DetectComposeCmdForRunner`, `NewDefaultOrchestratorForRunner`.
+- `cmd/runner` CLI and `scripts/lib/runner.sh` shared shell helper (+ real-host
+  test with `--prove-failure` mutations); `cmd/boot` gains `--runner`.
+- Docs: `docs/RUNNER_FLAG.md`.
+
 CAT-DEVEMU, gaps G1, G2 and G11 of the device-emulation plan. **PROVISIONAL**:
 unit-tested with paired mutants; one rootless-podman cgroup read-back test
 (alpine, no pull). No emulator was booted and no live Android/Tauri run exists.

@@ -150,6 +150,13 @@ returns a config without validation).
 **Open proposal (not implemented):** a first-class local-host build target is
 described in [docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md](docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md).
 
+## Forcing the container runner
+
+`--runner=NAME` (or `CONTAINERS_RUNNER=NAME`) overrides the default runtime
+priority order; unknown or unavailable runners are refused (rc 2), never
+silently replaced. Go API in `pkg/runtime`, shell helper `scripts/lib/runner.sh`
+for start/restart scripts. See [docs/RUNNER_FLAG.md](docs/RUNNER_FLAG.md).
+
 ## Architecture
 
 ```
