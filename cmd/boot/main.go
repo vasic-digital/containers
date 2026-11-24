@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -23,6 +24,7 @@ var (
 	flagEnvFile = flag.String("env", "", "Path to .env file (default: ./pkg/envconfig/.env)")
 	flagProject = flag.String("project", "", "Path to project directory")
 	flagTimeout = flag.Duration("timeout", 5*time.Minute, "Boot timeout")
+	flagRunner  = flag.String("runner", "", "Force the container runner (one of: "+strings.Join(runtime.SupportedRunners(), ", ")+", auto); overrides $CONTAINERS_RUNNER and the default priority order")
 	flagHelp    = flag.Bool("help", false, "Show help")
 )
 
@@ -78,7 +80,19 @@ func main() {
 		cancel()
 	}()
 
-	if err := runBoot(ctx, envFile, projectDir); err != nil {
+	runnerSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "runner" {
+			runnerSet = true
+		}
+	})
+	choice, err := runtime.ResolveRunner(*flagRunner, runnerSet, os.Getenv)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(2)
+	}
+
+	if err := runBoot(ctx, envFile, projectDir, choice); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
@@ -91,7 +105,7 @@ func main() {
 // *distribution.DefaultDistributor already satisfies boot.Distributor — its own
 // doc comment says so — so it is passed straight through.
 
-func runBoot(ctx context.Context, envFile, projectDir string) error {
+func runBoot(ctx context.Context, envFile, projectDir string, choice runtime.RunnerChoice) error {
 	logger := logging.NewStdLogger("boot")
 	logger.Info("Starting boot process...")
 
@@ -111,11 +125,11 @@ func runBoot(ctx context.Context, envFile, projectDir string) error {
 	logger.Info("Configuration loaded: remote=%v, hosts=%d, scheduler=%s",
 		cfg.Enabled, len(cfg.Hosts), cfg.Scheduler)
 
-	rt, err := runtime.AutoDetect(ctx)
+	rt, err := runtime.SelectRuntime(ctx, choice)
 	if err != nil {
-		return fmt.Errorf("auto-detect runtime: %w", err)
+		return fmt.Errorf("select runtime: %w", err)
 	}
-	logger.Info("Using runtime: %s", rt.Name())
+	logger.Info("Using runtime: %s (selected by %s)", rt.Name(), choice.Source)
 
 	exec, err := remote.NewSSHExecutor(logger)
 	if err != nil {

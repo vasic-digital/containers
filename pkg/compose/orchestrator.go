@@ -192,6 +192,12 @@ func NewDefaultOrchestrator(
 	if err != nil {
 		return nil, err
 	}
+	return newDefaultOrchestratorFrom(cmd, args, workDir, logger), nil
+}
+
+func newDefaultOrchestratorFrom(
+	cmd string, args []string, workDir string, logger logging.Logger,
+) *DefaultOrchestrator {
 	if logger == nil {
 		logger = logging.NopLogger{}
 	}
@@ -208,7 +214,7 @@ func NewDefaultOrchestrator(
 		// probe of the resolved command itself.
 		isPodmanCompose: isPodmanComposeCmd(cmd, args) ||
 			isPodmanBackedCmd(cmd, args, composeProbeTimeout),
-	}, nil
+	}
 }
 
 // NewOrchestrator creates an orchestrator with an explicit compose
@@ -856,21 +862,79 @@ func parsePorts(raw string) []string {
 	return result
 }
 
-// detectComposeCmd tries to find a working compose command, preferring
-// Docker Compose v2 plugin, then standalone docker-compose, then
-// podman-compose, then podman compose.
-func detectComposeCmd() (string, []string, error) {
-	candidates := []struct {
-		cmd  string
-		args []string
-	}{
+type composeCandidate struct {
+	cmd  string
+	args []string
+}
+
+// defaultComposeCandidates is the unforced probe order.
+func defaultComposeCandidates() []composeCandidate {
+	return []composeCandidate{
 		{"docker", []string{"compose"}},
 		{"docker-compose", nil},
 		{"podman-compose", nil},
 		{"podman", []string{"compose"}},
 	}
+}
 
-	for _, c := range candidates {
+// ComposeCandidatesForRunner returns the compose front-ends that belong to a
+// forced runner (a runtime.SupportedRunners name), in probe order. Runners
+// without a compose implementation return an empty list.
+func ComposeCandidatesForRunner(runner string) [][]string {
+	var out [][]string
+	switch runner {
+	case "docker":
+		out = [][]string{{"docker", "compose"}, {"docker-compose"}}
+	case "podman":
+		out = [][]string{{"podman-compose"}, {"podman", "compose"}}
+	case "nerdctl":
+		out = [][]string{{"nerdctl", "compose"}}
+	}
+	return out
+}
+
+// DetectComposeCmdForRunner finds a working compose command belonging to the
+// forced runner. It never falls back to another runner's compose front-end.
+func DetectComposeCmdForRunner(runner string) (string, []string, error) {
+	cands := ComposeCandidatesForRunner(runner)
+	if len(cands) == 0 {
+		return "", nil, fmt.Errorf("runner %q has no compose implementation "+
+			"(compose-capable runners: docker, podman, nerdctl)", runner)
+	}
+	for _, c := range cands {
+		var args []string
+		if len(c) > 1 {
+			args = c[1:]
+		}
+		if composeCmdWorks(c[0], args, composeProbeTimeout) {
+			return c[0], args, nil
+		}
+	}
+	return "", nil, fmt.Errorf("forced runner %q has no working compose command "+
+		"(tried %d candidate(s)); refusing to fall back to another runner", runner, len(cands))
+}
+
+// NewDefaultOrchestratorForRunner is NewDefaultOrchestrator restricted to the
+// compose front-ends of one forced runner. An empty runner means the default
+// probe order.
+func NewDefaultOrchestratorForRunner(
+	workDir string, logger logging.Logger, runner string,
+) (*DefaultOrchestrator, error) {
+	if runner == "" {
+		return NewDefaultOrchestrator(workDir, logger)
+	}
+	cmd, args, err := DetectComposeCmdForRunner(runner)
+	if err != nil {
+		return nil, err
+	}
+	return newDefaultOrchestratorFrom(cmd, args, workDir, logger), nil
+}
+
+// detectComposeCmd tries to find a working compose command, preferring
+// Docker Compose v2 plugin, then standalone docker-compose, then
+// podman-compose, then podman compose.
+func detectComposeCmd() (string, []string, error) {
+	for _, c := range defaultComposeCandidates() {
 		if composeCmdWorks(c.cmd, c.args, composeProbeTimeout) {
 			return c.cmd, c.args, nil
 		}
