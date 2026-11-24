@@ -65,7 +65,7 @@ image.sysdir.1=system-images/android-28/google_apis/x86_64/
 // listAVDKey returns the fakeExecutor script key for the baked-AVD
 // listing exec against the given image.
 func listAVDKey(image string) string {
-	return "podman run --rm --entrypoint bash -- " + image + " -c " + listAVDsScript
+	return "podman run --rm --memory 536870912 --memory-swap 536870912 --cpus 1 --pids-limit 256 --entrypoint bash -- " + image + " -c " + listAVDsScript
 }
 
 // TestParseAvdmanagerListAVD pins the parser against realistic output.

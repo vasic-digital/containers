@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"digital.vasic.containers/pkg/hostbudget"
 )
 
 // processRunner is the seam through which QEMUVM launches qemu-system-*.
@@ -161,12 +162,7 @@ func newQEMUVMWithDeps(p processRunner, s sshClient, q qmpClient, kvm bool) *QEM
 // the low-risk fix: it fails exactly when qemu-system's own
 // KVM_CREATE_VM open would fail, and succeeds exactly when it would.
 func kvmAvailable() bool {
-	f, err := os.OpenFile("/dev/kvm", os.O_RDWR, 0)
-	if err != nil {
-		return false
-	}
-	_ = f.Close()
-	return true
+	return hostbudget.KVMUsable("/dev/kvm") == nil
 }
 
 func qemuBinary(arch string) string {

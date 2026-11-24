@@ -136,6 +136,7 @@ func cgroupOf(t *testing.T, pid int) string {
 // rehearsal that mutates buildLaunchCommand to nohup).
 func TestLaunch_DurableSurvivesLauncher(t *testing.T) {
 	if !hasSystemdUser(t) {
+		// SKIP-OK: conditional topology skip, hasSystemdUser found no systemd --user manager; runs on systemd hosts
 		t.Skip("no systemd --user manager available (honest skip: durability requires systemd-run --user)")
 	}
 	r := NewLocalRunner(nil)
@@ -207,6 +208,7 @@ func TestLaunch_DurableSurvivesLauncher(t *testing.T) {
 // were re-implemented with nohup, the durable assertion above would fail.
 func TestDurabilityPredicate_SystemdRunVsNohup(t *testing.T) {
 	if !hasSystemdUser(t) {
+		// SKIP-OK: conditional topology skip, hasSystemdUser found no systemd --user manager; runs on systemd hosts
 		t.Skip("no systemd --user manager available (honest skip)")
 	}
 	r := NewLocalRunner(nil)

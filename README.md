@@ -2,10 +2,12 @@
 
 | Field | Value |
 |---|---|
-| Revision | 2 |
+| Revision | 6 |
 | Created | 2026-04-30 |
-| Last modified | 2026-05-19 |
+| Last modified | 2026-10-28 (release `containers-2.0.0`) |
 | Status | active |
+| Documented state | release `containers-2.0.0` (2026-10-28): removes exported `runtime.RuntimePriority` (RT-RACE-1), fixes `go vet -tags integration`, honest non-unit test targets; BREAKING Go API changes since 1.1.x are listed in [MIGRATION.md](MIGRATION.md); llmctl `v3.3.0` already consumes the 1.2 API |
+| Change history | [CHANGELOG.md](CHANGELOG.md) |
 | Test coverage | [docs/test-coverage.md](docs/test-coverage.md) |
 | Issues | docs/Issues.md (when present) |
 | Continuation | docs/CONTINUATION.md (when present) |
@@ -95,6 +97,65 @@ func main() {
 - **Remote volumes**: SSHFS, NFS, and rsync-based volume sharing
 - **Automatic failover**: Detect offline hosts and reschedule containers
 - **Environment configuration**: `.env` files and `CONTAINERS_REMOTE_*` env vars
+- **Android / Cuttlefish / Genymotion / Apple-simulator / QEMU matrices**: `pkg/emulator`, `pkg/cuttlefish`, `pkg/genymotion`, `pkg/applesim`, `pkg/vm` plus `cmd/emulator-matrix` (with `--build-type` / `--gradle-property`), `emulator-canary`, `vm-matrix`
+- **Cross-platform build backends**: `pkg/crossbuild` (host, Linux container, Apple `container` micro-VM on macOS) selected by `crossbuild.Selector`
+- **GPU-aware scheduling**: see [docs/gpu-scheduling.md](docs/gpu-scheduling.md)
+- **Durable remote execution and egress**: `pkg/remoteexec`, `pkg/egress` (SOCKS egress verification)
+- **Dependency-ordered orchestrator startup**: topological waves in `pkg/orchestrator`
+
+## Configuration and runtime defaults
+
+Remote hosts are configured only through environment variables / a `.env` file
+(loaded by `pkg/envconfig`); nothing host-specific is compiled in. Names below
+are taken from `pkg/envconfig/parser.go` and `pkg/envconfig/template.go`
+(`envconfig.GenerateEnvExample()` prints the full documented template):
+
+| Variable | Meaning | Default (code) |
+|---|---|---|
+| `CONTAINERS_REMOTE_ENABLED` | master switch for remote distribution | `false` |
+| `CONTAINERS_REMOTE_DEFAULT_SSH_USER` / `_SSH_KEY` / `_SSH_PASSWORD` | SSH defaults for all hosts | empty |
+| `CONTAINERS_REMOTE_DEFAULT_RUNTIME` | runtime assumed on remote hosts (`docker` / `podman`) | `docker` |
+| `CONTAINERS_REMOTE_SCHEDULER` | `resource_aware`, `round_robin`, `affinity`, `spread`, `bin_pack` | `resource_aware` |
+| `CONTAINERS_REMOTE_HOST_N_NAME`, `_ADDRESS`, `_PORT`, `_USER`, `_KEY`, `_RUNTIME`, `_LABELS`, `_GPU_AUTOPROBE` | per-host settings, `N` = 1, 2, ... | per-host; unset falls back to the global defaults above |
+
+Example (placeholder values; use your own hostnames and keys, never commit
+credentials):
+
+```dotenv
+CONTAINERS_REMOTE_ENABLED=true
+CONTAINERS_REMOTE_DEFAULT_RUNTIME=docker
+CONTAINERS_REMOTE_HOST_1_NAME=build-host-a
+CONTAINERS_REMOTE_HOST_1_ADDRESS=build-a.example.internal
+CONTAINERS_REMOTE_HOST_1_USER=deploy
+CONTAINERS_REMOTE_HOST_1_RUNTIME=podman
+```
+
+Since `helixcode-v1.1.0`, SET-but-invalid values are reported as errors by
+`Parse` / `LoadFromFile` instead of silently defaulting (`LoadFromEnv` itself
+returns a config without validation).
+
+**Runtime defaults, stated precisely:**
+- Remote-host runtime default is `docker` (`CONTAINERS_REMOTE_DEFAULT_RUNTIME`).
+- Local auto-detection (`runtime.AutoDetect`) tries, in order, Podman, Docker,
+  nerdctl, CRI-O, LXD, Kubernetes, and honours `runtime.SetRuntimePriority`.
+- Podman is supported as a runtime (`PodmanRuntime`, podman-compose shim
+  detection in `pkg/compose`). NOT VERIFIED end-to-end in this documentation
+  pass: no builds or container tests were run for this refresh; rootless Podman
+  against a real remote host and Docker/Podman behaviour parity on the full
+  matrix are UNCONFIRMED until the containerised full-suite run happens.
+- Host names such as `thinker` appear in this repository only as illustrative
+  examples (for instance the `ctop --host` usage text and emulator comments);
+  they are not defaults and nothing resolves them implicitly.
+
+**Open proposal (not implemented):** a first-class local-host build target is
+described in [docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md](docs/LOCAL_HOST_BUILD_TARGET_PROPOSAL.md).
+
+## Forcing the container runner
+
+`--runner=NAME` (or `CONTAINERS_RUNNER=NAME`) overrides the default runtime
+priority order; unknown or unavailable runners are refused (rc 2), never
+silently replaced. Go API in `pkg/runtime`, shell helper `scripts/lib/runner.sh`
+for start/restart scripts. See [docs/RUNNER_FLAG.md](docs/RUNNER_FLAG.md).
 
 ## Architecture
 
@@ -336,6 +397,124 @@ bash challenges/scripts/containers_describe_challenge.sh --mutate
 The challenge respects the host-power-management hard ban (CONST-033 / §12),
 performs no sudo / suspend / hibernate / poweroff calls, never echoes secrets
 (§11.4.10), and runs in O(seconds) without any container start.
+
+## Host budget and resource envelope (pkg/hostbudget, pkg/runtime, pkg/emulator)
+
+PROVISIONAL (CAT-DEVEMU G1/G2/G11; see `CHANGELOG.md`). `hostbudget.Admit` asks
+whether the live host (`/proc`: memory ceiling and reserve, PSI, load, RLIMIT_NPROC,
+read-write `/dev/kvm`) has room for a workload and answers `fits`, `does_not_fit`
+or `undetermined`; `undetermined` is never treated as `fits`. `Containerized.Boot`
+calls it first and refuses with `ErrHostBudget`, and every emulator container now
+carries `--memory`, `--memory-swap`, `--cpus`, `--pids-limit`. `pkg/runtime` run
+options gained typed resource, device, publish, label and digest options that
+refuse `--privileged` and host namespaces. `emulator.ReachableAPI` resolves which
+URL an emulator, container or bridge client must use to reach a host service.
+Round 2 hardens the option builder (capability lists, `ns:`/`container:` joins,
+`--device`, sensitive bind-mount sources), counts only the current user's tasks
+for the pids axis, adds `ContainerizedConfig.RequireKVM`, and makes the in-target
+probes require an explicit exit status. Round 3 replaces the denylist scan of
+free-form `ExtraArgs` with an ALLOWLIST (below). Docker/nerdctl need
+`--add-host=host.docker.internal:host-gateway`. See "Known gaps" in `CHANGELOG.md`.
+
+### Run option allowlist (pkg/runtime, round 3)
+
+`WithRunExtraArgs` accepts ONLY the flags below, parsed with the engine's grammar
+(`--x v`, `--x=v`, `-x v`, `-xv`, `-x=v`, clusters like `-ie A=b`, repeated).
+Anything else (unknown or abbreviated flags, `--`, a stray positional that would
+become the image, a value on a boolean flag) is refused with
+`ErrRunForbiddenOption`; a bad value of an allowed flag is `ErrRunInvalidOption`.
+
+| Flag | Value rule |
+|---|---|
+| `--read-only`, `--init`, `--rm`, `--interactive`/`-i` | boolean, no value |
+| `--label`/`-l` | `key=value`, non-empty key |
+| `--env`/`-e` | `NAME=value` (a bare `NAME` would copy a host variable: refused) |
+| `--workdir`/`-w` | absolute clean path |
+| `--hostname` | DNS-label characters |
+| `--stop-timeout` | integer 0..3600 |
+| `--tmpfs` | `dst[:opts]`, dst not `/`, `/proc`, `/sys`; opts from `ro rw noexec exec nosuid nodev size= mode= uid= gid= nr_inodes=` |
+| `--dns` | literal IP |
+| `--add-host` | `host:IP` or `host:host-gateway` |
+| `--ulimit` | `nofile nproc core cpu fsize stack` = non-negative `soft[:hard]` |
+| `--restart` | `no` only |
+| `--stop-signal` | signal name or number |
+| `--pull` | `never` or `missing` |
+| `--shm-size` | digits with optional `b k m g` |
+
+Security-sensitive features exist only as typed options:
+
+| Need | Typed option | Policy |
+|---|---|---|
+| mounts | `WithRunMount(RunMount{Type, Source, Target, ReadOnly})`, `WithRunVolumes("src:dst[:ro]")` (parsed into the same typed mounts) | types `bind`, `volume`, `tmpfs` only; emitted as `--mount`, never `-v`; bind sources need `WithRunMountAllowedRoots` |
+| capabilities | `WithRunCapAdd`, `WithRunCapAddReason(reason, ...)`, `WithRunCapDropAll` | safe list `NET_BIND_SERVICE NET_RAW CHOWN FOWNER FSETID KILL SETGID SETUID SYS_CHROOT`; `NET_ADMIN` only with a reason of at least 8 characters (returned in `RunSpec.Reasons`); everything else refused |
+| security options | `WithRunNoNewPrivileges` | only `no-new-privileges` |
+| devices, namespaces, publish, resources | existing typed options | unchanged |
+| network | `WithRunNetwork` | a plain network name, `none`, `bridge`, `pasta`, `slirp4netns`; `host`, `container`, `ns:`, any `:`/`=` option form refused |
+| rootfs, `--env-host`, `--env-file`, `--hooks-dir`, `--volumes-from`, `--cgroup-parent`, `--gpus`, `--privileged` | none | never available |
+
+Bind-mount source policy: the source must be absolute, clean, literal (no
+`,` `"` or control characters) and below one of the caller's allowed roots. One
+class-wide deny rule (protected anchors x {lexical, fully symlink-resolved} forms,
+for the source and for every allowed root):
+
+- refused: `/` and `/home` (ancestors of every anchor), any `/home/<user>`, the
+  temp root itself, the user's home and every ancestor of it; the credential and
+  container-storage directories of the home AND every ancestor of them (so
+  `~/.config`, `~/.local`, `~/.local/share` are refused) with everything below
+  them: `.ssh .gnupg .aws .kube .docker .config/gh .config/containers
+  .config/systemd .config/autostart .local/bin .local/share/{keyrings,containers,docker}
+  .password-store`, the files `.git-credentials .pgpass .netrc` and the shell
+  dotfiles `.bashrc .bash_profile .profile .zshrc`; the subtrees `/proc /sys /dev
+  /run /var /etc /boot /root /usr /opt /srv /mnt /media /snap /lib* /bin /sbin`;
+  container runtime and session state directly in the temp root (`podman-*`,
+  `storage-run-*`, `tmux-*`, `ssh-*`, `.X11-unix`, ...); `*.sock`, `*.socket` and
+  real socket files. A work directory below the home that is neither an
+  ancestor nor a descendant of an anchor is accepted.
+- symlinks are followed component by component, including DANGLING links (a
+  `~/.ssh` that points at a missing directory is anchored on that missing target,
+  so mounting its parent is refused), relative targets and chains; more than 40
+  hops (a loop) is refused (fail closed).
+- the PHYSICAL location of every link on the way to an anchor is protected too:
+  while an anchor is resolved, each component's real position (resolved parent +
+  name, at every hop, also inside link targets) is recorded; a candidate equal to,
+  or an ancestor of, such a location is refused (a container with write access to
+  the directory that holds `~/.local/bin -> /disk/bin` could replace that link).
+- an anchor that cannot be resolved (loop, or more than 40 hops) refuses EVERY
+  bind mount until it is fixed (fail closed), with a reason naming the anchor.
+- the home anchors are built from BOTH `$HOME` and the passwd home. A `$HOME` of
+  `/`, a relative or unclean `$HOME` is ignored (the passwd home still protects);
+  if neither is usable the local runtime refuses every bind mount (fail closed).
+- a refusal message tells the caller to mount a dedicated subdirectory instead.
+
+A local runtime resolves symlinks (`EvalSymlinks`), requires the source to exist
+and passes the RESOLVED path to the engine. `ResolveRunSpec` (used by
+`RemoteRuntime`) does NOT inspect the local file system: it requires an absolute,
+clean, literal path, applies the lexical denies and the roots, and assumes nothing
+about symlinks on the remote host.
+
+Evidence level of the bind-mount policy: unit tests with paired mutants, a
+property test against an author oracle and an independent oracle based on GNU
+`readlink -m` (see CHANGELOG for the counts of the last run). Both are finite
+random samples of symlink layouts, not a proof; no live rootless podman run
+exercised these denies.
+
+Known limits of the bind-mount policy (stated, not hidden): other users' credential
+directories are not anchors (only `/home/<user>` itself is refused); hard links
+and bind-mount aliases of a protected directory are invisible (no device/inode
+comparison); on a host where `/home` is a symlink to `/var/home` the resolved
+`/var/...` form is refused, which fails safe but was not exercised on such a host
+(UNCONFIRMED live); a path changed between the check and the container start (TOCTOU)
+is mitigated only by passing the resolved path to the engine.
+
+Round 4 additions: `WithRunDetach()` emits `-d`; `ParseRunMemory("256m")` parses a
+size (digits plus optional `b/k/m/g`, overflow-checked) for the memory option.
+Bounds: pids `1..1048576`, memory `>= 4 MiB`, CPUs finite and `<= 4096`,
+`--stop-signal` numbers `1..64`. Further built-in denies: home files `.bashrc
+.bash_profile .profile .zshrc .netrc`, home dirs `.config/systemd .config/autostart
+.local/bin`, and the subtrees `/mnt /media /snap`. `WithRunCapAddReason` records
+`CAP,CAP: reason` and `NET_ADMIN` needs its own reasoned entry. Host-budget thread
+counting skips only ENOENT/ESRCH; EACCES (for example `/proc` mounted with `hidepid`)
+makes that axis undetermined instead of being skipped.
 
 ## Android Emulator (pkg/emulator)
 

@@ -36,6 +36,7 @@ import (
 func TestDeployRemote_CommandInjection(t *testing.T) {
 	sh, err := exec.LookPath("sh")
 	if err != nil {
+		// SKIP-OK: conditional topology skip, exec.LookPath found no POSIX sh on PATH; runs wherever sh exists
 		t.Skip("SKIP-with-reason (§11.4.3): no POSIX /bin/sh available")
 	}
 

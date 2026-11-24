@@ -59,10 +59,10 @@ func TestDistributionWorkflow_AllPhases(t *testing.T) {
 	}
 }
 
-// TestDistributor_WithMockHosts creates a Distributor with
-// minimal dependencies and verifies that Distribute returns an
+// TestDistributor_NoSchedulerErrors creates a real Distributor with
+// minimal dependencies (no mocks) and verifies that Distribute returns an
 // error when no scheduler is configured.
-func TestDistributor_WithMockHosts(t *testing.T) {
+func TestDistributor_NoSchedulerErrors(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test in short mode") // SKIP-OK: #short-mode
 	}

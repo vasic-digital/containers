@@ -35,13 +35,8 @@ package runtime
 // package; the test below documents the KNOWN behavior rather than
 // asserting a (nonexistent) fix.
 //
-// RT-RACE-1 (MED, FLAGGED — not fixed): detect.go's exported RuntimePriority
-// var can be read/written directly, bypassing priorityMu, racing
-// GetRuntimePriority/SetRuntimePriority. The only clean fix (unexporting)
-// removes a public symbol (§11.4.122) and is NOT applied here; see
-// TestRTRace1_DirectAccessRacesWithSetRuntimePriority (skipped by default,
-// run manually with -race to capture the race) and detect.go's doc comment
-// for the flagged recommendation.
+// RT-RACE-1 (MED, FIXED in containers-2.0.0): the exported RuntimePriority
+// var was unexported; see priority_api_test.go.
 
 import (
 	"context"
@@ -265,43 +260,10 @@ func TestParseLabelsString_NoCommaInValue_Unaffected(t *testing.T) {
 	assert.Equal(t, "frontend", got["tier"])
 }
 
-// --- RT-RACE-1 (flagged — not fixed; reproduces the race as evidence) ------
-
-// TestRTRace1_DirectAccessRacesWithSetRuntimePriority reproduces, under
-// `-race`, the data race between direct unsynchronized access to the
-// exported RuntimePriority var and a concurrent SetRuntimePriority call.
-// This is captured as EVIDENCE for the flagged finding, not fixed here: the
-// only clean fix (unexporting RuntimePriority) removes a public symbol
-// (§11.4.122) and requires an explicit operator API-break decision — see
-// detect.go's doc comment on the var for the flagged recommendation.
+// --- RT-RACE-1 (FIXED in containers-2.0.0) ---------------------------------
 //
-// Skipped by default: this package's standing `-race` suite (which this
-// same hardening batch must keep GREEN, per DoD) would otherwise be made to
-// fail by a known, deliberately-flagged-not-fixed finding. Run manually
-// (`go test -race -run TestRTRace1 -v ./pkg/runtime/... `, with the t.Skip
-// below commented out) to capture the "WARNING: DATA RACE" report cited as
-// evidence in the conductor's RT-RACE-1 finding.
-func TestRTRace1_DirectAccessRacesWithSetRuntimePriority(t *testing.T) {
-	t.Skip("RT-RACE-1 evidence-only: intentionally races against the " +
-		"exported RuntimePriority var to document the flagged (not fixed) " +
-		"finding; see detect.go's doc comment. Left skipped so the standing " +
-		"`-race` suite stays GREEN for this hardening batch's DoD.")
-
-	origPriority := GetRuntimePriority()
-	t.Cleanup(func() { SetRuntimePriority(origPriority) })
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		SetRuntimePriority([]string{"docker", "podman"})
-	}()
-
-	// Direct, unsynchronized read of the exported var — races with the
-	// SetRuntimePriority goroutine's write under `go test -race`.
-	_ = RuntimePriority
-
-	<-done
-}
+// The exported RuntimePriority var is now the unexported runtimePriority;
+// the regression guards live in priority_api_test.go.
 
 // --- RT-DOCKER-1 (fixed) -----------------------------------------------------
 //

@@ -52,6 +52,7 @@ func TestRequireKVM_Absent(t *testing.T) {
 // gate opens.
 func TestRequireKVM_TopologyGate(t *testing.T) {
 	if err := RequireKVM(); err != nil {
+		// SKIP-OK: conditional topology skip, RequireKVM reports the host cannot run Cuttlefish (no /dev/kvm); runs on Linux+KVM hosts
 		t.Skipf("SKIP-OK (§11.4.3 topology): host cannot run Cuttlefish: %v", err)
 	}
 	// Reached only on a Linux + KVM host — the gate correctly opened.

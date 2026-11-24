@@ -224,6 +224,15 @@ func resolveImageForAVD(image string, avd AVD) (string, error) {
 	return strings.ReplaceAll(image, apiPlaceholder, strconv.Itoa(avd.APILevel)), nil
 }
 
+// Resource envelope of the throwaway listing container (CAT-DEVEMU G2): it
+// only runs avdmanager, so a small fixed cap is enough and keeps even this
+// short-lived container inside the host-safety rules.
+const (
+	probeMemory = "536870912"
+	probeCPUs   = "1"
+	probePids   = "256"
+)
+
 // listBakedAVDs runs listAVDsScript INSIDE the emulator image (via a
 // throwaway `--rm --entrypoint bash` container) and parses the result.
 // The listing runs the image's own tooling against its own filesystem,
@@ -240,7 +249,10 @@ func (c *Containerized) listBakedAVDs(
 ) ([]bakedAVD, error) {
 	out, err := c.executor.Execute(
 		ctx, c.runtimeBinary,
-		"run", "--rm", "--entrypoint", "bash", "--", image, "-c", listAVDsScript,
+		"run", "--rm",
+		"--memory", probeMemory, "--memory-swap", probeMemory,
+		"--cpus", probeCPUs, "--pids-limit", probePids,
+		"--entrypoint", "bash", "--", image, "-c", listAVDsScript,
 	)
 	if err != nil {
 		return nil, fmt.Errorf(

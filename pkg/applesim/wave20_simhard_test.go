@@ -148,9 +148,11 @@ func shq(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'
 func writeShellScript(t *testing.T, body string) string {
 	t.Helper()
 	if runtime.GOOS == "windows" {
+		// SKIP-OK: conditional topology skip, windows has no POSIX shell (GOOS check above); runs on every Unix host
 		t.Skip("SIM-2 real-process guard uses a POSIX shell; skipped on windows")
 	}
 	if _, err := os.Stat("/bin/sh"); err != nil {
+		// SKIP-OK: conditional topology skip, /bin/sh missing on this host (os.Stat check above); runs wherever /bin/sh exists
 		t.Skipf("SIM-2 real-process guard needs /bin/sh: %v", err)
 	}
 	p := filepath.Join(t.TempDir(), "fakesimctl.sh")
