@@ -646,6 +646,6 @@ go run ./cmd/ota-device-emu-boot \
   --compose images/ota-device-emu/docker-compose.example.yml
 ```
 
-## License
+## Licence
 
-MIT
+Source-available, all rights reserved. See [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Gate: `bash scripts/verify_licence.sh` (`--prove-failure` for its paired proof).
