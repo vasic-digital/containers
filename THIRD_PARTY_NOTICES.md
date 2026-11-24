@@ -36,17 +36,17 @@ under those licences.
 | `github.com/stretchr/testify` | `v1.11.1` | direct | MIT | LICENSE |
 | `golang.org/x/crypto` | `v0.52.0` | direct | BSD-3-Clause | LICENSE |
 | `golang.org/x/term` | `v0.43.0` | direct | BSD-3-Clause | LICENSE |
-| `gopkg.in/yaml.v3` | `v3.0.1` | direct | Apache-2.0 | LICENSE +NOTICE |
+| `gopkg.in/yaml.v3` | `v3.0.1` | direct | MIT AND Apache-2.0 (MIT covers the files ported from libyaml; Apache-2.0 the rest) | LICENSE +NOTICE |
 | `github.com/beorn7/perks` | `v1.0.1` | indirect | MIT | LICENSE |
 | `github.com/cespare/xxhash/v2` | `v2.3.0` | indirect | MIT | LICENSE.txt |
 | `github.com/davecgh/go-spew` | `v1.1.2-0.20180830191138-d8f796af33cc` | indirect | ISC | LICENSE |
 | `github.com/kr/text` | `v0.2.0` | indirect | MIT | License (read manually) |
 | `github.com/munnerz/goautoneg` | `v0.0.0-20191010083416-a7dc8b61c822` | indirect | BSD-3-Clause | LICENSE |
-| `github.com/pmezard/go-difflib` | `v1.0.1-0.20181226105442-5d4384ee4fb2` | indirect | BSD-2-Clause | LICENSE |
+| `github.com/pmezard/go-difflib` | `v1.0.1-0.20181226105442-5d4384ee4fb2` | indirect | BSD-3-Clause | LICENSE |
 | `github.com/prometheus/common` | `v0.67.5` | indirect | Apache-2.0 | LICENSE +NOTICE |
 | `github.com/prometheus/procfs` | `v0.20.1` | indirect | Apache-2.0 | LICENSE +NOTICE |
 | `github.com/rogpeppe/go-internal` | `v1.14.1` | indirect | BSD-3-Clause | LICENSE |
-| `go.yaml.in/yaml/v2` | `v2.4.4` | indirect | Apache-2.0 | LICENSE +NOTICE |
+| `go.yaml.in/yaml/v2` | `v2.4.4` | indirect | MIT AND Apache-2.0 (MIT covers the files ported from libyaml, see LICENSE.libyaml) | LICENSE +NOTICE +LICENSE.libyaml |
 | `golang.org/x/sys` | `v0.45.0` | direct | BSD-3-Clause | LICENSE |
 | `google.golang.org/protobuf` | `v1.36.11` | indirect | BSD-3-Clause | LICENSE |
 
